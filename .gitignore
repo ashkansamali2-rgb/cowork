@@ -1,0 +1,9 @@
+*.gguf
+*.pyc
+__pycache__/
+.venv/
+*.env
+jarvis/memory.json
+jarvis/logs/
+*.egg-info/
+.DS_Store
