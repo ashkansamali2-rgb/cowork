@@ -1,20 +1,36 @@
 """
-gesture_daemon.py — Phase 6 v4 (dwell click — daily driver)
+gesture_daemon.py — Phase 6 v5 (pinch drag — tab focused)
 
-How it works:
-- Index fingertip drives the cursor. No gesture classification.
-- Dwell click: hold still for DWELL_MS → mouseDown
-- Dwell release: hold still again for DWELL_MS → mouseUp (completes drag)
-- Two fingers up + move → scroll
-- Open palm (hold 8 frames) → cancel / mouseUp emergency
+Designed for one job: grab a browser tab with a pinch and drag it
+to another window or screen.
 
-Tab dragging:
-  1. Point at tab, hold still → grabs it
-  2. Move finger → drags tab across
-  3. Hold still → drops it
+HOW IT WORKS
+────────────
+  Index fingertip  →  cursor position (smoothed)
+  Pinch (thumb + index close)  →  mouseDown  (grab the tab)
+  Move while pinched           →  drag
+  Release pinch                →  mouseUp    (drop)
+  Open palm                    →  emergency cancel
+
+WHY PINCH INSTEAD OF DWELL
+───────────────────────────
+  Dwell requires holding still *on* a 30px tab for 500ms with a
+  hovering hand — too much precision demand. Pinch is an intentional
+  physical action, low false-positive, and feels natural for dragging.
+
+CAMERA TILT FIX
+───────────────
+  Set CAMERA_TILT_DEG to the approximate clockwise tilt of your
+  webcam in degrees (e.g. 15, 30). Landmarks are rotated back before
+  any geometry check so finger-up/down logic stays correct.
+
+TUNING KEYS (in preview window)
+───────────────────────────────
+  +/-  adjust pinch threshold
+  Q    quit
 
 Requires: ~/cowork/hand_landmarker.task
-Install:   pip install pyautogui opencv-python mediapipe websockets
+Install:  pip install pyautogui opencv-python mediapipe websockets numpy
 """
 
 import cv2
@@ -31,6 +47,7 @@ import math
 import threading
 from collections import deque
 import os
+import numpy as np
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -39,19 +56,22 @@ CANTIVIA_BUS_URL = "ws://localhost:8002"
 CAMERA_INDEX     = 0
 FRAME_W, FRAME_H = 640, 480
 
-DWELL_MS         = 500    # ms of stillness to fire mouseDown or mouseUp
-DWELL_MOVE_PX    = 18     # pixels — if cursor moves more than this, reset dwell timer
-DRAG_MOVE_PX     = 14     # pixels — movement needed to enter drag mode
+# ★ Set this to your webcam's clockwise tilt in degrees.
+# If your camera is tilted left (top leans left), use a negative value.
+# Start with 0, increase in steps of 10 until finger-up detection feels right.
+CAMERA_TILT_DEG  = 40
 
-SMOOTH_FRAMES    = 10     # weighted smoothing window
-VELOCITY_GATE    = 0.003  # normalized — below this = hand is "still"
-DEAD_ZONE_PX     = 5      # don't move cursor for tiny hand movements
+# Pinch: thumb tip ↔ index tip normalised distance to count as "pinched"
+PINCH_CLOSE      = 0.055   # below this = pinched (grab)
+PINCH_OPEN       = 0.085   # above this = released (drop)  — hysteresis band
 
-SCROLL_FINGERS   = 2      # how many fingers up = scroll mode
-SCROLL_DEAD      = 0.003  # minimum motion to scroll
-SCROLL_SCALE     = 14     # lower = faster
+# Cursor smoothing
+SMOOTH_FRAMES    = 8
+VELOCITY_GATE    = 0.002   # normalised — below this = hand is still, don't jitter
+DEAD_ZONE_PX     = 4
 
-PALM_FRAMES      = 10     # open palm must be held this many frames to cancel
+# How many frames of open palm to trigger cancel
+PALM_FRAMES      = 8
 
 pyautogui.FAILSAFE = False
 pyautogui.PAUSE    = 0
@@ -85,7 +105,7 @@ def get_desktop():
             f = s.frame()
             print(f"  [{i}] {int(f.size.width)}x{int(f.size.height)} @ ({int(f.origin.x)},{int(f.origin.y)})")
         return w, h, int(min_x), int(min_y)
-    except Exception as e:
+    except Exception:
         w, h = pyautogui.size()
         print(f"Single screen {w}x{h}")
         return w, h, 0, 0
@@ -97,213 +117,144 @@ DESK_W, DESK_H, DESK_X, DESK_Y = get_desktop()
 latest_landmarks = None
 landmarks_lock   = threading.Lock()
 
-# ── Dwell state machine ───────────────────────────────────────────────────────
-#
-#   IDLE ──(still DWELL_MS)──► PRESSING ──(mouseDown)──► DOWN
-#   DOWN ──(moved > DRAG_PX)──► DRAGGING
-#   DRAGGING ──(still DWELL_MS)──► RELEASING ──(mouseUp)──► IDLE
-#   DOWN ──(still DWELL_MS, no drag)──► RELEASING ──(mouseUp + click)──► IDLE
-#   any state ──(open palm)──► IDLE (emergency cancel)
+# ── Tilt correction ───────────────────────────────────────────────────────────
 
-class DwellState:
-    def __init__(self):
-        # Cursor smoothing
-        self.pos_history   = deque(maxlen=SMOOTH_FRAMES)
-        self.prev_raw      = None
-        self.last_cursor   = (0, 0)
+def rotate_landmarks(lms, deg):
+    """
+    Rotate all landmarks around the hand's centroid by -deg degrees.
+    This compensates for a tilted camera so that 'up' in the image
+    matches 'up' in the geometry checks.
+    """
+    if deg == 0:
+        return lms
 
-        # Dwell
-        self.dwell_start   = None     # time when hand became still
-        self.dwell_anchor  = None     # cursor position when dwell started
-        self.mouse_down    = False
-        self.dragging      = False
-        self.drag_origin   = None
-        self.mode          = "idle"   # idle | pressing | down | dragging | releasing
+    rad = math.radians(-deg)  # counter-rotate to undo the tilt
+    cos_r, sin_r = math.cos(rad), math.sin(rad)
 
-        # Scroll
-        self.scroll_buf    = deque(maxlen=5)
-        self.prev_scroll_y = None
+    # Centroid of all landmarks
+    cx = sum(l.x for l in lms) / len(lms)
+    cy = sum(l.y for l in lms) / len(lms)
 
-        # Palm cancel
-        self.palm_count    = 0
+    class LM:
+        __slots__ = ('x', 'y', 'z')
+        def __init__(self, x, y, z):
+            self.x, self.y, self.z = x, y, z
 
-        # Bus
-        self.last_pub      = None
+    rotated = []
+    for l in lms:
+        dx, dy = l.x - cx, l.y - cy
+        rx = cx + dx * cos_r - dy * sin_r
+        ry = cy + dx * sin_r + dy * cos_r
+        rotated.append(LM(rx, ry, l.z))
+    return rotated
 
-ds = DwellState()
-
-# ── Math ──────────────────────────────────────────────────────────────────────
+# ── Gesture helpers ───────────────────────────────────────────────────────────
 
 def dist(a, b):
     return math.hypot(a.x - b.x, a.y - b.y)
 
-def fingers_up_count(lms):
-    tips = [INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP]
-    mcps = [INDEX_MCP, MIDDLE_MCP, RING_MCP, PINKY_MCP]
-    return sum(1 for t, m in zip(tips, mcps) if lms[t].y < lms[m].y - 0.03)
+def pinch_distance(lms):
+    return dist(lms[THUMB_TIP], lms[INDEX_TIP])
 
 def is_open_palm(lms):
-    return fingers_up_count(lms) >= 4 and dist(lms[THUMB_TIP], lms[INDEX_MCP]) > 0.06
+    tips = [INDEX_TIP, MIDDLE_TIP, RING_TIP, PINKY_TIP]
+    mcps = [INDEX_MCP, MIDDLE_MCP, RING_MCP, PINKY_MCP]
+    fingers = sum(1 for t, m in zip(tips, mcps) if lms[t].y < lms[m].y - 0.03)
+    return fingers >= 4 and dist(lms[THUMB_TIP], lms[INDEX_MCP]) > 0.06
 
-def is_scroll_mode(lms):
-    index_up  = lms[INDEX_TIP].y  < lms[INDEX_MCP].y  - 0.03
-    middle_up = lms[MIDDLE_TIP].y < lms[MIDDLE_MCP].y - 0.03
-    ring_dn   = lms[RING_TIP].y   > lms[RING_MCP].y
-    pinky_dn  = lms[PINKY_TIP].y  > lms[PINKY_MCP].y
-    return index_up and middle_up and ring_dn and pinky_dn
+# ── Pinch state ───────────────────────────────────────────────────────────────
 
-# ── Cursor: index fingertip → screen ─────────────────────────────────────────
+class PinchState:
+    def __init__(self):
+        self.pos_history  = deque(maxlen=SMOOTH_FRAMES)
+        self.prev_raw     = None
+        self.last_cursor  = (0, 0)
+
+        self.pinched      = False   # currently holding mouseDown
+        self.mode         = "idle"  # idle | pinched | dragging
+        self.palm_count   = 0
+        self.last_pub     = None
+        self.pinch_dist   = 0.0     # for HUD display
+
+ps = PinchState()
+
+# ── Cursor ────────────────────────────────────────────────────────────────────
 
 def get_cursor(lms):
-    """
-    Map index fingertip directly to screen coords.
-    Weighted smoothing + velocity gate + dead zone.
-    """
     tip = lms[INDEX_TIP]
-    raw_x = int((1.0 - tip.x) * DESK_W) + DESK_X
+    raw_x = int(tip.x * DESK_W) + DESK_X
     raw_y = int(tip.y * DESK_H) + DESK_Y
     raw_x = max(DESK_X, min(DESK_X + DESK_W - 1, raw_x))
     raw_y = max(DESK_Y, min(DESK_Y + DESK_H - 1, raw_y))
 
-    # Velocity gate
-    if ds.prev_raw:
-        vx = abs(tip.x - ds.prev_raw[0])
-        vy = abs(tip.y - ds.prev_raw[1])
+    if ps.prev_raw:
+        vx = abs(tip.x - ps.prev_raw[0])
+        vy = abs(tip.y - ps.prev_raw[1])
         if vx < VELOCITY_GATE and vy < VELOCITY_GATE:
-            return ds.last_cursor
-    ds.prev_raw = (tip.x, tip.y)
+            return ps.last_cursor
+    ps.prev_raw = (tip.x, tip.y)
 
-    ds.pos_history.append((raw_x, raw_y))
-    n = len(ds.pos_history)
+    ps.pos_history.append((raw_x, raw_y))
+    n = len(ps.pos_history)
     weights = list(range(1, n + 1))
     wsum = sum(weights)
-    sx = int(sum(w * p[0] for w, p in zip(weights, ds.pos_history)) / wsum)
-    sy = int(sum(w * p[1] for w, p in zip(weights, ds.pos_history)) / wsum)
+    sx = int(sum(w * p[0] for w, p in zip(weights, ps.pos_history)) / wsum)
+    sy = int(sum(w * p[1] for w, p in zip(weights, ps.pos_history)) / wsum)
 
-    lx, ly = ds.last_cursor
+    lx, ly = ps.last_cursor
     if abs(sx - lx) <= DEAD_ZONE_PX and abs(sy - ly) <= DEAD_ZONE_PX:
-        return ds.last_cursor
+        return ps.last_cursor
 
-    ds.last_cursor = (sx, sy)
+    ps.last_cursor = (sx, sy)
     return sx, sy
 
-# ── Dwell engine ──────────────────────────────────────────────────────────────
+# ── Pinch engine ──────────────────────────────────────────────────────────────
 
-def dwell_tick(cx, cy):
+def pinch_tick(lms, cx, cy):
     """
-    Core dwell state machine. Call every frame with current cursor pos.
-    Returns (mode, dwell_progress_0_to_1)
+    Simple two-state pinch machine with hysteresis.
+    Returns mode string for HUD.
     """
-    now = time.time()
+    d = pinch_distance(lms)
+    ps.pinch_dist = d
 
-    # How far has cursor moved since dwell started?
-    if ds.dwell_anchor:
-        ax, ay = ds.dwell_anchor
-        moved = math.hypot(cx - ax, cy - ay)
-    else:
-        moved = 0
-
-    # If hand moved significantly, reset dwell timer
-    if moved > DWELL_MOVE_PX:
-        ds.dwell_start  = now
-        ds.dwell_anchor = (cx, cy)
-        # If we're in drag mode, that's fine — cursor is supposed to move
-        if ds.mode == "dragging":
-            return ds.mode, 0.0
-        # Otherwise cancel any building dwell
-        if ds.mode in ("pressing", "releasing"):
-            ds.mode = "down" if ds.mouse_down else "idle"
-        return ds.mode, 0.0
-
-    # Start dwell timer if not running
-    if ds.dwell_start is None or ds.dwell_anchor is None:
-        ds.dwell_start  = now
-        ds.dwell_anchor = (cx, cy)
-
-    elapsed  = now - ds.dwell_start
-    progress = min(elapsed / (DWELL_MS / 1000), 1.0)
-
-    # ── State transitions ──
-
-    if ds.mode == "idle":
-        if progress >= 1.0:
-            # Dwell complete → press down
+    if not ps.pinched:
+        # Waiting for pinch
+        if d < PINCH_CLOSE:
+            ps.pinched = True
+            ps.mode    = "pinched"
             pyautogui.mouseDown()
-            ds.mouse_down  = True
-            ds.drag_origin = (cx, cy)
-            ds.mode        = "down"
-            ds.dwell_start = None
-            return "down", 1.0
-        return "idle", progress
-
-    elif ds.mode == "down":
-        # Check if we've started dragging
-        if ds.drag_origin:
-            dx = abs(cx - ds.drag_origin[0])
-            dy = abs(cy - ds.drag_origin[1])
-            if dx > DRAG_MOVE_PX or dy > DRAG_MOVE_PX:
-                ds.mode        = "dragging"
-                ds.dwell_start = None
-                return "dragging", 0.0
-        # Still down and still — count towards release dwell
-        if progress >= 1.0:
-            # Quick click (no drag) — release and click
+        else:
+            ps.mode = "idle"
+    else:
+        # Currently pinched — check for release
+        if d > PINCH_OPEN:
+            ps.pinched = False
             pyautogui.mouseUp()
-            pyautogui.click()
-            ds.mouse_down  = False
-            ds.drag_origin = None
-            ds.mode        = "idle"
-            ds.dwell_start = None
-            return "clicked", 1.0
-        return "down", progress
+            ps.mode = "idle"
+            return "dropped"
+        else:
+            # Still pinched — are we moving?
+            ps.mode = "dragging"
 
-    elif ds.mode == "dragging":
-        # Dragging — cursor follows finger, dwell to drop
-        if progress >= 1.0:
-            pyautogui.mouseUp()
-            ds.mouse_down  = False
-            ds.dragging    = False
-            ds.drag_origin = None
-            ds.mode        = "idle"
-            ds.dwell_start = None
-            return "dropped", 1.0
-        return "dragging", progress
-
-    return ds.mode, progress
+    return ps.mode
 
 def emergency_cancel():
-    """Open palm — release everything immediately."""
-    if ds.mouse_down:
+    if ps.pinched:
         pyautogui.mouseUp()
-        ds.mouse_down  = False
-    ds.dragging    = False
-    ds.drag_origin = None
-    ds.mode        = "idle"
-    ds.dwell_start = None
-    ds.dwell_anchor= None
-
-# ── Scroll ────────────────────────────────────────────────────────────────────
-
-def do_scroll(lms):
-    mid_y = (lms[INDEX_TIP].y + lms[MIDDLE_TIP].y) / 2
-    if ds.prev_scroll_y is not None:
-        delta = mid_y - ds.prev_scroll_y
-        ds.scroll_buf.append(delta)
-        avg = sum(ds.scroll_buf) / len(ds.scroll_buf)
-        if abs(avg) > SCROLL_DEAD:
-            mag = min(abs(avg) * 500, 25)
-            pyautogui.scroll(int(-math.copysign(mag, avg)))
-    ds.prev_scroll_y = mid_y
+        ps.pinched = False
+    ps.mode      = "idle"
+    ps.palm_count = 0
 
 # ── Bus ───────────────────────────────────────────────────────────────────────
 
-_bus_loop = None
+_bus_loop      = None
 _bus_connected = False
 
 def publish(name):
-    if _bus_loop and name != ds.last_pub:
+    if _bus_loop and name != ps.last_pub:
         asyncio.run_coroutine_threadsafe(_send(name), _bus_loop)
-        ds.last_pub = name
+        ps.last_pub = name
 
 async def _send(name):
     global _bus_connected
@@ -327,40 +278,52 @@ def on_result(result, output_image, timestamp_ms):
     with landmarks_lock:
         latest_landmarks = result.hand_landmarks[0] if result.hand_landmarks else None
 
-# ── Draw dwell arc on preview ─────────────────────────────────────────────────
+# ── Draw HUD ──────────────────────────────────────────────────────────────────
 
-def draw_dwell_arc(frame, cx_norm, cy_norm, progress, mode):
-    """Draw a circular progress arc around the fingertip in the preview window."""
-    px = int((1 - cx_norm) * FRAME_W)
-    py = int(cy_norm * FRAME_H)
-
+def draw_hud(frame, lms, mode):
     color_map = {
-        "idle":     (80, 200, 120),   # green building
-        "down":     (80, 180, 255),   # blue — held down
-        "dragging": (255, 160, 40),   # orange — dragging
-        "clicked":  (255, 255, 255),
+        "idle":     (80, 200, 120),
+        "pinched":  (80, 180, 255),
+        "dragging": (255, 160, 40),
         "dropped":  (255, 255, 255),
+        "cancel":   (80, 80, 255),
+        "no hand":  (100, 100, 100),
     }
     col = color_map.get(mode, (180, 180, 180))
 
-    # Background ring
-    cv2.circle(frame, (px, py), 22, (60, 60, 60), 1)
+    # Mode label
+    cv2.putText(frame, mode.upper(), (12, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.0, col, 2)
 
-    # Progress arc (approximate with polyline)
-    if progress > 0:
-        pts = []
-        steps = max(2, int(progress * 32))
-        for i in range(steps + 1):
-            angle = -math.pi / 2 + (i / 32) * 2 * math.pi * progress
-            ex = int(px + 22 * math.cos(angle))
-            ey = int(py + 22 * math.sin(angle))
-            pts.append([ex, ey])
-        if len(pts) >= 2:
-            import numpy as np
-            cv2.polylines(frame, [np.array(pts)], False, col, 2)
+    if lms:
+        # Index fingertip dot
+        ix = int(lms[INDEX_TIP].x * FRAME_W)
+        iy = int(lms[INDEX_TIP].y * FRAME_H)
+        cv2.circle(frame, (ix, iy), 8, col, -1)
 
-    # Dot at fingertip
-    cv2.circle(frame, (px, py), 6, col, -1)
+        # Thumb tip dot
+        tx = int(lms[THUMB_TIP].x * FRAME_W)
+        ty = int(lms[THUMB_TIP].y * FRAME_H)
+        cv2.circle(frame, (tx, ty), 6, col, -1)
+
+        # Line between thumb and index (shows pinch distance)
+        cv2.line(frame, (ix, iy), (tx, ty), col, 1)
+
+        # Pinch distance bar (bottom of frame)
+        bar_w = int(ps.pinch_dist * 8 * FRAME_W)  # rough scale
+        bar_w = min(bar_w, FRAME_W)
+        close_px = int(PINCH_CLOSE * 8 * FRAME_W)
+        open_px  = int(PINCH_OPEN  * 8 * FRAME_W)
+        cv2.rectangle(frame, (0, FRAME_H - 18), (bar_w, FRAME_H - 8), col, -1)
+        cv2.line(frame, (close_px, FRAME_H - 22), (close_px, FRAME_H - 4), (0, 255, 0), 1)
+        cv2.line(frame, (open_px,  FRAME_H - 22), (open_px,  FRAME_H - 4), (0, 180, 255), 1)
+
+    # Bottom status
+    tilt_str = f"tilt:{CAMERA_TILT_DEG}°"
+    cv2.putText(frame, f"pinch:{ps.pinch_dist:.3f}  {tilt_str}",
+                (12, FRAME_H - 26), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (140, 140, 140), 1)
+    cv2.putText(frame, "bus:ok" if _bus_connected else "bus:off",
+                (12, FRAME_H - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (140, 140, 140), 1)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
@@ -386,16 +349,20 @@ def main():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  FRAME_W)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_H)
 
-    print(f"\nGesture daemon v4 — dwell click")
+    print(f"\nGesture daemon v5 — pinch drag")
     print(f"Desktop: {DESK_W}x{DESK_H}")
-    print(f"Dwell time: {DWELL_MS}ms  |  Move threshold: {DWELL_MOVE_PX}px")
+    print(f"Pinch close: {PINCH_CLOSE}  |  Pinch open: {PINCH_OPEN}")
+    print(f"Camera tilt correction: {CAMERA_TILT_DEG}°")
     print(f"\nHow to use:")
-    print(f"  Point index finger  → moves cursor")
-    print(f"  Hold still {DWELL_MS}ms     → click (or grab for drag)")
-    print(f"  Move while grabbed  → drags (tab dragging works!)")
-    print(f"  Hold still again    → drop")
-    print(f"  2 fingers + move    → scroll")
-    print(f"  Open palm           → cancel / release\n")
+    print(f"  Point index finger      → moves cursor")
+    print(f"  Pinch (thumb+index)     → grab (mouseDown)")
+    print(f"  Move while pinched      → drag the tab")
+    print(f"  Open pinch              → drop (mouseUp)")
+    print(f"  Open palm               → emergency cancel")
+    print(f"\nTuning keys:")
+    print(f"  +/-  adjust pinch threshold")
+    print(f"  T/t  increase/decrease tilt correction")
+    print(f"  Q    quit\n")
 
     with mp_vision.HandLandmarker.create_from_options(opts) as landmarker:
         ts = 0
@@ -410,83 +377,51 @@ def main():
             landmarker.detect_async(mp_img, ts)
 
             with landmarks_lock:
-                lms = latest_landmarks
+                raw_lms = latest_landmarks
 
             mode = "no hand"
-            progress = 0.0
 
-            if lms:
+            if raw_lms:
+                lms = rotate_landmarks(raw_lms, CAMERA_TILT_DEG)
+
                 # Open palm → emergency cancel
                 if is_open_palm(lms):
-                    ds.palm_count += 1
-                    if ds.palm_count >= PALM_FRAMES:
+                    ps.palm_count += 1
+                    if ps.palm_count >= PALM_FRAMES:
                         emergency_cancel()
                         publish("open_palm")
                         mode = "cancel"
                 else:
-                    ds.palm_count = 0
-
-                # Scroll mode — 2 fingers up
-                if is_scroll_mode(lms) and not ds.mouse_down:
-                    do_scroll(lms)
-                    publish("scroll")
-                    mode = "scroll"
-                    # Draw both fingertips
-                    for idx in [INDEX_TIP, MIDDLE_TIP]:
-                        px = int((1 - lms[idx].x) * FRAME_W)
-                        py = int(lms[idx].y * FRAME_H)
-                        cv2.circle(frame, (px, py), 7, (80, 200, 120), -1)
-                else:
-                    ds.prev_scroll_y = None
-
-                    # Normal mode — index fingertip drives cursor
+                    ps.palm_count = 0
                     cx, cy = get_cursor(lms)
                     pyautogui.moveTo(cx, cy)
-                    mode, progress = dwell_tick(cx, cy)
+                    mode = pinch_tick(lms, cx, cy)
                     publish(mode)
-
-                    # Draw dwell arc
-                    draw_dwell_arc(frame, lms[INDEX_TIP].x, lms[INDEX_TIP].y, progress, mode)
-
             else:
-                # Hand left frame
                 emergency_cancel()
-                ds.pos_history.clear()
-                ds.prev_raw      = None
-                ds.prev_scroll_y = None
-                ds.palm_count    = 0
+                ps.pos_history.clear()
+                ps.prev_raw = None
 
-            # HUD
-            mode_colors = {
-                "idle":     (80, 200, 120),
-                "down":     (80, 180, 255),
-                "dragging": (255, 160, 40),
-                "scroll":   (180, 120, 255),
-                "cancel":   (80, 80, 255),
-                "clicked":  (255, 255, 255),
-                "dropped":  (255, 255, 255),
-                "no hand":  (100, 100, 100),
-            }
-            col = mode_colors.get(mode, (180, 180, 180))
-            cv2.putText(frame, mode.upper(), (12, 40),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, col, 2)
-            cv2.putText(frame, f"dwell: {DWELL_MS}ms",
-                        (12, FRAME_H - 26), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (140,140,140), 1)
-            cv2.putText(frame, "bus:ok" if _bus_connected else "bus:off",
-                        (12, FRAME_H - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (140,140,140), 1)
-
-            cv2.imshow("Gesture v4 — dwell click — Q to quit", frame)
+            draw_hud(frame, raw_lms, mode)
+            cv2.imshow("Gesture v5 — pinch drag — Q to quit", frame)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 break
-            elif key == ord('+') or key == ord('='):
-                DWELL_MS_ref = globals()
-                globals()['DWELL_MS'] = min(DWELL_MS + 50, 1500)
-                print(f"Dwell: {DWELL_MS}ms")
+            elif key in (ord('+'), ord('=')):
+                globals()['PINCH_CLOSE'] = round(min(PINCH_CLOSE + 0.005, 0.15), 3)
+                globals()['PINCH_OPEN']  = round(min(PINCH_OPEN  + 0.005, 0.18), 3)
+                print(f"Pinch close: {PINCH_CLOSE}  open: {PINCH_OPEN}")
             elif key == ord('-'):
-                globals()['DWELL_MS'] = max(DWELL_MS - 50, 150)
-                print(f"Dwell: {DWELL_MS}ms")
+                globals()['PINCH_CLOSE'] = round(max(PINCH_CLOSE - 0.005, 0.02), 3)
+                globals()['PINCH_OPEN']  = round(max(PINCH_OPEN  - 0.005, 0.04), 3)
+                print(f"Pinch close: {PINCH_CLOSE}  open: {PINCH_OPEN}")
+            elif key == ord('T'):
+                globals()['CAMERA_TILT_DEG'] = CAMERA_TILT_DEG + 5
+                print(f"Tilt: {CAMERA_TILT_DEG}°")
+            elif key == ord('t'):
+                globals()['CAMERA_TILT_DEG'] = CAMERA_TILT_DEG - 5
+                print(f"Tilt: {CAMERA_TILT_DEG}°")
 
     emergency_cancel()
     cap.release()
