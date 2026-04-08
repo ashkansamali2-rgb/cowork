@@ -7,3 +7,7 @@ jarvis/memory.json
 jarvis/logs/
 *.egg-info/
 .DS_Store
+jarvis/brain_error.log
+jarvis/interfaces/app/node_modules/
+jarvis/interfaces/whatsapp/session/
+jarvis/voices/*.onnx
