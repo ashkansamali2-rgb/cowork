@@ -11,3 +11,12 @@ jarvis/brain_error.log
 jarvis/interfaces/app/node_modules/
 jarvis/interfaces/whatsapp/session/
 jarvis/voices/*.onnx
+.aider*
+jarvis/interfaces/whatsapp/session/
+jarvis/memory/
+jarvis/projects/
+aider/
+*.wav
+*.onnx
+venv/
+__pycache__/
