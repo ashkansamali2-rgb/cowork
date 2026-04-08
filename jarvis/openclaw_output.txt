@@ -1,0 +1,58 @@
+OpenClaw status
+
+Overview
+┌─────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Item            │ Value                                                                                             │
+├─────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Dashboard       │ http://192.168.0.193:18789/                                                                       │
+│ OS              │ linux 6.17.0-14-generic (x64) · node 22.22.0                                                      │
+│ Tailscale       │ off                                                                                               │
+│ Channel         │ stable (default)                                                                                  │
+│ Update          │ available · pnpm · npm update 2026.3.2                                                            │
+│ Gateway         │ local · ws://127.0.0.1:18789 (local loopback) · reachable 22ms · auth token · bot (192.168.0.     │
+│                 │ 193) app 2026.2.26 linux 6.17.0-14-generic                                                        │
+│ Gateway service │ systemd installed · enabled · running (pid 1395, state active)                                    │
+│ Node service    │ systemd not installed                                                                             │
+│ Agents          │ 1 · 1 bootstrap file present · sessions 1 · default main active 2h ago                            │
+│ Memory          │ 0 files · 0 chunks · dirty · sources memory · plugin memory-core · vector ready · fts ready ·     │
+│                 │ cache on (0)                                                                                      │
+│ Probes          │ skipped (use --deep)                                                                              │
+│ Events          │ none                                                                                              │
+│ Heartbeat       │ 30m (main)                                                                                        │
+│ Sessions        │ 1 active · default gemini-3-pro-preview (1000k ctx) · ~/.openclaw/agents/main/sessions/sessions.  │
+│                 │ json                                                                                              │
+└─────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Security audit
+Summary: 1 critical · 1 warn · 1 info
+  CRITICAL Small models require sandboxing and web tools disabled
+    Small models (<=300B params) detected: - custom-api-cerebras-ai/llama3.1-8b (8B) @ agents.defaults.model.fallbacks (unsafe; sandbox=non-main; web=[browser]) Un…
+    Fix: If you must use small models, enable sandboxing for all sessions (agents.defaults.sandbox.mode="all") and disable web_search/web_fetch/browser (tools.deny=["group:web","browser"]).
+  WARN Some gateway.nodes.denyCommands entries are ineffective
+    gateway.nodes.denyCommands uses exact node command-name matching only (for example `system.run`), not shell-text filtering inside a command payload. - Unknown …
+    Fix: Use exact command names (for example: canvas.present, canvas.hide, canvas.navigate, canvas.eval, canvas.snapshot, canvas.a2ui.push, canvas.a2ui.pushJSONL, canvas.a2ui.reset). If you need broader restrictions, remove risky command IDs from allowCommands/default workflows and tighten tools.exec policy.
+Full report: openclaw security audit
+Deep probe: openclaw security audit --deep
+
+Channels
+┌──────────┬─────────┬────────┬───────────────────────────────────────────────────────────────────────────────────────┐
+│ Channel  │ Enabled │ State  │ Detail                                                                                │
+├──────────┼─────────┼────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+└──────────┴─────────┴────────┴───────────────────────────────────────────────────────────────────────────────────────┘
+
+Sessions
+┌──────────────────────────────────────────────────────────┬────────┬─────────┬──────────────────────┬────────────────┐
+│ Key                                                      │ Kind   │ Age     │ Model                │ Tokens         │
+├──────────────────────────────────────────────────────────┼────────┼─────────┼──────────────────────┼────────────────┤
+│ agent:main:main                                          │ direct │ 2h ago  │ gemini-3-pro-preview │ 15k/1000k (1%) │
+└──────────────────────────────────────────────────────────┴────────┴─────────┴──────────────────────┴────────────────┘
+
+FAQ: https://docs.openclaw.ai/faq
+Troubleshooting: https://docs.openclaw.ai/troubleshooting
+
+Update available (npm 2026.3.2). Run: openclaw update
+
+Next steps:
+  Need to share?      openclaw status --all
+  Need to debug live? openclaw logs --follow
+  Need to test channels? openclaw status --deep
