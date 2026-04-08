@@ -1,350 +1,302 @@
-# ForensicNet — Project Context Document v3
-## For continuing this project in a new Claude chat
-
-Paste this entire document as your first message in any new Claude conversation.
-Tell Claude: "I am continuing this project. Read this document fully before responding."
-
----
-
-## Who I Am
-
-I am Feargal (also goes by Ashkan Samali), a secondary school student in Ireland.
-I am building a deepfake detection platform called **Cantivia** for **YSTE
-(Young Scientist and Technology Exhibition)**. I placed 1st in Technology
-Intermediate at YSTE 2026. I am returning to improve the system significantly.
-
-I use **Claude Code** to implement all code changes. When Claude gives me prompts,
-I pass them directly to Claude Code which edits my actual files.
-I do not manually edit code myself.
-
-GitHub repository: `ashkansamali2-rgb/forensicnet` (branch: main)
-Local repo path: `/Users/ashkansamali/Vision/backbone/ForensicNet`
-Python environment: `/Users/ashkansamali/forensicnet_env/bin/python3`
+# COWORK — Project Context & Roadmap
+**Last updated:** April 8, 2026  
+**Author:** Ashkan Samali  
+**Machine:** MacBook Pro (Apple Silicon)  
+**Status:** Phase 2 complete, Phase 3 in progress
 
 ---
 
-## Repository Structure
+## What This Is
+
+A fully local, voice + gesture controlled AI operating system for a solo developer.
+No subscriptions. No cloud dependency. No gimmicks.
+
+The goal: replace the current workflow of juggling Claude web + Gemini + Antigravity + Claude Code CLI
+with a single unified system that listens, sees, codes, and acts — running entirely on-device.
+
+Think Iron Man's JARVIS. Not a chatbot. An operating system you talk to.
+
+---
+
+## Current Workflow (What We're Replacing)
+
+| Tool | Role | Problem |
+|---|---|---|
+| Claude Web (Sonnet) | Main brain, gives code | Have to copy/paste to editor |
+| Gemini | Consultant / second opinion | Manual, separate tab |
+| Antigravity | Code editor | Have to manually paste Claude's output |
+| Claude Code CLI | Applies code to files | Eats Claude usage quota fast |
+| Terminal (manual) | Running everything | Too many windows, too much friction |
+
+**The replacement:** Say or gesture a task → system plans it → writes it → applies it to your actual files → done.
+
+---
+
+## System Architecture (Current State)
 
 ```
-forensicnet/                          ← repo root
-├── CONTEXT.md                        ← this file, lives at root
-├── README.md                         ← project overview
-├── forensicnet_nano/                 ← 5M proof of concept (image only, works)
-├── forensicnet_75m/                  ← 75M validation backbone (needs retraining)
-│   ├── models/
-│   │   ├── backbone_75m.py           ← ForensicNet75M architecture
-│   │   ├── decoder_75m.py            ← MAEDecoder75M (training only)
-│   │   ├── backbone.py               ← Nano classes (TransformerBlock etc.)
-│   │   ├── gated_repr.py             ← GatedRepresentation module
-│   │   └── __init__.py
-│   ├── train_75m.py                  ← backbone pretraining script
-│   ├── train_heads.py                ← classifier head training
-│   ├── test_backbone.py              ← 10-test diagnostic suite
-│   ├── run.sh                        ← training launch script
-│   ├── setup.sh                      ← server setup script
-│   ├── requirements.txt              ← all dependencies
-│   ├── 75m_subset_manifest.json      ← HuggingFace dataset manifest
-│   └── CLAUDE.md                     ← Claude Code context for 75M
-└── forensicnet_300m/                 ← 300M production backbone (built, not trained)
-    ├── models/
-    │   ├── backbone_300m.py          ← ForensicNet300M architecture
-    │   ├── decoder_300m.py           ← MAEDecoder300M (training only)
-    │   ├── gated_repr.py             ← copy of GatedRepresentation
-    │   └── __init__.py
-    ├── train_300m.py                 ← backbone pretraining (8x B200 DDP)
-    ├── train_heads_300m.py           ← classifier head training
-    ├── test_backbone_300m.py         ← 10-test diagnostic suite
-    ├── run.sh                        ← training launch (--nproc_per_node=8)
-    ├── setup.sh                      ← server setup
-    ├── requirements.txt              ← all dependencies
-    └── CLAUDE.md                     ← Claude Code context for 300M
+You (voice / text / gesture)
+        ↓
+┌─────────────────────────────────────┐
+│         JARVIS DAEMON               │
+│  FastAPI WebSocket — port 8001      │
+│  Keyword router → branches to:      │
+│  - Cantivia (coding tasks)          │
+│  - Shell tools (open apps, files)   │
+│  - Ollama brain (jarvis-brain 23GB) │
+└──────────────┬──────────────────────┘
+               ↓
+┌─────────────────────────────────────┐
+│         CANTIVIA BUS                │
+│  WebSocket hub — port 8002          │
+│  Pub/sub event routing              │
+│  Events: TASK_CODING, TASK_VOICE,   │
+│  HEARTBEAT, AGENT_SPAWN, SCREENSHOT │
+└──────┬───────────────────┬──────────┘
+       ↓                   ↓
+┌──────────────┐   ┌───────────────────┐
+│ GEMMA 4 E4B  │   │  QWEN 3.5 9B      │
+│ Architect    │   │  Editor           │
+│ port 8080    │   │  port 8081        │
+│ Plans tasks  │   │  Writes the code  │
+└──────────────┘   └───────────────────┘
 ```
 
----
+### Key Files
+| File | Purpose |
+|---|---|
+| `~/jarvis/api_server.py` | WebSocket server, entry point |
+| `~/jarvis/core/router.py` | Keyword router, brain of Jarvis |
+| `~/jarvis/core/bus_client.py` | Jarvis ↔ Bus connection |
+| `~/cantivia-bus.py` | Central event bus |
+| `~/cantivia-cli.py` | Coding agent (Gemma + Qwen pipeline) |
+| `~/jarvis/config.py` | All URLs, keys, paths |
+| `~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect model |
+| `~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor model |
 
-## What Cantivia Is
+### Ports
+| Port | Service |
+|---|---|
+| 8001 | Jarvis WebSocket API |
+| 8002 | Cantivia Event Bus |
+| 8080 | llama-server — Gemma 4 (Architect) |
+| 8081 | llama-server — Qwen 3.5 (Editor) |
+| 11434 | Ollama (jarvis-brain fallback) |
 
-A modular deepfake detection platform:
-- A single **forensic backbone** learns universal frequency-domain representations
-  across images, audio, and video
-- Lightweight **classifier heads** (one per AI generator) bolt on top of the frozen backbone
-- New generators detected by training only a new head (~30 min), no backbone retraining
-- Backend: Rust/Axum + Python ML workers + NATS + PostgreSQL + Redis
-
-Key insight: AI-generated content leaves artifacts in the **DCT frequency domain**.
-ForensicNet operates exclusively in frequency space — it never sees raw pixels.
-
----
-
-## Model Progression (the story for judges)
-
-1. **ForensicNet-Nano (5M)** — `forensicnet_nano/` — proof of concept, images only.
-   Validated the architecture approach. Learned what worked and what didn't.
-
-2. **ForensicNet-75M (78.71M)** — `forensicnet_75m/` — full multimodal backbone.
-   Handles images, audio, and video. Trained once (9 epochs, not enough).
-   Needs retraining with fixes applied.
-
-3. **ForensicNet-300M (301M)** — `forensicnet_300m/` — production backbone.
-   Codebase built and ready. Needs GPU budget to train.
-
----
-
-## Architecture — ForensicNet-75M and 300M
-
-Both models share identical architecture. Only dimensions differ.
-
-| Component | 75M | 300M |
-|-----------|-----|------|
-| Embedding dim | 640 | 1024 |
-| Attention heads | 10 | 16 |
-| Stem layers | 5 | 8 |
-| Visual layers | 6 | 9 |
-| Audio layers | 4 | 6 |
-| Decoder dim | 320 | 512 |
-| Decoder layers | 4 | 6 |
-| Decoder heads | 5 | 8 |
-| Parameters | ~78.71M | ~301.4M |
-
-**Fixed for both models:**
-- Input: [3, 128, 128] DCT frequency tensor for ALL modalities — never change
-- Patch size: 4x4, 1024 patches — never change
-- No spatial interpolation on frequency data — destroys forensic information
-- torch.scatter in decoder (not torch.gather) — gradient flow fix
-- Dropout 0.1 backbone, 0.0 decoder
-- Z-score normalisation before GatedRepresentation
-- bfloat16 mixed precision, no GradScaler needed
-- Backbone trains on REAL data only
-
-**DCT Preprocessing:**
-- Resize to 1024x1024 → 2D DCT via scipy.fft.dctn orthonormal
-- Three 128x128 bands: Low [:128,:128], Mid [448:576,448:576], High [896:,896:]
-- Average across RGB → [3,128,128] → z-score normalise
-
-**Audio:** mel + delta + delta-delta → [3,128,128]
-**Video:** YCbCr → DCT per frame → 8-frame temporal pool → [3,128,128]
+### LaunchD Services (auto-start on login)
+- `com.jarvis.api` — Jarvis API server
+- `com.jarvis.brain` — Ollama brain
+- `com.jarvis.voice` — Voice daemon
+- `com.jarvis.ollama` — Ollama service
+- `com.jarvis.llamaserver` — llama.cpp server
 
 ---
 
-## Training Dataset
+## Models
 
-`ash12321/forensic-dataset` on HuggingFace — 169 healthy WebDataset tars, ~1.19TB
-- Image: 122 tars, 185.9GB (ImageNet, COCO, WikiArt, Flickr30k)
-- Audio: 32 tars, 49.2GB (LibriSpeech, ESC-50)
-- Video: 15 tars, 956GB (AVA, UCF-101)
-- 75M subset: 18 image + 12 audio + 4 video tars (~211.5GB)
-- 300M target: 800K samples from full dataset
-- Modality schedule: ["image","image","audio","video"] — 2:1:1 ratio
-
----
-
-## What Went Wrong in the First 75M Training Run
-
-Hardware: DigitalOcean H100, 9 epochs, ~€200. Final loss: 0.7351 (not converged).
-
-- Loss curve: 0.7855 → 0.7451 → ... → 0.7351 (still descending at epoch 8)
-- Cosine similarity: 0.9992 (all embeddings mapped to same region — useless)
-- FLUX head: predicted negative for everything (50.77% accuracy)
-- SDXL head: predicted positive for everything (62.75% accuracy)
+| Model | File | Use |
+|---|---|---|
+| Gemma 4 E4B | `gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect — planning, diagnosis |
+| Qwen 3.5 9B | `Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor — writing code |
+| jarvis-brain (Ollama, 23GB) | Ollama | General assistant fallback |
+| Qwen3-TTS 0.6B | HuggingFace MLX | Voice output |
+| Whisper large-v3-turbo | HuggingFace MLX | Voice input |
 
 ---
 
-## Every Fix Applied to 75M (all in codebase, pushed to GitHub)
-
-| # | Problem | Fix | File |
-|---|---------|-----|------|
-| 1 | Only 9 epochs | NUM_EPOCHS = 30 | train_75m.py |
-| 2 | Head LR 1e-3 caused collapse | Changed to 1e-4 | train_heads.py |
-| 3 | Cosine sim 0.9992 — embedding collapse | Added VICReg loss | train_75m.py |
-| 4 | Batch size 64 too small | Changed to 128 | train_75m.py |
-| 5 | WARMUP_EPOCHS = 1 too short | Changed to 2 | train_75m.py |
-| 6 | Hardcoded /results/ /workspace/ paths | TAR_DIR / CHECKPOINT_DIR env vars | train_75m.py |
-| 7 | Missing libraries | Added webdataset, fsspec, soundfile, etc. | requirements.txt |
-| 8 | opencv-python (needs headless) | opencv-python-headless | requirements.txt |
-| 9 | run.sh / setup.sh were Vast.ai specific | Clean Vultr versions | run.sh, setup.sh |
-| 10 | batch_size ignored in heads | All 3 DataLoaders use batch_size param | train_heads.py |
-
-**VICReg details (fix #3 — most important):**
-- Variance loss: forces each of 640 dims to have std > 0.5 across a batch
-- Covariance loss: forces all 640 dims to be decorrelated
-- Constants: WEIGHT=0.1, STD_COEFF=25.0, COV_COEFF=1.0, MIN_STD=0.5
-- Runs OUTSIDE autocast in full float32 — bfloat16 causes instability
-- Training loss = mae_loss + 0.1 * vicreg_loss
-- Second full forward pass per step to get embeddings — intentional
+## Phases
 
 ---
 
-## Current Status
+### ✅ PHASE 1 — Foundation
+**Status: Complete**
 
-| Item | Status |
-|------|--------|
-| ForensicNet-Nano (5M) | ✅ Complete — images only, proof of concept |
-| ForensicNet-75M architecture | ✅ Built and validated |
-| ForensicNet-75M all fixes | ✅ Applied and pushed to GitHub |
-| ForensicNet-75M training | ⏳ WAITING FOR GPU ACCESS |
-| ForensicNet-75M head training | ⏳ After backbone training |
-| ForensicNet-300M codebase | ✅ Built (301.4M params verified) |
-| ForensicNet-300M training | ⏳ After 75M proves approach works |
-| GitHub repo structure | ✅ Clean — forensicnet_75m/ and forensicnet_300m/ |
+- Jarvis daemon running as launchd service
+- FastAPI WebSocket server on port 8001
+- Keyword router (claude code / openclaw / shell tools)
+- Rolling conversation memory (10 messages)
+- Basic TTS + Whisper voice pipeline (slow, needs replacement)
+- Ollama brain connected
 
 ---
 
-## NEXT ACTION: Train the 75M on GPU
+### ✅ PHASE 2 — The Event Bus (Dual Brain)
+**Status: Complete**
 
-### Plan
-- **Phase 1:** ~20 epochs on any available A100 (~$2.40/hr)
-- **Phase 2:** Resume for final 10 epochs on DigitalOcean or another provider
+- Cantivia Bus live on port 8002
+- Jarvis auto-connects to bus on startup
+- Gemma 4 E4B running on port 8080 (Architect)
+- Qwen 3.5 9B running on port 8081 (Editor)
+- Cantivia CLI connected, receives TASK_CODING events
+- Full pipeline proven: voice command → Jarvis → Bus → Gemma plans → Qwen codes → file saved
+- `cantivia [task]` keyword routes correctly through the pipeline
 
-### Step 1 — When you have GPU access, connect and verify:
+---
+
+### 🔧 PHASE 3 — Real Code Application (Aider Integration)
+**Status: In progress — next up**
+
+**Goal:** Cantivia doesn't just write code to a file — it applies it to your actual codebase using aider.
+
+**Tasks:**
+- Configure aider to use Gemma (architect) + Qwen (editor) via llama.cpp
+- Cantivia CLI spawns aider as subprocess with the task and target repo
+- `cantivia fix [file or feature]` → aider opens, Gemma plans, Qwen edits, diff applied
+- Support repo context: user specifies working repo or Cantivia infers from open folder
+- Output diff shown in terminal, auto-applied on confirmation
+
+**How to start:**
 ```bash
-nvidia-smi
-```
-Must show GPU model and CUDA version.
-
-### Step 2 — Clone and setup:
-```bash
-git clone https://github.com/ashkansamali2-rgb/forensicnet
-cd forensicnet/forensicnet_75m
-bash setup.sh
-export HF_TOKEN="your_actual_token_here"
-```
-
-### Step 3 — Verify PyTorch sees GPU:
-```bash
-python3 -c "import torch; print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0))"
-```
-
-### Step 4 — Verify model builds:
-```bash
-python3 -c "
-import sys; sys.path.insert(0, '.')
-from models.backbone_75m import ForensicNet75M
-from models.decoder_75m import MAEDecoder75M
-m = ForensicNet75M()
-bp = sum(p.numel() for p in m.parameters())
-print(f'Backbone: {bp/1e6:.1f}M')
-assert 65_000_000 < bp < 90_000_000
-print('PASS')
-"
-```
-
-### Step 5 — Start training:
-```bash
-screen -S training
-bash run.sh
-```
-Detach: Ctrl+A then D. Reconnect: `screen -r training`
-
-### Step 6 — Monitor:
-```bash
-watch -n 5 nvidia-smi
-
-watch -n 60 "python3 -c \"
-import json
-with open('checkpoints_75m/training_log.json') as f:
-    log = json.load(f)
-for e in log:
-    print(f'Epoch {e[\"epoch\"]}: loss={e[\"train_loss\"]:.5f} gate={e[\"gate_mean\"]:.3f}')
-\""
-```
-
-### Resume if interrupted:
-```bash
-export RESUME_CHECKPOINT=./checkpoints_75m/backbone_75m_best.pt
-export START_EPOCH=X
-export END_EPOCH=30
-bash run.sh
+# Test aider with local models
+aider --model openai/gemma --openai-api-base http://localhost:8080/v1 --openai-api-key dummy
 ```
 
 ---
 
-## Healthy Training Targets
+### 🔧 PHASE 4 — Browser Vision (Playwright + Diagnosis)
+**Status: Planned**
 
-| Epoch | MAE Loss | Gate | VICReg Loss |
-|-------|----------|------|-------------|
-| 0 | 0.75–0.85 | 0.45–0.55 | 0.5–2.0 |
-| 5 | < 0.65 | 0.35–0.65 | < 0.5 |
-| 10 | < 0.55 | 0.3–0.7 | < 0.3 |
-| 20 | < 0.45 | 0.3–0.8 | < 0.2 |
-| 30 | < 0.40 | 0.3–0.8 | < 0.15 |
+**Goal:** `cantivia fix localhost:3000` → screenshots the page, diagnoses the bug, patches the code.
 
-**Key target: cosine similarity < 0.92 after training (was 0.9992)**
+**Tasks:**
+- Playwright integration in Cantivia CLI
+- On browser task: launch headless Chromium, navigate to URL, screenshot
+- Screenshot → base64 → sent to Gemma as vision input (Gemma 4 is multimodal)
+- Gemma diagnoses the visual bug, produces a fix plan
+- Qwen writes the patch, aider applies it
+- Loop: re-screenshot after patch to verify fix
 
-**Red flags — stop and tell Claude:**
-- Loss goes NaN
-- Loss flat for 5+ consecutive epochs
-- Gate collapses to <0.1 or >0.99
-- GPU utilisation <50%
-- VICReg loss goes NaN
+**Trigger keywords:** `fix localhost`, `fix [url]`, `screenshot [url] and fix`
 
 ---
 
-## After Training — Diagnostics
+### 🔧 PHASE 5 — Fast Voice (Sub-300ms Latency)
+**Status: Planned**
+
+**Goal:** Replace the slow, sloppy voice pipeline with something that feels instant.
+
+**Problems with current voice:**
+- Whisper large is slow on CPU
+- TTS pipeline has too much latency
+- No interruption handling
+- No wake word — have to manually trigger
+
+**Solution:**
+- Wake word: Porcupine (already have Picovoice key in config) — "Hey Cowork"
+- STT: Switch to Whisper tiny or base (MLX, Apple Silicon optimised) for <100ms transcription
+- Brain: Gemma 4 E4B handles fast local responses (no Ollama round trip)
+- TTS: Qwen3-TTS 0.6B MLX already in HuggingFace cache — wire it in
+- Interruption: kill current task on new voice input (kill switch already built)
+- Target: wake word → response playing in under 1 second
+
+---
+
+### 🔧 PHASE 6 — Hand Gesture Control (MacBook Camera)
+**Status: Planned — ambitious**
+
+**Goal:** Control the OS with hand gestures via the built-in MacBook camera.
+
+**Tasks:**
+- MediaPipe Hands — real-time hand landmark detection (runs on CPU/ANE, no GPU needed)
+- Define gesture vocabulary:
+  - ✋ Open palm → pause/stop current task
+  - 👆 Point → move cursor
+  - 👌 Pinch → click
+  - 🤏 Pinch + drag → drag windows
+  - ✌️ Two fingers up → trigger voice listen mode
+  - 👊 Fist → kill current agent task
+- Overlay HUD: semi-transparent gesture indicator on screen (like a radar)
+- Gesture events published to the bus as `GESTURE_EVENT` type
+- Jarvis router handles gesture events same as voice commands
+
+**Stack:** MediaPipe + OpenCV + PyAutoGUI for cursor control + AppKit for window management
+
+---
+
+### 🔧 PHASE 7 — Multi-Agent Spawner
+**Status: Planned**
+
+**Goal:** Say one thing, spawn multiple parallel agents working simultaneously.
+
+**Example:** `"cantivia refactor the auth module and fix the dashboard layout and update the tests"`
+→ 3 agents spawn in parallel, each working on one task, results merged
+
+**Tasks:**
+- `AGENT_SPAWN` event type already in bus protocol — wire it up
+- Agent pool: max 3 concurrent (limited by VRAM/RAM)
+- Each agent gets its own aider subprocess + model context
+- Results aggregated and reported back via TASK_VOICE
+- Conflict detection: if two agents edit the same file, queue them
+
+---
+
+### 🔧 PHASE 8 — The HUD (Ambient UI)
+**Status: Planned — ambitious**
+
+**Goal:** A always-on ambient display that shows system state without being in the way.
+
+**Design:** Thin neon overlay on the right edge of screen (like Jarvis from the films)
+- Active agents and their status
+- Current voice/gesture mode indicator  
+- Model inference speed (tokens/sec)
+- Bus event stream (last 5 events)
+- Quick actions (tap to spawn common tasks)
+
+**Stack:** Electron (already in your setup) + CSS animations + WebSocket to bus
+
+---
+
+### 🔧 PHASE 9 — Self-Healing & Autonomous Loops
+**Status: Future**
+
+**Goal:** System monitors itself and fixes its own problems.
+
+- Heartbeat engine watches all services (bus, llama servers, Jarvis)
+- If a service dies → auto-restart via launchctl
+- If a model produces bad output → retry with different temperature
+- Nightly: auto-pull latest model updates, run self-test suite
+- Error logs → Gemma diagnoses → opens GitHub issue or fixes inline
+
+---
+
+## How To Start The Full System
 
 ```bash
-scp root@server-ip:~/forensicnet/forensicnet_75m/checkpoints_75m/backbone_75m_best.pt ~/Desktop/
-python3 test_backbone.py --checkpoint ~/Desktop/backbone_75m_best.pt
+# One command to rule them all (add to ~/.zshrc as alias)
+alias start="launchctl start com.jarvis.api && \
+  llama-server -m ~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf --port 8080 --ctx-size 8192 --n-gpu-layers 99 & \
+  llama-server -m ~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf --port 8081 --ctx-size 8192 --n-gpu-layers 99 & \
+  python3 ~/cantivia-bus.py & \
+  python3 ~/cantivia-cli.py &"
 ```
-
-Pass criteria:
-- 10/10 tests pass
-- Cosine similarity < 0.92 (critical)
-- Gate mean: 0.3–0.8
 
 ---
 
-## Head Training (after diagnostics pass)
+## Current Limitations / Known Issues
 
-```bash
-python3 train_heads.py \
-    --backbone ~/Desktop/backbone_75m_best.pt \
-    --hf-token your_token \
-    --output-dir ./heads \
-    --epochs 20 \
-    --batch-size 64
-```
-
-Expected: FLUX and SDXL accuracy > 85%, FPR < 10%.
+- Voice pipeline is slow — Whisper large on CPU, high latency (Phase 5 fixes this)
+- Cantivia saves to `cantivia_output.py` but doesn't apply to real files yet (Phase 3 fixes this)
+- No wake word — must manually type or trigger (Phase 5 fixes this)
+- Jarvis brain (Ollama 23GB) is slow for general tasks — Gemma 4 should replace it (Phase 3)
+- No visual feedback when agents are working (Phase 8 fixes this)
+- `on_event` deprecation warning in FastAPI — migrate to lifespan handlers (minor, cosmetic)
 
 ---
 
-## 300M Training Plan (after 75M heads work)
+## How To Give This To Another Model
 
-```
-forensicnet/forensicnet_300m/
-```
+Paste this file as context. Then say:
 
-- Hardware: 8x B200 GPUs (not yet available)
-- 25 epochs, 800K samples, batch 32 per GPU (256 effective)
-- All same fixes as 75M already applied
-- run.sh already configured for --nproc_per_node=8
-- Budget estimate: ~€300-400
+> "Read CONTEXT.md. We are on Phase [X]. The last thing we did was [Y]. Continue from there."
 
-Do NOT start 300M until 75M heads achieve > 85% accuracy.
+The model will have everything it needs: architecture, file paths, ports, model names, current state, and what to build next.
 
 ---
 
-## Technical Decisions — Never Reverse
+## Guiding Principles
 
-1. torch.scatter in decoder (not gather) — gradient flow fix
-2. Dropout 0.1 backbone, 0.0 decoder — higher caused mode collapse
-3. Input [3,128,128], patch size 4, 1024 patches — never change
-4. No spatial interpolation on frequency data — destroys forensic info
-5. Z-score normalise before GatedRepresentation — prevents gate collapse
-6. Two branches only (Visual + Audio) — image and video share visual branch
-7. bfloat16 mixed precision — no GradScaler needed
-8. Backbone on REAL data only — heads handle real vs AI
-9. VICReg in float32 — bfloat16 causes covariance instability
-10. Video pipeline unchanged — slow but correct, do not modify
-
----
-
-## How to Continue in a New Chat
-
-"I am continuing a deepfake detection project called ForensicNet/Cantivia.
-I am a secondary school student in Ireland building this for YSTE.
-I use Claude Code for all code changes — give me Claude Code prompts, not raw code.
-My GitHub repo is ashkansamali2-rgb/forensicnet (branch: main).
-Local path: /Users/ashkansamali/Vision/backbone/ForensicNet
-Python env: /Users/ashkansamali/forensicnet_env/bin/python3
-Here is my full project context: [paste this entire document]"
+1. **Local first.** Nothing leaves the machine unless explicitly asked.
+2. **No gimmicks.** Every feature must save real time in the real workflow.
+3. **One command.** The whole system starts with one word.
+4. **Ambient, not intrusive.** The UI should feel like Iron Man's HUD, not another app to manage.
+5. **Self-healing.** If something breaks, the system fixes itself before the developer notices.
