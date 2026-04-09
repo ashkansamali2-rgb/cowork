@@ -1,0 +1,237 @@
+const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const path = require('path')
+const fs = require('fs')
+const os = require('os')
+const WebSocket = require('ws')
+
+const isDev = process.env.NODE_ENV !== 'production'
+const CHATS_DIR = path.join(__dirname, 'chats')
+const JARVIS_WS_URL = 'ws://127.0.0.1:8001/ws'
+const BUS_WS_URL = 'ws://127.0.0.1:8002'
+
+let mainWindow = null
+let jarvisWs = null
+let busWs = null
+let jarvisConnected = false
+let busConnected = false
+
+// Ensure chats directory exists
+if (!fs.existsSync(CHATS_DIR)) {
+  fs.mkdirSync(CHATS_DIR, { recursive: true })
+}
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 900,
+    minHeight: 600,
+    frame: false,
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 16, y: 16 },
+    backgroundColor: '#FBF8F4',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+    show: false,
+  })
+
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
+    // mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
+  }
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+    connectJarvis()
+    connectBus()
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
+    if (jarvisWs) jarvisWs.close()
+    if (busWs) busWs.close()
+  })
+}
+
+// ── Jarvis WebSocket ──────────────────────────────────────────────────────────
+function connectJarvis() {
+  if (jarvisWs && (jarvisWs.readyState === WebSocket.OPEN || jarvisWs.readyState === WebSocket.CONNECTING)) return
+
+  try {
+    jarvisWs = new WebSocket(JARVIS_WS_URL)
+
+    jarvisWs.on('open', () => {
+      jarvisConnected = true
+      sendToRenderer('connection:status', { service: 'jarvis', connected: true })
+    })
+
+    jarvisWs.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data.toString())
+        // Strip ANSI escape codes from the message text
+        const raw = msg.msg || msg.content || ''
+        const clean = raw.replace(/\x1b\[[0-9;]*m/g, '').trim()
+
+        if (msg.type === 'final') {
+          // Only final messages appear as Jarvis chat responses
+          sendToRenderer('chat:stream', { content: clean, done: false })
+          sendToRenderer('chat:stream', { content: '', done: true })
+        } else if (msg.type === 'status') {
+          // Status messages shown as a subtle indicator, not a chat bubble
+          sendToRenderer('chat:status', { text: clean })
+        } else if (msg.type === 'ack') {
+          // Ignored entirely
+        } else if (msg.type === 'stream') {
+          sendToRenderer('chat:stream', { content: clean, done: false })
+        }
+        // All other types: silently ignore
+      } catch {
+        // Non-JSON: ignore
+      }
+    })
+
+    jarvisWs.on('close', () => {
+      jarvisConnected = false
+      sendToRenderer('connection:status', { service: 'jarvis', connected: false })
+      setTimeout(connectJarvis, 3000)
+    })
+
+    jarvisWs.on('error', (err) => {
+      console.error('[Jarvis WS] error:', err.message)
+      jarvisConnected = false
+      sendToRenderer('connection:status', { service: 'jarvis', connected: false })
+    })
+  } catch (err) {
+    console.error('[Jarvis WS] connect error:', err.message)
+    setTimeout(connectJarvis, 3000)
+  }
+}
+
+// ── Bus WebSocket ─────────────────────────────────────────────────────────────
+function connectBus() {
+  if (busWs && (busWs.readyState === WebSocket.OPEN || busWs.readyState === WebSocket.CONNECTING)) return
+
+  try {
+    busWs = new WebSocket(BUS_WS_URL)
+
+    busWs.on('open', () => {
+      busConnected = true
+      sendToRenderer('connection:status', { service: 'bus', connected: true })
+    })
+
+    busWs.on('message', (data) => {
+      try {
+        const msg = JSON.parse(data.toString())
+        sendToRenderer('bus:event', msg)
+      } catch {
+        sendToRenderer('bus:event', { raw: data.toString() })
+      }
+    })
+
+    busWs.on('close', () => {
+      busConnected = false
+      sendToRenderer('connection:status', { service: 'bus', connected: false })
+      setTimeout(connectBus, 3000)
+    })
+
+    busWs.on('error', (err) => {
+      console.error('[Bus WS] error:', err.message)
+      busConnected = false
+      sendToRenderer('connection:status', { service: 'bus', connected: false })
+    })
+  } catch (err) {
+    console.error('[Bus WS] connect error:', err.message)
+    setTimeout(connectBus, 3000)
+  }
+}
+
+function sendToRenderer(channel, data) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, data)
+  }
+}
+
+// ── IPC Handlers ──────────────────────────────────────────────────────────────
+ipcMain.handle('chat:send', async (event, message) => {
+  if (!jarvisWs || jarvisWs.readyState !== WebSocket.OPEN) {
+    throw new Error('Jarvis not connected')
+  }
+  const payload = JSON.stringify({ message: message })
+  jarvisWs.send(payload)
+  return { ok: true }
+})
+
+ipcMain.handle('chat:save', async (event, chat) => {
+  try {
+    const filename = `${chat.id || Date.now()}.json`
+    const filepath = path.join(CHATS_DIR, filename)
+    fs.writeFileSync(filepath, JSON.stringify(chat, null, 2), 'utf8')
+    return { ok: true, filepath }
+  } catch (err) {
+    throw new Error(`Failed to save chat: ${err.message}`)
+  }
+})
+
+ipcMain.handle('chat:load', async () => {
+  try {
+    if (!fs.existsSync(CHATS_DIR)) return []
+    const files = fs.readdirSync(CHATS_DIR).filter(f => f.endsWith('.json'))
+    const chats = files.map(file => {
+      try {
+        const raw = fs.readFileSync(path.join(CHATS_DIR, file), 'utf8')
+        return JSON.parse(raw)
+      } catch {
+        return null
+      }
+    }).filter(Boolean)
+    chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    return chats
+  } catch (err) {
+    console.error('[chat:load]', err.message)
+    return []
+  }
+})
+
+ipcMain.handle('agent:spawn', async (event, task) => {
+  if (!busWs || busWs.readyState !== WebSocket.OPEN) {
+    throw new Error('Bus not connected')
+  }
+  const payload = JSON.stringify({
+    type: 'spawn_agent',
+    agent: 'cantivia',
+    repo: task.repo,
+    task: task.description,
+    timestamp: Date.now(),
+  })
+  busWs.send(payload)
+  return { ok: true }
+})
+
+ipcMain.handle('connection:status', async () => {
+  return { jarvis: jarvisConnected, bus: busConnected }
+})
+
+ipcMain.handle('window:minimize', () => {
+  if (mainWindow) mainWindow.minimize()
+})
+
+ipcMain.handle('window:close', () => {
+  if (mainWindow) mainWindow.close()
+})
+
+// ── App lifecycle ─────────────────────────────────────────────────────────────
+app.whenReady().then(createWindow)
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
+})

@@ -20,3 +20,6 @@ aider/
 *.onnx
 venv/
 __pycache__/
+ui/command-station/node_modules/
+ui/chrome-extension/node_modules/
+node_modules/

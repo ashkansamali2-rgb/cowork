@@ -1,0 +1,112 @@
+#jarvis-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2147483646;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+  color: white;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+
+#jarvis-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 28px rgba(124, 58, 237, 0.6);
+}
+
+#jarvis-overlay {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  width: 360px;
+  background: #0F0F1A;
+  border: 1px solid #2D2D3F;
+  border-radius: 12px;
+  flex-direction: column;
+  z-index: 2147483645;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  display: none;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+
+#jarvis-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #13131F;
+  border-bottom: 1px solid #1E1E2E;
+}
+
+.jarvis-logo {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #7C3AED, #5B21B6);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+#jarvis-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #E5E7EB;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+#jarvis-input::placeholder { color: #4B5563; }
+
+#jarvis-send, #jarvis-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#jarvis-send {
+  background: #7C3AED;
+  color: white;
+}
+#jarvis-send:hover { background: #6D28D9; }
+
+#jarvis-close {
+  background: #1E1E2E;
+  color: #6B7280;
+}
+#jarvis-close:hover { background: #2D2D3F; color: #E5E7EB; }
+
+#jarvis-response {
+  padding: 12px;
+  color: #D1D5DB;
+  font-size: 13px;
+  line-height: 1.6;
+  max-height: 200px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
+#jarvis-response::-webkit-scrollbar { width: 4px; }
+#jarvis-response::-webkit-scrollbar-track { background: transparent; }
+#jarvis-response::-webkit-scrollbar-thumb { background: #2D2D3F; border-radius: 2px; }

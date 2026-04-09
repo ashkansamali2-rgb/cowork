@@ -1,0 +1,21 @@
+{
+  "id": "chat_1775765811433_wbveg2",
+  "title": "hi",
+  "messages": [
+    {
+      "id": "msg_1775765918739",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1775765918739,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775766099851",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1775766099851,
+      "streaming": false
+    }
+  ],
+  "updatedAt": 1775768493770
+}

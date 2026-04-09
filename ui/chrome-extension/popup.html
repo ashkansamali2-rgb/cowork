@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app" id="app">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="logo">
+        <div class="logo-mark">J</div>
+        <span class="logo-text">Jarvis</span>
+      </div>
+      <div class="topbar-right">
+        <span class="conn-status" id="connStatus">○ OFF</span>
+        <button class="theme-toggle" id="themeToggle" title="Toggle light/dark">
+          <svg id="themeIconDark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg id="themeIconLight" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Command input -->
+    <div class="input-section">
+      <textarea
+        id="commandInput"
+        placeholder="Ask Jarvis anything..."
+        rows="3"
+        spellcheck="false"
+      ></textarea>
+      <div class="input-row">
+        <button id="pageContextBtn" class="btn-text" title="Send this page to Jarvis">
+          Send page to Jarvis
+        </button>
+        <div class="input-row-right">
+          <button id="voiceBtn" class="btn-voice" title="Voice input">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3"/>
+              <path d="M5 10a7 7 0 0014 0"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <button id="sendBtn" class="btn-send" title="Send">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stream response -->
+    <div class="stream-area" id="streamArea" style="display:none">
+      <div class="stream-header">
+        <span class="stream-label">Responding</span>
+        <div class="spinner"></div>
+      </div>
+      <div class="stream-content" id="streamContent"></div>
+    </div>
+
+    <!-- Recent tasks -->
+    <div class="tasks-section">
+      <div class="section-label">Recent</div>
+      <div id="tasksFeed" class="tasks-feed">
+        <div class="empty-state">No recent activity</div>
+      </div>
+    </div>
+
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

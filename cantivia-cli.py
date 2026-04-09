@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import subprocess
+import base64
 import websockets
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [CLI] %(message)s")
@@ -23,8 +24,6 @@ def parse_tasks(message: str) -> list[str]:
 
 
 def extract_file(task: str) -> tuple[str, list[str]]:
-    """Extract filename from task if mentioned. Returns (clean_task, [file_args])"""
-    # Look for patterns like "in cantivia-bus.py" or "to router.py"
     match = re.search(r'(?:in|to|from|file)\s+([\w\-/]+\.py)', task, re.IGNORECASE)
     if match:
         fname = match.group(1)
@@ -32,6 +31,61 @@ def extract_file(task: str) -> tuple[str, list[str]]:
         if os.path.exists(fpath):
             return task, ["--file", fpath]
     return task, []
+
+
+def screenshot_url(url: str) -> str | None:
+    """Take a screenshot of a URL using Playwright. Returns base64 PNG or None."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(viewport={"width": 1280, "height": 900})
+            page.goto(url, wait_until="networkidle", timeout=15000)
+            screenshot = page.screenshot(full_page=False)
+            browser.close()
+            return base64.b64encode(screenshot).decode()
+    except Exception as e:
+        log.error(f"Screenshot error: {e}")
+        return None
+
+
+def get_page_source(url: str) -> str:
+    """Get page HTML source via Playwright."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=15000)
+            source = page.content()
+            browser.close()
+            return source[:8000]  # Cap at 8k chars
+    except Exception as e:
+        return f"Could not fetch page: {e}"
+
+
+def diagnose_page(url: str, task: str) -> str:
+    """Send page HTML to Gemma for diagnosis and fix plan."""
+    import requests
+    source = get_page_source(url)
+    try:
+        r = requests.post(ARCHITECT_URL + "/chat/completions", json={
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a web developer. Analyze the HTML source and produce a concise fix plan."
+                },
+                {
+                    "role": "user",
+                    "content": f"URL: {url}\nTask: {task}\nPage source:\n{source}\n\nWhat needs fixing? Give a short actionable plan."
+                }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 500
+        }, timeout=60)
+        return r.json()["choices"][0]["message"]["content"].strip()
+    except Exception as e:
+        return f"Diagnosis error: {e}"
 
 
 def run_aider(task: str, repo_path: str, file_args: list[str]) -> str:
@@ -43,14 +97,10 @@ def run_aider(task: str, repo_path: str, file_args: list[str]) -> str:
         "--yes",
         "--no-auto-commits",
     ] + file_args + ["--message", task]
-
     try:
         result = subprocess.run(
-            cmd,
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            timeout=300
+            cmd, cwd=repo_path,
+            capture_output=True, text=True, timeout=300
         )
         output = result.stdout + result.stderr
         return output[-1000:] if len(output) > 1000 else output
@@ -58,6 +108,43 @@ def run_aider(task: str, repo_path: str, file_args: list[str]) -> str:
         return f"Agent timed out: {task[:50]}"
     except Exception as e:
         return f"Agent error: {e}"
+
+
+async def handle_browser_task(message: str, ws) -> str:
+    """Phase 4 — screenshot URL, diagnose, then fix with aider."""
+    # Extract URL from message
+    # Extract port number if mentioned e.g. "fix localhost:3000" or "fix port 3000"
+    port_match = re.search(r'localhost:?\s*(\d+)', message, re.IGNORECASE)
+    url_match = re.search(r'(https?://\S+)', message, re.IGNORECASE)
+    if url_match:
+        url = url_match.group(1)
+    elif port_match:
+        url = f"http://localhost:{port_match.group(1)}"
+    else:
+        url = "http://localhost:3000"
+
+    await ws.send(json.dumps({"type": "STATUS", "msg": f"Screenshotting {url}..."}))
+    log.info(f"[Browser] Screenshotting {url}")
+
+    screenshot_b64 = await asyncio.to_thread(screenshot_url, url)
+
+    await ws.send(json.dumps({"type": "STATUS", "msg": "Gemma is diagnosing the page..."}))
+
+    task = message
+    diagnosis = await asyncio.to_thread(diagnose_page, url, task)
+    log.info(f"[Browser] Diagnosis: {diagnosis[:120]}")
+
+    await ws.send(json.dumps({"type": "STATUS", "msg": "Qwen is writing the fix..."}))
+
+    # Run aider with the diagnosis as the task
+    fix_result = await asyncio.to_thread(run_aider, diagnosis, DEFAULT_REPO, [])
+
+    # Take a second screenshot to verify
+    await ws.send(json.dumps({"type": "STATUS", "msg": "Verifying fix..."}))
+    screenshot2 = await asyncio.to_thread(screenshot_url, url)
+    verified = "✅ Page re-screenshotted after fix." if screenshot2 else "⚠️ Could not verify."
+
+    return f"Diagnosed: {diagnosis[:200]}\n\nFix applied. {verified}"
 
 
 async def run_agent(task: str, agent_id: str, repo_path: str, ws) -> str:
@@ -73,6 +160,11 @@ async def run_agent(task: str, agent_id: str, repo_path: str, ws) -> str:
 
 
 async def handle_coding_task(message: str, ws) -> str:
+    # Phase 4: browser fix tasks
+    browser_triggers = ["fix localhost", "fix http", "screenshot", "check localhost", "debug localhost"]
+    if any(t in message.lower() for t in browser_triggers):
+        return await handle_browser_task(message, ws)
+
     repo_path = DEFAULT_REPO
     if " in ~/" in message:
         parts = message.split(" in ~/")
@@ -105,7 +197,7 @@ async def handle_coding_task(message: str, ws) -> str:
 
 
 async def main():
-    log.info("Cantivia CLI starting (multi-agent mode)...")
+    log.info("Cantivia CLI starting (multi-agent + browser vision mode)...")
     while True:
         try:
             async with websockets.connect(BUS_URL) as ws:

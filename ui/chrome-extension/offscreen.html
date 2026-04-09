@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<script>
+// offscreen.js - manages WebSocket connections
+let jarvisWs = null;
+let busWs = null;
+let currentResponse = '';
+
+function connectJarvis() {
+  if (jarvisWs?.readyState === WebSocket.OPEN) return;
+  try {
+    jarvisWs = new WebSocket('ws://127.0.0.1:8001/ws');
+
+    jarvisWs.onopen = () => {
+      chrome.runtime.sendMessage({ type: 'CONNECTION_STATUS', connected: true });
+    };
+
+    jarvisWs.onclose = () => {
+      chrome.runtime.sendMessage({ type: 'CONNECTION_STATUS', connected: false });
+      setTimeout(connectJarvis, 3000);
+    };
+
+    jarvisWs.onerror = () => {
+      chrome.runtime.sendMessage({ type: 'CONNECTION_STATUS', connected: false });
+    };
+
+    jarvisWs.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'stream') {
+          currentResponse += data.content;
+          chrome.runtime.sendMessage({ type: 'JARVIS_STREAM', content: data.content });
+        } else if (data.type === 'done') {
+          chrome.runtime.sendMessage({ type: 'JARVIS_DONE', full_response: currentResponse });
+          currentResponse = '';
+        }
+      } catch (e) {
+        // raw text
+        currentResponse += event.data;
+        chrome.runtime.sendMessage({ type: 'JARVIS_STREAM', content: event.data });
+      }
+    };
+  } catch(e) {
+    setTimeout(connectJarvis, 3000);
+  }
+}
+
+function connectBus() {
+  try {
+    busWs = new WebSocket('ws://127.0.0.1:8002');
+    busWs.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        chrome.runtime.sendMessage({ type: 'BUS_EVENT', data });
+      } catch(e) {}
+    };
+    busWs.onclose = () => setTimeout(connectBus, 3000);
+  } catch(e) {
+    setTimeout(connectBus, 3000);
+  }
+}
+
+connectJarvis();
+connectBus();
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.target === 'offscreen' && msg.type === 'SEND_TO_JARVIS') {
+    if (jarvisWs?.readyState === WebSocket.OPEN) {
+      let payload = { type: 'chat', content: msg.content };
+      if (msg.context) payload.context = msg.context;
+      jarvisWs.send(JSON.stringify(payload));
+    }
+  }
+});
+</script>
+</html>
