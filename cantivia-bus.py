@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-cantivia-bus.py — The merge pin connecting Jarvis + Cantivia CLI
-Runs as a standalone WebSocket hub on port 8002.
-Both systems connect as clients and pub/sub through here.
+cantivia-bus.py — The merge pin connecting Jarvis + Cantivia CLI.
+
+This script runs as a standalone WebSocket hub on port 8002.
+It acts as a central message broker, allowing both Jarvis and Cantivia CLI
+to connect as clients and communicate via publish/subscribe patterns.
+It routes events between the two systems based on their type.
 """
 
 import asyncio
