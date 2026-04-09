@@ -23,3 +23,6 @@ __pycache__/
 ui/command-station/node_modules/
 ui/chrome-extension/node_modules/
 node_modules/
+ui/command-station/dist/
+ui/command-station/dist-electron/
+ui/command-station/.vite/
