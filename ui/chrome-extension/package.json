@@ -1,0 +1,12 @@
+{
+  "name": "jarvis-chrome-extension",
+  "version": "1.0.0",
+  "description": "Jarvis Command Station Chrome Extension",
+  "scripts": {
+    "generate-icons": "node generate-icons.js",
+    "build": "npm run generate-icons"
+  },
+  "devDependencies": {
+    "canvas": "^2.11.2"
+  }
+}

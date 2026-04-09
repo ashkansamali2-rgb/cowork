@@ -6,6 +6,7 @@ import re
 import json
 sys.path.insert(0, os.path.expanduser('~/jarvis'))
 from core.tools import AVAILABLE_TOOLS
+from core.tool_learner import handle_missing_tool
 from config import LLAMA_CPP_URL
 
 C_CYAN = "\033[96m"
@@ -13,29 +14,22 @@ C_GREEN = "\033[92m"
 C_RED = "\033[91m"
 C_RESET = "\033[0m"
 
-MEMORY_FILE = os.path.expanduser('~/jarvis/memory.json')
+_session_memory: dict[str, list] = {}
 
-def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        try:
-            with open(MEMORY_FILE, 'r') as f:
-                return json.load(f)
-        except:
-            pass
-    return []
+def load_memory(session_id: str = "") -> list:
+    return list(_session_memory.get(session_id, []))
 
-def save_memory(mem_list):
-    with open(MEMORY_FILE, 'w') as f:
-        json.dump(mem_list, f)
+def save_memory(session_id: str, mem_list: list) -> None:
+    _session_memory[session_id] = list(mem_list)
 
 def clean_response(text):
     return re.sub(r'<think>.*?(</think>|$)', '', text, flags=re.DOTALL).strip()
 
 def make_request(messages):
-    r = requests.post(LLAMA_CPP_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": 500}, timeout=120)
+    r = requests.post(LLAMA_CPP_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": 2000}, timeout=120)
     return r.json()['choices'][0]['message']['content']
 
-async def agent_loop(user_message: str, websocket=None):
+async def agent_loop(user_message: str, websocket=None, session_id: str = ""):
     msg_lower = user_message.lower()
     msg_lower = msg_lower.replace("anti-gravity", "antigravity")
     
@@ -91,23 +85,24 @@ async def agent_loop(user_message: str, websocket=None):
     # ==========================================
     # THE HEAVYWEIGHT PATH
     # ==========================================
-    SYSTEM_PROMPT = """You are JARVIS. You control this Mac.
-    CRITICAL RULES:
-    1. Format for apps: <cmd>run_shell|open -a "App Name"</cmd>
-    2. Format for music: <cmd>play_media|Song or Artist Name</cmd>
-    3. Format for web: <cmd>run_shell|open "https://google.com/search?q=YOUR_SEARCH"</cmd>
-    4. MULTI-TASKING: Generate a separate <cmd> tag for EACH task (up to 7 max).
-    5. FILE SYSTEM MASTERY: You HAVE full access to the Mac's file system. NEVER say you cannot create, edit, or view files. Use standard bash commands (touch, mkdir, echo, ls) inside the run_shell tool to manipulate files. Assume the user's home directory is ~/.
+    SYSTEM_PROMPT = """You are JARVIS, a general-purpose AI assistant running on this Mac.
 
-    EXAMPLES:
-    User: "Create a new file called classifier heads in project vision"
-    You: <cmd>run_shell|mkdir -p ~/project_vision && touch ~/project_vision/"classifier heads"</cmd> Creating the file for you now.
+Respond naturally and directly. No unnecessary caveats, no refusals for normal requests.
+Answer questions, write essays, explain code, help with writing, and have normal conversations freely.
 
-    User: "Open Blender and Antigravity"
-    You: <cmd>run_shell|open -a "Blender"</cmd> <cmd>run_shell|open -a "Antigravity"</cmd> Opening both for you right now.
-    """
+For Mac control actions only, use command tags:
+- Open apps: <cmd>run_shell|open -a "App Name"</cmd>
+- Web search: <cmd>run_shell|open "https://google.com/search?q=query"</cmd>
+- Play music: <cmd>play_media|Song or Artist</cmd>
+- Shell commands: <cmd>run_shell|bash command here</cmd>
+- Multiple actions: one <cmd> tag per action, up to 7
+
+Only route to cantivia when the user explicitly asks to edit, create, or modify files in a codebase.
+For everything else — conversation, explanations, writing, questions — just respond directly.
+
+Be concise and useful. Skip filler phrases."""
     
-    conversation_memory = load_memory()
+    conversation_memory = load_memory(session_id)
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.extend(conversation_memory)
     messages.append({"role": "user", "content": msg_lower})
@@ -127,7 +122,7 @@ async def agent_loop(user_message: str, websocket=None):
         conversation_memory.append({"role": "assistant", "content": re.sub(r'<cmd>.*?</cmd>', '', response_text, flags=re.DOTALL).strip()})
         if len(conversation_memory) > 10:
             conversation_memory = conversation_memory[-10:]
-        save_memory(conversation_memory)
+        save_memory(session_id, conversation_memory)
             
         cmd_matches = re.findall(r'<cmd>(.*?)</cmd>', response_text, flags=re.DOTALL)
         if cmd_matches:
@@ -149,7 +144,9 @@ async def agent_loop(user_message: str, websocket=None):
                     mac_cmd = args.strip()
                     
                     if tool_name not in AVAILABLE_TOOLS:
-                        results.append(f"System Error: Tool '{tool_name}' doesn't exist.")
+                        # Self-healing: ask Gemma to write the missing tool
+                        learn_result = handle_missing_tool(tool_name, mac_cmd)
+                        results.append(learn_result)
                         continue
                     
                     forbidden_commands = ["rm ", "sudo ", "mkfs", "mv ", "> /dev/null"]

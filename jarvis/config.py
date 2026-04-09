@@ -34,4 +34,4 @@ PICOVOICE_KEY = '1y8fhxOCmVhcPu6n73f66vme7Am0dzVAGDoOwZYJBqfmwGcLda/HCA=='
 GEMINI_API_KEY = 'YOUR_GEMINI_KEY_HERE'
 OPENCLAW_URL = 'http://YOUR_REMOTE_IP:8000/generate' # Replace with actual OpenClaw IP
 
-LLAMA_CPP_URL = 'http://localhost:8080/v1/chat/completions'
+LLAMA_CPP_URL = 'http://localhost:8081/v1/chat/completions'

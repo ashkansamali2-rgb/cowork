@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #FBF8F4;
+  color: #1A1A1A;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar — thin, minimal */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4D3CF;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7C3AED;
+}
+
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+/* Streaming cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: #7C3AED;
+  font-size: 0.9em;
+  margin-left: 1px;
+}
+
+/* Typing indicator dots */
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+  40%           { opacity: 1;   transform: scale(1);   }
+}
+.typing-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7C3AED;
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+
+/* Drag region for frameless window */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Chat active sidebar item */
+.chat-item-active {
+  border-left: 2px solid #7C3AED;
+  background-color: #EDE9FE;
+  color: #1A1A1A;
+}
+
+/* Purple button — flat, sharp */
+.btn-purple {
+  background-color: #7C3AED;
+  color: #ffffff;
+  border: none;
+  transition: background-color 0.15s ease;
+}
+.btn-purple:hover:not(:disabled) {
+  background-color: #6D28D9;
+}
+.btn-purple:disabled {
+  background-color: #C4B5FD;
+  cursor: not-allowed;
+}
+
+/* Ghost button */
+.btn-ghost {
+  background: transparent;
+  color: #6B7280;
+  border: none;
+  transition: color 0.12s ease, background-color 0.12s ease;
+}
+.btn-ghost:hover:not(:disabled) {
+  color: #1A1A1A;
+  background-color: #EDE9FE;
+}
+
+/* Message content typography */
+.message-content p {
+  margin: 0 0 0.5em 0;
+}
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+.message-content code {
+  background: #EDE9FE;
+  border: 1px solid #DDD6FE;
+  padding: 0.1em 0.3em;
+  font-size: 0.85em;
+  font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
+}
+.message-content pre {
+  background: #F4F3F0;
+  border: 1px solid #E5E4E0;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.message-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* File pill */
+.file-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #EDE9FE;
+  border: 1px solid #DDD6FE;
+  color: #5B21B6;
+  font-size: 11px;
+  padding: 2px 8px 2px 6px;
+  font-family: inherit;
+}
+.file-pill button {
+  color: #7C3AED;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-size: 13px;
+  opacity: 0.7;
+  transition: opacity 0.1s;
+}
+.file-pill button:hover {
+  opacity: 1;
+}
