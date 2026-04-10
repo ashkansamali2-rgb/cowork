@@ -210,6 +210,19 @@ ipcMain.handle('chat:load', async () => {
   }
 })
 
+ipcMain.handle('chat:clearAll', async () => {
+  try {
+    if (!fs.existsSync(CHATS_DIR)) return { ok: true }
+    const files = fs.readdirSync(CHATS_DIR).filter(f => f.endsWith('.json'))
+    for (const file of files) {
+      fs.unlinkSync(path.join(CHATS_DIR, file))
+    }
+    return { ok: true, deleted: files.length }
+  } catch (err) {
+    throw new Error(`Failed to clear chats: ${err.message}`)
+  }
+})
+
 ipcMain.handle('chat:delete', async (event, chatPath) => {
   try {
     // Security: only allow deleting files within CHATS_DIR or PROJECTS_DIR

@@ -174,6 +174,23 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             return f"Done. {result}"
         except Exception as e:
             return f"Execution error: {e}"
+    # Priority 2b: Background research agent
+    _research_match = None
+    for _prefix in ("research ", "look up ", "find out about ", "search for "):
+        if msg_lower.startswith(_prefix):
+            _research_match = user_message[len(_prefix):]
+            break
+    if _research_match is None and msg_lower.startswith("research "):
+        _research_match = user_message[9:]
+
+    if _research_match:
+        from core.agent_manager import get_manager
+        import time as _time
+        agent_id = f"AGENT-{int(_time.time())}"
+        mgr = get_manager()
+        mgr.spawn(_research_match, agent_id)
+        return f"Agent spawned. I'll research '{_research_match}' in the background. Results will be saved to ~/cowork/agents/{agent_id}/result.txt"
+
     # Priority 3: Cantivia coding tasks → route to bus
     if "cantivia" in msg_lower:
         from core.bus_client import publish

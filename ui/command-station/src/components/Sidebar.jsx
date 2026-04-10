@@ -136,6 +136,7 @@ export default function Sidebar({
   onAddProjectFile,
   onRemoveProjectFile,
   onExpandProject,
+  onClearAllChats,
 }) {
   const [expandedProjects, setExpandedProjects] = useState({})
   const [showNewProject, setShowNewProject] = useState(false)
@@ -349,6 +350,19 @@ export default function Sidebar({
           })}
         </div>
       </div>
+
+      {/* Clear all chats */}
+      {onClearAllChats && (
+        <div className="flex-shrink-0 px-3 pb-2">
+          <button
+            onClick={onClearAllChats}
+            className="no-drag w-full py-1 text-[10px] text-[#9CA3AF] hover:text-[#EF4444] border border-[#EAE6DF] hover:border-[#EF4444] transition-colors"
+            style={{ borderRadius: 0 }}
+          >
+            Clear all chats
+          </button>
+        </div>
+      )}
 
       {/* Connection status — bottom */}
       <div className="flex-shrink-0 border-t border-[#EAE6DF] px-4 py-2.5">

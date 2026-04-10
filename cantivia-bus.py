@@ -55,15 +55,16 @@ def bus_log(client_id: str, event_type: str, details: str = "") -> None:
 
 
 # ── Event types ──────────────────────────────────────────────────────────────
-TASK_CODING   = "TASK_CODING"    # Jarvis → CLI: "fix the bug I mentioned"
-TASK_VOICE    = "TASK_VOICE"     # CLI → Jarvis: speak a result
-TASK_SHELL    = "TASK_SHELL"     # either → run shell command via Jarvis tools
-HEARTBEAT     = "HEARTBEAT"      # Jarvis heartbeat engine events
-AGENT_SPAWN   = "AGENT_SPAWN"    # autonomous background agent task
-SCREENSHOT    = "SCREENSHOT"     # Playwright screenshot result from CLI
-STATUS        = "STATUS"         # generic status update
-RESULT        = "RESULT"         # task result
-ERROR         = "ERROR"
+TASK_CODING    = "TASK_CODING"    # Jarvis → CLI: "fix the bug I mentioned"
+TASK_VOICE     = "TASK_VOICE"     # CLI → Jarvis: speak a result
+TASK_SHELL     = "TASK_SHELL"     # either → run shell command via Jarvis tools
+HEARTBEAT      = "HEARTBEAT"      # Jarvis heartbeat engine events
+AGENT_SPAWN    = "AGENT_SPAWN"    # autonomous background agent task
+AGENT_STATUS   = "AGENT_STATUS"   # agent progress/completion update: {agent_id, status, message}
+SCREENSHOT     = "SCREENSHOT"     # Playwright screenshot result from CLI
+STATUS         = "STATUS"         # generic status update
+RESULT         = "RESULT"         # task result
+ERROR          = "ERROR"
 
 # ── Connected clients registry ───────────────────────────────────────────────
 clients: dict[str, websockets.WebSocketServerProtocol] = {}
@@ -154,6 +155,15 @@ async def route_event(sender_id: str, event: dict):
         # Autonomous task — log it and route to whoever can handle it
         log.info(f"AGENT SPAWN: {event.get('task')}")
         bus_log(sender_id, "AGENT_SPAWN", str(event.get("task", "")))
+        await broadcast(event, exclude=sender_id)
+
+    elif etype == AGENT_STATUS:
+        # Agent progress or completion update: {agent_id, status, message}
+        agent_id = event.get("agent_id", "unknown")
+        status   = event.get("status", "")
+        message  = event.get("message", "")
+        log.info(f"AGENT_STATUS [{agent_id}] {status}: {message}")
+        bus_log(sender_id, f"AGENT_STATUS_{status.upper()}", f"agent={agent_id} {message[:100]}")
         await broadcast(event, exclude=sender_id)
 
     elif etype == SCREENSHOT:
