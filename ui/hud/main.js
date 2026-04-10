@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 
 let win;
@@ -25,19 +25,12 @@ app.whenReady().then(() => {
   });
 
   win.setAlwaysOnTop(true, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(true);
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'index.html'));
 
-  // Allow temporary mouse events when the window is interacted with
-  win.webContents.on('did-finish-load', () => {
-    win.webContents.executeJavaScript(`
-      window.electronMain = {
-        setIgnoreMouseEvents: (ignore) => {
-          // Send message to main process
-        }
-      };
-    `);
+  ipcMain.on('hud-event', (event, data) => {
+    // receive simple JSON serializable objects from renderer
   });
 });
 

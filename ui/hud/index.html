@@ -97,6 +97,8 @@
 </div>
 
 <script>
+  const { ipcRenderer } = require('electron');
+
   const hud    = document.getElementById('hud');
   const dots   = document.getElementById('dots');
   const accent = document.getElementById('accent');
@@ -130,44 +132,84 @@
 
   // WebSocket connection with auto-reconnect
   function connect() {
-    const ws = new WebSocket('ws://127.0.0.1:8001/ws');
+    let ws;
+    try {
+      ws = new WebSocket('ws://127.0.0.1:8001/ws');
+    } catch (e) {
+      console.error(e);
+      return;
+    }
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ register: 'hud' }));
+    ws.onopen = (event) => {
+      try {
+        ws.send(JSON.stringify({ register: 'hud' }));
+        try {
+          ipcRenderer.send('hud-event', { type: 'open', msg: 'connected' });
+        } catch (e) {
+          console.error(e);
+        }
+      } catch (err) {
+        console.error(err);
+      }
     };
 
     ws.onmessage = (event) => {
-      let data;
-      try { data = JSON.parse(event.data); } catch { return; }
+      try {
+        let data;
+        try { data = JSON.parse(event.data); } catch { return; }
 
-      const type = data.type || data.event || '';
+        const type = data.type || data.event || '';
+        let msg = data.msg || data.content || data.text || '';
+        
+        // Ensure msg is string
+        if (typeof msg !== 'string') {
+          msg = JSON.stringify(msg);
+        }
 
-      // Thinking: user sent a message
-      if (type === 'status' && data.msg && data.msg.includes('thinking')) {
-        showThinking();
-        return;
-      }
+        try {
+           ipcRenderer.send('hud-event', { type: type, msg: msg });
+        } catch (e) {
+           console.error(e);
+        }
 
-      // Jarvis responded
-      if (type === 'response' || type === 'RESPONSE' || type === 'assistant') {
-        const msg = data.msg || data.content || data.text || '';
-        if (msg) showResponse(msg);
-        return;
-      }
+        // Thinking: user sent a message
+        if (type === 'status' || type === 'ack') {
+          showThinking();
+          return;
+        }
 
-      // Generic status from Jarvis (shows briefly)
-      if (type === 'status' && data.msg) {
-        showThinking();
-        return;
+        // Jarvis responded
+        if (type === 'final' || type === 'response' || type === 'RESPONSE' || type === 'assistant') {
+          if (msg) showResponse(msg);
+          return;
+        }
+
+        // For generic message to be displayed if doing 'test' 
+        if (msg && !type) {
+           showResponse(msg);
+           return;
+        }
+        
+      } catch (err) {
+        console.error(err);
       }
     };
 
-    ws.onclose = () => {
-      setTimeout(connect, 3000);
+    ws.onclose = (event) => {
+      try {
+        setTimeout(connect, 3000);
+      } catch (err) {
+        console.error(err);
+      }
     };
 
-    ws.onerror = () => {
-      ws.close();
+    ws.onerror = (event) => {
+      try {
+        console.error('WebSocket error');
+        ws.close();
+      } catch (err) {
+        console.error(err);
+      }
     };
   }
 
