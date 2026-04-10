@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain } = require('electron');
+const { app, BrowserWindow, screen } = require('electron');
 const path = require('path');
 
 let win;
@@ -8,7 +8,7 @@ app.whenReady().then(() => {
 
   win = new BrowserWindow({
     width: 600,
-    height: 80,
+    height: 100,
     x: Math.floor((width - 600) / 2),
     y: 0,
     transparent: true,
@@ -18,6 +18,7 @@ app.whenReady().then(() => {
     resizable: false,
     focusable: false,
     hasShadow: false,
+    show: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -28,10 +29,6 @@ app.whenReady().then(() => {
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setIgnoreMouseEvents(true, { forward: true });
   win.loadFile(path.join(__dirname, 'index.html'));
-
-  ipcMain.on('hud-event', (event, data) => {
-    // receive simple JSON serializable objects from renderer
-  });
 });
 
 app.on('window-all-closed', () => app.quit());
