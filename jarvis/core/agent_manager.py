@@ -7,6 +7,7 @@ run shell commands, or handle general tasks. Results are saved to
 """
 
 import asyncio
+import json
 import os
 import re
 from datetime import datetime
@@ -92,6 +93,9 @@ class AgentManager:
             self._agents[agent_id]["result"] = result
             _save_result(agent_id, task, result)
             await _publish_agent_status(agent_id, DONE, result[:200])
+            # Speak the summary back via Jarvis voice
+            if _is_research_task(task.lower()):
+                await _speak_result(agent_id, result[:500])
 
         except asyncio.CancelledError:
             self._agents[agent_id]["status"] = FAILED
@@ -134,10 +138,23 @@ def _extract_research_query(task: str) -> str:
 
 
 async def _research(query: str) -> str:
-    """Search DuckDuckGo and return a summary of the top results."""
+    """Search DuckDuckGo via API, fetch page content, summarise with Qwen."""
     import requests
+    from duckduckgo_search import DDGS
 
-    url = "https://html.duckduckgo.com/html/"
+    # ── Step 1: DuckDuckGo search ──────────────────────────────────────────────
+    try:
+        def _ddg_search():
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=5))
+        results = await asyncio.to_thread(_ddg_search)
+    except Exception as e:
+        return f"DuckDuckGo search failed for '{query}': {e}"
+
+    if not results:
+        return f"No results found for: {query}"
+
+    # ── Step 2: Fetch page content for each result ─────────────────────────────
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -145,34 +162,91 @@ async def _research(query: str) -> str:
             "Chrome/120.0.0.0 Safari/537.36"
         )
     }
-    params = {"q": query}
 
+    snippets = []
+    for r in results:
+        title = r.get("title", "")
+        href  = r.get("href", "")
+        body  = r.get("body", "")
+
+        # Try to fetch the page; fall back to DDG snippet
+        page_text = body
+        if href:
+            try:
+                resp = await asyncio.to_thread(
+                    lambda url=href: requests.get(url, headers=headers, timeout=6)
+                )
+                raw_html = resp.text
+                # Strip tags, collapse whitespace
+                text = re.sub(r'<[^>]+>', ' ', raw_html)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 200:
+                    page_text = text[:3000]
+            except Exception:
+                pass  # use DDG snippet
+
+        snippets.append(f"## {title}\nURL: {href}\n{page_text[:2000]}")
+
+    combined = "\n\n---\n\n".join(snippets)
+
+    # ── Step 3: Summarise with Qwen (port 8081) ────────────────────────────────
+    summary = f"Research results for: {query}\n\n" + "\n\n".join(
+        f"{i+1}. {r.get('title','')}\n   {r.get('body','')[:300]}"
+        for i, r in enumerate(results)
+    )
     try:
-        resp = await asyncio.to_thread(
-            lambda: requests.get(url, params=params, headers=headers, timeout=10)
-        )
-        resp.raise_for_status()
-        html = resp.text
+        def _qwen_summarise():
+            payload = {
+                "model": "qwen",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a research summariser. Given web search results, "
+                            "produce a clear, concise summary in 3-5 sentences. "
+                            "Focus on key facts. No filler."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Summarise the following research results for the query: '{query}'\n\n"
+                            f"{combined[:6000]}"
+                        ),
+                    },
+                ],
+                "temperature": 0.3,
+                "max_tokens": 512,
+            }
+            resp = requests.post(
+                "http://localhost:8081/v1/chat/completions",
+                json=payload,
+                timeout=60,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"].strip()
 
-        # Extract result snippets from DuckDuckGo HTML
-        snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
-        titles   = re.findall(r'class="result__title"[^>]*>.*?<a[^>]*>(.*?)</a>', html, re.DOTALL)
-
-        def clean(s):
-            return re.sub(r'<[^>]+>', '', s).strip()
-
-        lines = [f"Research results for: {query}\n"]
-        for i, (title, snippet) in enumerate(zip(titles[:5], snippets[:5]), 1):
-            lines.append(f"{i}. {clean(title)}")
-            lines.append(f"   {clean(snippet)}\n")
-
-        if not lines[1:]:
-            return f"No results found for: {query}"
-
-        return "\n".join(lines)
-
+        summary = await asyncio.to_thread(_qwen_summarise)
     except Exception as e:
-        return f"Research failed for '{query}': {e}"
+        # Fall back to raw snippet list if Qwen is down
+        pass
+
+    return summary
+
+
+async def _speak_result(agent_id: str, text: str):
+    """Publish a TASK_VOICE event to the bus so Jarvis speaks the result."""
+    try:
+        import websockets as _ws
+        async with _ws.connect("ws://127.0.0.1:8002") as ws:
+            await ws.send(json.dumps({"register": f"agent-{agent_id}"}))
+            await ws.recv()
+            await ws.send(json.dumps({
+                "type": "TASK_VOICE",
+                "msg":  text[:500],
+            }))
+    except Exception:
+        pass  # non-fatal
 
 
 def _save_result(agent_id: str, task: str, result: str):

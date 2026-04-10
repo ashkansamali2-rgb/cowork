@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import re
+import subprocess
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -425,6 +426,7 @@ class JarvisCLI(App):
         self._cwd:           str  = os.getcwd()  # capture launch directory
         self._agents:        dict = {}  # {id: {"task": str, "status": str}}
         self._agent_counter: int  = 0
+        self._pending_rm:    str  = ""  # path awaiting /rm confirmation
 
         # Background WS thread state (Jarvis)
         self._ws_loop:       Optional[asyncio.AbstractEventLoop] = None
@@ -838,6 +840,39 @@ class JarvisCLI(App):
             except NoMatches:
                 pass
 
+    # ── Box helper ────────────────────────────────────────────────────────────
+
+    def _write_box(self, title: str, lines: list):
+        """Write output in a formatted box to the chat panel."""
+        bar = "─" * max(0, 52 - len(title) - 3)
+        header = Text()
+        header.append(f"┌─ {title} ", style="bold #7C3AED")
+        header.append(bar, style="#2D2D3F")
+        self._write_chat(header)
+        shown = [l for l in lines if l is not None][:80]
+        for line in shown:
+            t = Text()
+            t.append("│ ", style="#2D2D3F")
+            t.append(str(line), style="#C8C8D8")
+            self._write_chat(t)
+        if not shown:
+            t = Text()
+            t.append("│ ", style="#2D2D3F")
+            t.append("(no output)", style="#6B6B8A")
+            self._write_chat(t)
+        footer = Text()
+        footer.append("└" + "─" * 54, style="#2D2D3F")
+        self._write_chat(footer)
+
+    def _run_cmd(self, args: list, cwd: str = None) -> tuple[int, str]:
+        """Run a subprocess, return (returncode, combined output)."""
+        try:
+            r = subprocess.run(args, capture_output=True, text=True, cwd=cwd or self._get_effective_cwd())
+            out = (r.stdout + r.stderr).strip()
+            return r.returncode, out
+        except Exception as e:
+            return 1, str(e)
+
     # ── Input handling ────────────────────────────────────────────────────────
 
     def _handle_slash(self, text: str) -> bool:
@@ -851,18 +886,43 @@ class JarvisCLI(App):
         if cmd == "/help":
             lines = [
                 Text(""),
-                _dim_line("─── Slash Commands ─────────────────────────────────────"),
-                _cmd_line("/help",            "Show this help"),
-                _cmd_line("/clear",           "Clear the chat panel"),
-                _cmd_line("/project [name]",  "Set current project context"),
-                _cmd_line("/projects",        "List all projects"),
-                _cmd_line("/cd [path]",       "Change working directory for tasks"),
-                _cmd_line("/pwd",             "Show current working directory"),
-                _cmd_line("/agent [task]",    "Spawn a background agent for a task"),
-                _cmd_line("/agents",          "List all spawned agents and their status"),
-                _cmd_line("/kill [id]",       "Cancel a running agent (e.g. /kill AGENT-1)"),
-                _cmd_line("/cantivia [task]", "Send task directly to cantivia"),
-                _cmd_line("/exit",            "Quit the CLI"),
+                _dim_line("─── Files ───────────────────────────────────────────────"),
+                _cmd_line("/ls [path]",          "List files in dir"),
+                _cmd_line("/cat [file]",          "Show file contents"),
+                _cmd_line("/open [file]",         "Open file in default app"),
+                _cmd_line("/mkdir [name]",        "Create directory"),
+                _cmd_line("/rm [file]",           "Delete file (with confirmation)"),
+                _dim_line("─── Git ─────────────────────────────────────────────────"),
+                _cmd_line("/git status",          "git status"),
+                _cmd_line("/git add",             "git add -A"),
+                _cmd_line("/git commit [msg]",    "git commit -m"),
+                _cmd_line("/git push",            "git push"),
+                _cmd_line("/git log",             "Last 5 commits"),
+                _dim_line("─── Cowork ──────────────────────────────────────────────"),
+                _cmd_line("/start",               "Start all cowork services"),
+                _cmd_line("/stop",                "Stop all cowork services"),
+                _cmd_line("/status",              "Show port status"),
+                _cmd_line("/logs [service]",      "Tail service log (jarvis/bus/gemma/qwen/voice)"),
+                _cmd_line("/research [topic]",    "Spawn background research agent"),
+                _cmd_line("/agent [task]",        "Spawn background agent"),
+                _cmd_line("/agents",              "List running agents"),
+                _cmd_line("/kill [id]",           "Kill agent by id"),
+                _cmd_line("/cantivia [task]",     "Send task to cantivia pipeline"),
+                _dim_line("─── System ──────────────────────────────────────────────"),
+                _cmd_line("/time",                "Show current time"),
+                _cmd_line("/battery",             "Show battery status"),
+                _cmd_line("/wifi",                "Show WiFi network"),
+                _cmd_line("/volume [0-100]",      "Set system volume"),
+                _cmd_line("/screenshot",          "Take screenshot to desktop"),
+                _dim_line("─── Navigation ──────────────────────────────────────────"),
+                _cmd_line("/cd [path]",           "Change working directory"),
+                _cmd_line("/pwd",                 "Show working directory"),
+                _cmd_line("/home",                "Go to home directory"),
+                _cmd_line("/projects",            "List cowork projects"),
+                _cmd_line("/project [name]",      "Set current project context"),
+                _dim_line("─── General ─────────────────────────────────────────────"),
+                _cmd_line("/clear",               "Clear chat panel"),
+                _cmd_line("/exit",                "Quit the CLI"),
                 Text(""),
             ]
             for l in lines:
@@ -976,6 +1036,220 @@ class JarvisCLI(App):
             self._enqueue_send(json.dumps(payload))
             return True
 
+        # ── File & folder ──────────────────────────────────────────────────────
+
+        if cmd == "/ls":
+            target = os.path.expanduser(arg) if arg else self._get_effective_cwd()
+            try:
+                entries = sorted(Path(target).iterdir(), key=lambda p: (p.is_file(), p.name))
+                lines = [("📁 " if e.is_dir() else "   ") + e.name for e in entries]
+                self._write_box(f"/ls {target}", lines or ["(empty)"])
+            except Exception as e:
+                self._write_chat(make_jarvis_line(str(e), "error"))
+            return True
+
+        if cmd == "/cat":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /cat [file]", "error"))
+                return True
+            path = Path(os.path.expanduser(arg))
+            if not path.is_absolute():
+                path = Path(self._get_effective_cwd()) / arg
+            try:
+                content = path.read_text(errors="replace")
+                ext = path.suffix.lstrip(".") or "txt"
+                lines = [f"[{ext}]  {path}"] + content.splitlines()
+                self._write_box(f"/cat {path.name}", lines)
+            except Exception as e:
+                self._write_chat(make_jarvis_line(str(e), "error"))
+            return True
+
+        if cmd == "/open":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /open [file]", "error"))
+                return True
+            path = os.path.expanduser(arg)
+            if not os.path.isabs(path):
+                path = os.path.join(self._get_effective_cwd(), arg)
+            os.system(f'open "{path}"')
+            self._write_chat(make_jarvis_line(f"Opened: {path}", "status"))
+            return True
+
+        if cmd == "/mkdir":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /mkdir [name]", "error"))
+                return True
+            path = Path(self._get_effective_cwd()) / arg
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+                self._write_chat(make_jarvis_line(f"Created: {path}", "status"))
+            except Exception as e:
+                self._write_chat(make_jarvis_line(str(e), "error"))
+            return True
+
+        if cmd == "/rm":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /rm [file]", "error"))
+                return True
+            path = Path(self._get_effective_cwd()) / arg if not os.path.isabs(arg) else Path(arg)
+            if not path.exists():
+                self._write_chat(make_jarvis_line(f"Not found: {path}", "error"))
+                return True
+            # Note: confirmation via input widget is async; use a simple inline approach
+            self._write_chat(make_jarvis_line(
+                f"Type 'yes' and press Enter to delete: {path}", "status"
+            ))
+            self._pending_rm = str(path)
+            return True
+
+        # ── Git shortcuts ──────────────────────────────────────────────────────
+
+        if cmd == "/git":
+            sub_parts = arg.split(None, 1)
+            subcmd   = sub_parts[0].lower() if sub_parts else ""
+            sub_arg  = sub_parts[1] if len(sub_parts) > 1 else ""
+            cwd = self._get_effective_cwd()
+
+            if subcmd == "status":
+                rc, out = self._run_cmd(["git", "status"], cwd)
+                self._write_box("/git status", out.splitlines())
+            elif subcmd == "add":
+                rc, out = self._run_cmd(["git", "add", "-A"], cwd)
+                self._write_box("/git add", ["Staged all changes."] if rc == 0 else out.splitlines())
+            elif subcmd == "commit":
+                if not sub_arg:
+                    self._write_chat(make_jarvis_line("Usage: /git commit [message]", "error"))
+                else:
+                    rc, out = self._run_cmd(["git", "commit", "-m", sub_arg], cwd)
+                    self._write_box("/git commit", out.splitlines())
+            elif subcmd == "push":
+                rc, out = self._run_cmd(["git", "push"], cwd)
+                self._write_box("/git push", out.splitlines())
+            elif subcmd == "log":
+                rc, out = self._run_cmd(["git", "log", "--oneline", "-5"], cwd)
+                self._write_box("/git log", out.splitlines())
+            else:
+                self._write_chat(make_jarvis_line(
+                    "Usage: /git [status|add|commit <msg>|push|log]", "error"
+                ))
+            return True
+
+        # ── Cowork shortcuts ───────────────────────────────────────────────────
+
+        if cmd == "/start":
+            script = Path.home() / "cowork" / "start.sh"
+            if script.exists():
+                rc, out = self._run_cmd(["bash", str(script)])
+                self._write_box("/start", out.splitlines() or ["Services starting..."])
+            else:
+                self._write_chat(make_jarvis_line(f"Start script not found: {script}", "error"))
+            return True
+
+        if cmd == "/stop":
+            script = Path.home() / "cowork" / "stop.sh"
+            if script.exists():
+                rc, out = self._run_cmd(["bash", str(script)])
+                self._write_box("/stop", out.splitlines() or ["Services stopped."])
+            else:
+                self._write_chat(make_jarvis_line(f"Stop script not found: {script}", "error"))
+            return True
+
+        if cmd == "/status":
+            ports = {
+                "jarvis": 8001,
+                "bus":    8002,
+                "gemma":  8080,
+                "qwen":   8081,
+                "voice":  8082,
+            }
+            lines = []
+            for name, port in ports.items():
+                rc, out = self._run_cmd(["lsof", "-ti", f":{port}"])
+                pid = out.strip().splitlines()[0] if out.strip() else ""
+                status = f"[UP]  pid={pid}" if pid else "[--]  not running"
+                color_marker = "✓" if pid else "✗"
+                lines.append(f"{color_marker}  {name:<8}  :{port}  {status}")
+            self._write_box("/status  port check", lines)
+            return True
+
+        if cmd == "/logs":
+            service = arg.lower() if arg else ""
+            valid = ("jarvis", "bus", "gemma", "qwen", "voice")
+            if service not in valid:
+                self._write_chat(make_jarvis_line(
+                    f"Usage: /logs [{'/'.join(valid)}]", "error"
+                ))
+                return True
+            log_path = f"/tmp/{service}.log"
+            rc, out = self._run_cmd(["tail", "-n", "20", log_path])
+            self._write_box(f"/logs {service}", out.splitlines() if out else [f"No log at {log_path}"])
+            return True
+
+        if cmd == "/research":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /research [topic]", "error"))
+                return True
+            self._agent_counter += 1
+            agent_id = f"AGENT-{self._agent_counter}"
+            self._agents[agent_id] = {"task": f"research: {arg}", "status": "running"}
+            payload = {
+                "type": "TASK_RESEARCH",
+                "msg": arg,
+                "cwd": self._get_effective_cwd(),
+                "agent_id": agent_id,
+            }
+            self._write_chat(make_jarvis_line(f"[{agent_id}] Research started: {arg}", "status"))
+            self._enqueue_bus_send(json.dumps(payload))
+            return True
+
+        # ── System ─────────────────────────────────────────────────────────────
+
+        if cmd == "/time":
+            now = datetime.now().strftime("%A, %B %d %Y  %H:%M:%S")
+            self._write_box("/time", [now])
+            return True
+
+        if cmd == "/battery":
+            rc, out = self._run_cmd(["pmset", "-g", "binfo"])
+            lines = [l for l in out.splitlines() if "percent" in l.lower() or "charging" in l.lower()]
+            self._write_box("/battery", lines or out.splitlines()[:5] or ["No battery info"])
+            return True
+
+        if cmd == "/wifi":
+            rc, out = self._run_cmd(["networksetup", "-getairportnetwork", "en0"])
+            self._write_box("/wifi", out.splitlines())
+            return True
+
+        if cmd == "/volume":
+            if not arg or not arg.isdigit():
+                self._write_chat(make_jarvis_line("Usage: /volume [0-100]", "error"))
+                return True
+            vol = max(0, min(100, int(arg)))
+            os.system(f'osascript -e "set volume output volume {vol}"')
+            self._write_chat(make_jarvis_line(f"Volume set to {vol}%", "status"))
+            return True
+
+        if cmd == "/screenshot":
+            ts_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            dest = os.path.expanduser(f"~/Desktop/screenshot_{ts_str}.png")
+            rc, out = self._run_cmd(["screencapture", "-i", dest])
+            if rc == 0:
+                self._write_chat(make_jarvis_line(f"Screenshot saved: {dest}", "status"))
+            else:
+                self._write_chat(make_jarvis_line(out or "Screenshot cancelled.", "status"))
+            return True
+
+        # ── Navigation ─────────────────────────────────────────────────────────
+
+        if cmd == "/home":
+            home = str(Path.home())
+            COWORK_DIR.mkdir(parents=True, exist_ok=True)
+            CWD_FILE.write_text(home)
+            self._cwd = home
+            self._update_cwd_prompt()
+            self._write_chat(make_jarvis_line(f"Working dir: {home}", "status"))
+            return True
+
         return False  # unknown slash command — fall through to Jarvis
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -990,8 +1264,28 @@ class JarvisCLI(App):
             self._do_exit()
             return
 
+        # /rm confirmation check
+        if self._pending_rm:
+            path = self._pending_rm
+            self._pending_rm = ""
+            if text.lower() == "yes":
+                try:
+                    import shutil
+                    p = Path(path)
+                    if p.is_dir():
+                        shutil.rmtree(p)
+                    else:
+                        p.unlink()
+                    self._write_chat(make_jarvis_line(f"Deleted: {path}", "status"))
+                except Exception as e:
+                    self._write_chat(make_jarvis_line(str(e), "error"))
+            else:
+                self._write_chat(make_jarvis_line("Cancelled.", "status"))
+            return
+
         # Slash commands — handled locally, not sent to Jarvis
         if text.startswith("/"):
+            self._write_chat(make_user_line(text))
             self._handle_slash(text)
             return
 
