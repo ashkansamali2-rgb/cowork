@@ -176,51 +176,26 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             return f"Done. {result}"
         except Exception as e:
             return f"Execution error: {e}"
-    # Priority 2b: Background research agent
-    _research_match = None
-    for _prefix in ("research ", "look up ", "find out about ", "search for "):
-        if msg_lower.startswith(_prefix):
-            _research_match = user_message[len(_prefix):]
-            break
-    if _research_match is None and msg_lower.startswith("research "):
-        _research_match = user_message[9:]
-
-    if _research_match:
-        from core.agent_manager import get_manager
-        import time as _time
-        agent_id = f"AGENT-{int(_time.time())}"
-        mgr = get_manager()
-        mgr.spawn(_research_match, agent_id)
-        return f"Agent spawned. I'll research '{_research_match}' in the background. Results will be saved to ~/cowork/agents/{agent_id}/result.txt"
-
-    # Priority 2c: Autonomous AgentRuntime — research/automation tasks
+    # Priority 2b: Autonomous AgentRuntime — catches research/document/automation tasks
+    # This runs BEFORE the heavyweight LLM path. agent_manager is NOT used.
     agent_triggers = [
         "research", "find information", "look up", "create a document",
-        "automate", "download", "fetch", "summarize and save", "write a report",
+        "automate", "download and save", "fetch and summarize", "write a report",
+        "document it", "create a word", "make a word doc", "write it up",
+        "summarize and save", "find out about", "search for and",
     ]
     if any(t in msg_lower for t in agent_triggers):
-        agent_id = f"AGENT-{int(_time.time())}"
-        task = user_message
+        agent_id = f"AGENT-{int(_time.time() * 1000)}"
+        if websocket:
+            try:
+                await websocket.send_json({"type": "status", "msg": f"Agent {agent_id} starting..."})
+            except Exception:
+                pass
 
         async def _run_agent():
             try:
-                runtime = create_agent(task, agent_id=agent_id)
-
-                async def _on_step(aid, step, action, obs):
-                    if websocket:
-                        try:
-                            await websocket.send_json({
-                                "type": "agent_update",
-                                "agent_id": aid,
-                                "step": step,
-                                "action": action,
-                                "observation": obs[:300],
-                            })
-                        except Exception:
-                            pass
-
-                runtime.on_step = _on_step
-                result = await runtime.run()
+                agent = create_agent(user_message, agent_id=agent_id)
+                result = await agent.run(websocket)
                 if websocket:
                     try:
                         await websocket.send_json({"type": "final", "msg": result})
@@ -229,12 +204,12 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             except Exception as e:
                 if websocket:
                     try:
-                        await websocket.send_json({"type": "error", "msg": f"Agent failed: {e}"})
+                        await websocket.send_json({"type": "error", "msg": f"Agent error: {e}"})
                     except Exception:
                         pass
 
         asyncio.create_task(_run_agent())
-        return f"Agent spawned. Working on: {task[:80]}..."
+        return f"Agent {agent_id} spawned. Working on it..."
 
     # Priority 3: Cantivia coding tasks → route to bus
     if "cantivia" in msg_lower:

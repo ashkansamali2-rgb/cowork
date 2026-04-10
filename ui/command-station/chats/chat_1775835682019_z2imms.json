@@ -15,8 +15,36 @@
       "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775835682/result.txt",
       "streaming": false,
       "timestamp": 1775835682050
+    },
+    {
+      "id": "msg_1775836345302",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775836345302,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775836345311",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775836345/result.txt",
+      "streaming": false,
+      "timestamp": 1775836345311
+    },
+    {
+      "id": "msg_1775836370081",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775836370081,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775836370085",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775836370/result.txt",
+      "streaming": false,
+      "timestamp": 1775836370085
     }
   ],
-  "updatedAt": 1775836114974,
+  "updatedAt": 1775836371091,
   "projectName": null
 }

@@ -70,7 +70,7 @@ class AgentRuntime:
         self.result: Optional[str] = None
         self.status: str = "pending"
 
-    async def run(self) -> str:
+    async def run(self, websocket=None) -> str:
         self.status = "running"
         AGENTS_DIR.mkdir(parents=True, exist_ok=True)
         agent_dir = AGENTS_DIR / self.agent_id
@@ -159,7 +159,22 @@ class AgentRuntime:
                         observation += f"\nSkillBuilder: {fix}"
 
             self.history.append({"step": step, "action": action, "args": args, "observation": observation})
-            await self._publish_update(step, action, observation[:500])
+
+            # Send update directly via websocket if available, else publish to bus
+            step_payload = {
+                "type":        "agent_update",
+                "agent_id":    self.agent_id,
+                "step":        step,
+                "action":      action,
+                "observation": observation[:300],
+            }
+            if websocket:
+                try:
+                    await websocket.send_json(step_payload)
+                except Exception:
+                    pass
+            else:
+                await self._publish_update(step, action, observation[:500])
 
         else:
             # max_steps reached
