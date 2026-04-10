@@ -1,0 +1,10 @@
+[System] Booting Qwen3-TTS...
+Fetching 12 files:   0%|          | 0/12 [00:00<?, ?it/s]Fetching 12 files: 100%|██████████| 12/12 [00:00<00:00, 217885.92it/s]
+  Initialized encoder codebooks
+Loaded speech tokenizer from /Users/ashkansamali/.cache/huggingface/hub/models--mlx-community--Qwen3-TTS-12Hz-0.6B-Base-bf16/snapshots/1eccf1cb2519b5a4e8a95b5f0544f3303568164f/speech_tokenizer
+[System] Connecting to Jarvis (ws://127.0.0.1:8001/ws)...
+[System] Link established. JARVIS is online.
+[Mic] Calibrating...
+[Mic] Ready. Say 'Jarvis' to wake.
+[Voice] Speaking: Good to see you, sir. Awaiting your command.
+Fetching 4 files:   0%|          | 0/4 [00:00<?, ?it/s]Fetching 4 files: 100%|██████████| 4/4 [00:00<00:00, 92691.80it/s]

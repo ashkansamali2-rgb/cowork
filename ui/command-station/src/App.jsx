@@ -35,13 +35,17 @@ export default function App() {
   const [projects, setProjects] = useState([])
   const [activeProject, setActiveProject] = useState(null)
   const [projectChats, setProjectChats] = useState({})
+  const [projectFiles, setProjectFiles] = useState({})
   const isFirstMessageRef = useRef(true)
+  const projectFilesRef = useRef({})
 
   const activeChatIdRef = useRef(null)
   activeChatIdRef.current = activeChatId
 
   const activeProjectRef = useRef(null)
   activeProjectRef.current = activeProject
+
+  projectFilesRef.current = projectFiles
 
   // ── Setup listeners on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -224,10 +228,13 @@ export default function App() {
     setActiveProject(project)
     isFirstMessageRef.current = true
 
-    // Load project chats if not already loaded
-    if (api && !projectChats[project.name]) {
-      const chats = await api.listProjectChats(project.name).catch(() => [])
-      setProjectChats(prev => ({ ...prev, [project.name]: chats }))
+    if (api) {
+      if (!projectChats[project.name]) {
+        const chats = await api.listProjectChats(project.name).catch(() => [])
+        setProjectChats(prev => ({ ...prev, [project.name]: chats }))
+      }
+      const files = await api.listProjectFiles(project.name).catch(() => [])
+      setProjectFiles(prev => ({ ...prev, [project.name]: files }))
     }
   }, [projectChats])
 
@@ -238,7 +245,35 @@ export default function App() {
       const chats = await api.listProjectChats(project.name).catch(() => [])
       setProjectChats(prev => ({ ...prev, [project.name]: chats }))
     }
+    const files = await api.listProjectFiles(project.name).catch(() => [])
+    setProjectFiles(prev => ({ ...prev, [project.name]: files }))
   }, [projectChats])
+
+  const handleAddProjectFile = useCallback(async (projectName, filePath) => {
+    const api = window.jarvis
+    if (!api) return
+    try {
+      await api.addProjectFile(projectName, filePath)
+      const files = await api.listProjectFiles(projectName)
+      setProjectFiles(prev => ({ ...prev, [projectName]: files }))
+    } catch (err) {
+      console.error('Failed to add project file:', err)
+    }
+  }, [])
+
+  const handleRemoveProjectFile = useCallback(async (projectName, filename) => {
+    const api = window.jarvis
+    if (!api) return
+    try {
+      await api.removeProjectFile(projectName, filename)
+      setProjectFiles(prev => ({
+        ...prev,
+        [projectName]: (prev[projectName] || []).filter(f => f !== filename),
+      }))
+    } catch (err) {
+      console.error('Failed to remove project file:', err)
+    }
+  }, [])
 
   const handleCreateProject = useCallback(async (name, context) => {
     const api = window.jarvis
@@ -281,11 +316,21 @@ export default function App() {
       setActiveChatId(chatId)
     }
 
-    // Inject project context on first message
+    // Inject project context + project files on first message
     let messageToSend = text.trim()
     const proj = activeProjectRef.current
-    if (proj && isFirstMessageRef.current && proj.context) {
-      messageToSend = `[Project Context]\n${proj.context}\n\n[User]\n${text.trim()}`
+    if (proj && isFirstMessageRef.current) {
+      let contextBlock = ''
+      if (proj.context) contextBlock += `[Project Context]\n${proj.context}\n\n`
+      const files = projectFilesRef.current[proj.name] || []
+      for (const filename of files) {
+        try {
+          const result = await window.jarvis.readProjectFile(proj.name, filename)
+          const ext = filename.split('.').pop() || ''
+          contextBlock += `[Project File: ${filename}]\n\`\`\`${ext}\n${result.contents}\n\`\`\`\n\n`
+        } catch {}
+      }
+      if (contextBlock) messageToSend = `${contextBlock}[User]\n${text.trim()}`
       isFirstMessageRef.current = false
     } else {
       isFirstMessageRef.current = false
@@ -347,6 +392,10 @@ export default function App() {
           onCreateProject={handleCreateProject}
           onDeleteProject={handleDeleteProject}
           projectChats={projectChats}
+          projectFiles={projectFiles}
+          onAddProjectFile={handleAddProjectFile}
+          onRemoveProjectFile={handleRemoveProjectFile}
+          onExpandProject={handleSelectProjectChatAndLoadChats}
         />
         <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
           {activeProject && (
