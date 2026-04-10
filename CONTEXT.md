@@ -1,8 +1,8 @@
 # COWORK — Project Context & Roadmap
-**Last updated:** April 8, 2026  
-**Author:** Ashkan Samali  
-**Machine:** MacBook Pro (Apple Silicon)  
-**Status:** Phase 2 complete, Phase 3 in progress
+**Last updated:** April 9, 2026
+**Author:** Ashkan Samali
+**Machine:** MacBook Pro (Apple Silicon)
+**Status:** Phase 3 complete, Phase 4 in progress
 
 ---
 
@@ -41,9 +41,10 @@ You (voice / text / gesture)
 │         JARVIS DAEMON               │
 │  FastAPI WebSocket — port 8001      │
 │  Keyword router → branches to:      │
+│  - Fast routes (time/date/battery)  │
 │  - Cantivia (coding tasks)          │
 │  - Shell tools (open apps, files)   │
-│  - Ollama brain (jarvis-brain 23GB) │
+│  - Qwen 9B brain (llama.cpp)        │
 └──────────────┬──────────────────────┘
                ↓
 ┌─────────────────────────────────────┐
@@ -52,43 +53,48 @@ You (voice / text / gesture)
 │  Pub/sub event routing              │
 │  Events: TASK_CODING, TASK_VOICE,   │
 │  HEARTBEAT, AGENT_SPAWN, SCREENSHOT │
+│  Daily rotating logs: ~/cowork/logs/│
 └──────┬───────────────────┬──────────┘
        ↓                   ↓
 ┌──────────────┐   ┌───────────────────┐
 │ GEMMA 4 E4B  │   │  QWEN 3.5 9B      │
-│ Architect    │   │  Editor           │
+│ Architect    │   │  Editor + Brain   │
 │ port 8080    │   │  port 8081        │
 │ Plans tasks  │   │  Writes the code  │
 └──────────────┘   └───────────────────┘
 ```
 
-### Key Files
+---
+
+## Services & Ports
+
+| Port | Service | Description |
+|---|---|---|
+| 8001 | Jarvis WebSocket API | Main entry point — handles voice, text, routes all commands |
+| 8002 | Cantivia Event Bus | WebSocket pub/sub hub; routes events between Jarvis and Cantivia CLI |
+| 8080 | llama-server — Gemma 4 E4B | Architect model; plans tasks, multimodal |
+| 8081 | llama-server — Qwen 3.5 9B | Editor model; writes code; also used as Jarvis brain |
+| 5173 | Command Station (Vite dev) | Fallback when Electron app is not built |
+
+---
+
+## Key Files
+
 | File | Purpose |
 |---|---|
-| `~/jarvis/api_server.py` | WebSocket server, entry point |
-| `~/jarvis/core/router.py` | Keyword router, brain of Jarvis |
-| `~/jarvis/core/bus_client.py` | Jarvis ↔ Bus connection |
-| `~/cantivia-bus.py` | Central event bus |
-| `~/cantivia-cli.py` | Coding agent (Gemma + Qwen pipeline) |
-| `~/jarvis/config.py` | All URLs, keys, paths |
-| `~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect model |
-| `~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor model |
-
-### Ports
-| Port | Service |
-|---|---|
-| 8001 | Jarvis WebSocket API |
-| 8002 | Cantivia Event Bus |
-| 8080 | llama-server — Gemma 4 (Architect) |
-| 8081 | llama-server — Qwen 3.5 (Editor) |
-| 11434 | Ollama (jarvis-brain fallback) |
-
-### LaunchD Services (auto-start on login)
-- `com.jarvis.api` — Jarvis API server
-- `com.jarvis.brain` — Ollama brain
-- `com.jarvis.voice` — Voice daemon
-- `com.jarvis.ollama` — Ollama service
-- `com.jarvis.llamaserver` — llama.cpp server
+| `~/cowork/jarvis/api_server.py` | FastAPI WebSocket server, entry point for all messages |
+| `~/cowork/jarvis/core/router.py` | Keyword router; fast routes, Claude Code, OpenClaw, Cantivia, LLM |
+| `~/cowork/jarvis/core/bus_client.py` | Jarvis → Bus WebSocket client |
+| `~/cowork/jarvis/config.py` | All URLs, keys, model paths |
+| `~/cowork/cantivia-bus.py` | Central WebSocket event bus (port 8002); daily log rotation |
+| `~/cowork/cantivia-cli.py` | Coding agent — Gemma plans, Qwen edits, aider applies |
+| `~/cowork/start_cowork.sh` | One-command startup script; coloured status, health checks |
+| `~/cowork/clap_start.py` | Double-clap listener; calls start_cowork.sh on trigger |
+| `~/cowork/logs/` | Daily rotating logs: bus-YYYY-MM-DD.log, jarvis.log, etc. |
+| `~/cowork/ui/command-station/` | Electron + React dashboard |
+| `~/cowork/ui/command-station/dist-electron/mac-arm64/Command Station.app` | Built Electron app |
+| `~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect model file |
+| `~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor/brain model file |
 
 ---
 
@@ -96,9 +102,8 @@ You (voice / text / gesture)
 
 | Model | File | Use |
 |---|---|---|
-| Gemma 4 E4B | `gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect — planning, diagnosis |
-| Qwen 3.5 9B | `Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor — writing code |
-| jarvis-brain (Ollama, 23GB) | Ollama | General assistant fallback |
+| Gemma 4 E4B | `gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect — planning, diagnosis, multimodal |
+| Qwen 3.5 9B | `Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor — writing code; Jarvis general brain |
 | Qwen3-TTS 0.6B | HuggingFace MLX | Voice output |
 | Whisper large-v3-turbo | HuggingFace MLX | Voice input |
 
@@ -108,19 +113,19 @@ You (voice / text / gesture)
 
 ---
 
-### ✅ PHASE 1 — Foundation
+### PHASE 1 — Foundation
 **Status: Complete**
 
 - Jarvis daemon running as launchd service
 - FastAPI WebSocket server on port 8001
 - Keyword router (claude code / openclaw / shell tools)
 - Rolling conversation memory (10 messages)
-- Basic TTS + Whisper voice pipeline (slow, needs replacement)
+- Basic TTS + Whisper voice pipeline
 - Ollama brain connected
 
 ---
 
-### ✅ PHASE 2 — The Event Bus (Dual Brain)
+### PHASE 2 — The Event Bus (Dual Brain)
 **Status: Complete**
 
 - Cantivia Bus live on port 8002
@@ -133,163 +138,104 @@ You (voice / text / gesture)
 
 ---
 
-### 🔧 PHASE 3 — Real Code Application (Aider Integration)
-**Status: In progress — next up**
+### PHASE 3 — Multi-Agent Spawner & File Targeting
+**Status: Complete**
 
-**Goal:** Cantivia doesn't just write code to a file — it applies it to your actual codebase using aider.
-
-**Tasks:**
-- Configure aider to use Gemma (architect) + Qwen (editor) via llama.cpp
-- Cantivia CLI spawns aider as subprocess with the task and target repo
-- `cantivia fix [file or feature]` → aider opens, Gemma plans, Qwen edits, diff applied
-- Support repo context: user specifies working repo or Cantivia infers from open folder
-- Output diff shown in terminal, auto-applied on confirmation
-
-**How to start:**
-```bash
-# Test aider with local models
-aider --model openai/gemma --openai-api-base http://localhost:8080/v1 --openai-api-key dummy
-```
+- `AGENT_SPAWN` event type wired up end to end
+- Agent pool: up to 3 concurrent aider subprocesses
+- Each agent receives its own task + target file context
+- CLI folder-awareness: `cwd` passed through bus events so agents know which repo to target
+- Results aggregated and reported back via `TASK_VOICE`
+- Projects support: named sessions with message isolation
+- CLI slash commands: `/project`, `/memory`, `/agents`, etc.
 
 ---
 
-### 🔧 PHASE 4 — Browser Vision (Playwright + Diagnosis)
-**Status: Planned**
+### PHASE 4 — Quality of Life
+**Status: In progress**
 
-**Goal:** `cantivia fix localhost:3000` → screenshots the page, diagnoses the bug, patches the code.
+**Goal:** Remove friction from everyday use — faster responses, easier startup, better observability.
 
-**Tasks:**
-- Playwright integration in Cantivia CLI
-- On browser task: launch headless Chromium, navigate to URL, screenshot
-- Screenshot → base64 → sent to Gemma as vision input (Gemma 4 is multimodal)
-- Gemma diagnoses the visual bug, produces a fix plan
-- Qwen writes the patch, aider applies it
-- Loop: re-screenshot after patch to verify fix
+**Completed this session:**
+- `router.py`: Added `APP_NAME_MAP` — normalises fuzzy app names before `open -a` (e.g. "chrome" → "Google Chrome")
+- `router.py`: Added fast hardcoded routes for time, date, battery, volume, screenshot, sleep — zero LLM overhead
+- `cantivia-bus.py`: Daily rotating log files in `~/cowork/logs/bus-YYYY-MM-DD.log`; structured `[TIMESTAMP] [CLIENT] EVENT: details` format; task start/complete with duration
+- `start_cowork.sh`: New one-command startup; coloured output (green/yellow/red); health-checks each service (port or pgrep); opens Command Station Electron app automatically
+- `clap_start.py`: Refactored to call `start_cowork.sh` instead of inline subprocess calls
 
-**Trigger keywords:** `fix localhost`, `fix [url]`, `screenshot [url] and fix`
+**Remaining / next up:**
+- Command Station: project switcher UI, agent status panel
+- Voice: wake word ("Hey Cowork"), sub-300ms STT with Whisper tiny MLX
+- Self-healing: auto-restart dead services via heartbeat engine
 
 ---
 
-### 🔧 PHASE 5 — Fast Voice (Sub-300ms Latency)
+### PHASE 5 — Fast Voice (Sub-300ms Latency)
 **Status: Planned**
 
-**Goal:** Replace the slow, sloppy voice pipeline with something that feels instant.
-
-**Problems with current voice:**
-- Whisper large is slow on CPU
-- TTS pipeline has too much latency
-- No interruption handling
-- No wake word — have to manually trigger
-
-**Solution:**
-- Wake word: Porcupine (already have Picovoice key in config) — "Hey Cowork"
-- STT: Switch to Whisper tiny or base (MLX, Apple Silicon optimised) for <100ms transcription
-- Brain: Gemma 4 E4B handles fast local responses (no Ollama round trip)
-- TTS: Qwen3-TTS 0.6B MLX already in HuggingFace cache — wire it in
-- Interruption: kill current task on new voice input (kill switch already built)
+- Wake word: Porcupine — "Hey Cowork"
+- STT: Whisper tiny/base MLX for <100ms transcription
+- TTS: Qwen3-TTS 0.6B MLX
 - Target: wake word → response playing in under 1 second
 
 ---
 
-### 🔧 PHASE 6 — Hand Gesture Control (MacBook Camera)
-**Status: Planned — ambitious**
-
-**Goal:** Control the OS with hand gestures via the built-in MacBook camera.
-
-**Tasks:**
-- MediaPipe Hands — real-time hand landmark detection (runs on CPU/ANE, no GPU needed)
-- Define gesture vocabulary:
-  - ✋ Open palm → pause/stop current task
-  - 👆 Point → move cursor
-  - 👌 Pinch → click
-  - 🤏 Pinch + drag → drag windows
-  - ✌️ Two fingers up → trigger voice listen mode
-  - 👊 Fist → kill current agent task
-- Overlay HUD: semi-transparent gesture indicator on screen (like a radar)
-- Gesture events published to the bus as `GESTURE_EVENT` type
-- Jarvis router handles gesture events same as voice commands
-
-**Stack:** MediaPipe + OpenCV + PyAutoGUI for cursor control + AppKit for window management
-
----
-
-### 🔧 PHASE 7 — Multi-Agent Spawner
+### PHASE 6 — Hand Gesture Control
 **Status: Planned**
 
-**Goal:** Say one thing, spawn multiple parallel agents working simultaneously.
-
-**Example:** `"cantivia refactor the auth module and fix the dashboard layout and update the tests"`
-→ 3 agents spawn in parallel, each working on one task, results merged
-
-**Tasks:**
-- `AGENT_SPAWN` event type already in bus protocol — wire it up
-- Agent pool: max 3 concurrent (limited by VRAM/RAM)
-- Each agent gets its own aider subprocess + model context
-- Results aggregated and reported back via TASK_VOICE
-- Conflict detection: if two agents edit the same file, queue them
+- MediaPipe Hands real-time gesture detection via MacBook camera
+- Gestures: open palm (stop), point (cursor), pinch (click), two fingers (voice mode), fist (kill agent)
+- Gesture events published to bus as `GESTURE_EVENT`
 
 ---
 
-### 🔧 PHASE 8 — The HUD (Ambient UI)
-**Status: Planned — ambitious**
+### PHASE 7 — Browser Vision (Playwright + Diagnosis)
+**Status: Planned**
 
-**Goal:** A always-on ambient display that shows system state without being in the way.
-
-**Design:** Thin neon overlay on the right edge of screen (like Jarvis from the films)
-- Active agents and their status
-- Current voice/gesture mode indicator  
-- Model inference speed (tokens/sec)
-- Bus event stream (last 5 events)
-- Quick actions (tap to spawn common tasks)
-
-**Stack:** Electron (already in your setup) + CSS animations + WebSocket to bus
+- `cantivia fix localhost:3000` → screenshots page → Gemma diagnoses visually → Qwen patches → re-screenshot to verify
 
 ---
 
-### 🔧 PHASE 9 — Self-Healing & Autonomous Loops
+### PHASE 8 — The HUD (Ambient UI)
+**Status: Planned**
+
+- Always-on thin neon overlay: active agents, voice mode, inference speed, bus event stream
+- Stack: Electron + CSS animations + WebSocket to bus
+
+---
+
+### PHASE 9 — Self-Healing & Autonomous Loops
 **Status: Future**
 
-**Goal:** System monitors itself and fixes its own problems.
-
-- Heartbeat engine watches all services (bus, llama servers, Jarvis)
-- If a service dies → auto-restart via launchctl
-- If a model produces bad output → retry with different temperature
-- Nightly: auto-pull latest model updates, run self-test suite
-- Error logs → Gemma diagnoses → opens GitHub issue or fixes inline
+- Heartbeat engine watches all services; auto-restart via launchctl
+- Nightly: model updates, self-test suite
+- Error logs → Gemma diagnoses → fix inline or open GitHub issue
 
 ---
 
 ## How To Start The Full System
 
 ```bash
-# One command to rule them all (add to ~/.zshrc as alias)
-alias start="launchctl start com.jarvis.api && \
-  llama-server -m ~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf --port 8080 --ctx-size 8192 --n-gpu-layers 99 & \
-  llama-server -m ~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf --port 8081 --ctx-size 8192 --n-gpu-layers 99 & \
-  python3 ~/cantivia-bus.py & \
-  python3 ~/cantivia-cli.py &"
+# One command
+~/cowork/start_cowork.sh
+
+# Or double-clap (with clap_start.py running in background)
+python3 ~/cowork/clap_start.py
 ```
 
----
-
-## Current Limitations / Known Issues
-
-- Voice pipeline is slow — Whisper large on CPU, high latency (Phase 5 fixes this)
-- Cantivia saves to `cantivia_output.py` but doesn't apply to real files yet (Phase 3 fixes this)
-- No wake word — must manually type or trigger (Phase 5 fixes this)
-- Jarvis brain (Ollama 23GB) is slow for general tasks — Gemma 4 should replace it (Phase 3)
-- No visual feedback when agents are working (Phase 8 fixes this)
-- `on_event` deprecation warning in FastAPI — migrate to lifespan handlers (minor, cosmetic)
+Logs land in `~/cowork/logs/`.
 
 ---
 
-## How To Give This To Another Model
+## Current Known Issues Being Fixed
 
-Paste this file as context. Then say:
-
-> "Read CONTEXT.md. We are on Phase [X]. The last thing we did was [Y]. Continue from there."
-
-The model will have everything it needs: architecture, file paths, ports, model names, current state, and what to build next.
+| Issue | Fix |
+|---|---|
+| "open chrome" fails — wrong app name | APP_NAME_MAP normalisation in router.py |
+| "what time is it" hits LLM unnecessarily | Fast hardcoded routes, returns in <1ms |
+| Bus logs scattered, no file persistence | Daily rotating log files in ~/cowork/logs/ |
+| Starting system requires multiple terminal commands | start_cowork.sh with health checks |
+| clap_start.py duplicated startup logic | Now delegates entirely to start_cowork.sh |
 
 ---
 
@@ -300,3 +246,11 @@ The model will have everything it needs: architecture, file paths, ports, model 
 3. **One command.** The whole system starts with one word.
 4. **Ambient, not intrusive.** The UI should feel like Iron Man's HUD, not another app to manage.
 5. **Self-healing.** If something breaks, the system fixes itself before the developer notices.
+
+---
+
+## How To Give This To Another Model
+
+Paste this file as context. Then say:
+
+> "Read CONTEXT.md. We are on Phase [X]. The last thing we did was [Y]. Continue from there."

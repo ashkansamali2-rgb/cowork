@@ -78,7 +78,35 @@
       "content": "Goodbye! If you need anything else later, feel free to call on me. Have a great day!",
       "streaming": false,
       "timestamp": 1775769383526
+    },
+    {
+      "id": "msg_1775771196752",
+      "role": "assistant",
+      "content": "Done.",
+      "streaming": false,
+      "timestamp": 1775771196752
+    },
+    {
+      "id": "msg_1775771213613",
+      "role": "assistant",
+      "content": "I've opened the Terminal for you. What command would you like me to run?",
+      "streaming": false,
+      "timestamp": 1775771213613
+    },
+    {
+      "id": "msg_1775771250295",
+      "role": "assistant",
+      "content": "MacOS threw an error on run_shell: bash: cli: No such file or directory",
+      "streaming": false,
+      "timestamp": 1775771250295
+    },
+    {
+      "id": "msg_1775771336480",
+      "role": "assistant",
+      "content": "Done.",
+      "streaming": false,
+      "timestamp": 1775771336480
     }
   ],
-  "updatedAt": 1775769384538
+  "updatedAt": 1775771337489
 }
