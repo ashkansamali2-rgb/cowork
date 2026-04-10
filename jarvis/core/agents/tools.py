@@ -152,6 +152,86 @@ def create_document(title: str, content: str, fmt: str = "md") -> str:
     except Exception as e:
         return f"create_document failed: {e}"
 
+# ── create_word_document(title, content, path) ────────────────────────────────
+def create_word_document(title: str, content: str, path: str = None) -> str:
+    """Create a properly formatted Word (.docx) document on the Desktop.
+    Converts markdown headings (##) to Word heading styles and bullet points
+    to proper Word list items. Opens the file automatically."""
+    try:
+        from docx import Document
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        import re
+        from datetime import datetime
+
+        doc = Document()
+
+        # Set document title style
+        title_para = doc.add_heading(title, level=0)
+        title_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+        # Parse and add content line by line
+        for line in content.splitlines():
+            stripped = line.rstrip()
+
+            # h3 ###
+            if stripped.startswith("### "):
+                doc.add_heading(stripped[4:], level=3)
+
+            # h2 ##
+            elif stripped.startswith("## "):
+                doc.add_heading(stripped[3:], level=2)
+
+            # h1 #
+            elif stripped.startswith("# "):
+                doc.add_heading(stripped[2:], level=1)
+
+            # Bullet points: - or * or •
+            elif re.match(r'^[-*•]\s+', stripped):
+                text = re.sub(r'^[-*•]\s+', '', stripped)
+                p = doc.add_paragraph(style='List Bullet')
+                p.add_run(text)
+
+            # Numbered list: 1. 2. etc
+            elif re.match(r'^\d+\.\s+', stripped):
+                text = re.sub(r'^\d+\.\s+', '', stripped)
+                p = doc.add_paragraph(style='List Number')
+                p.add_run(text)
+
+            # Horizontal rule
+            elif stripped in ('---', '***', '___'):
+                doc.add_paragraph('─' * 60)
+
+            # Empty line
+            elif not stripped:
+                doc.add_paragraph('')
+
+            # Regular text
+            else:
+                # Handle inline bold **text**
+                p = doc.add_paragraph()
+                parts = re.split(r'\*\*(.*?)\*\*', stripped)
+                for i, part in enumerate(parts):
+                    run = p.add_run(part)
+                    if i % 2 == 1:  # odd parts are bold
+                        run.bold = True
+
+        # Determine output path
+        if path:
+            out = Path(os.path.expanduser(path))
+        else:
+            import re as _re
+            safe = _re.sub(r'[^a-zA-Z0-9_\- ]', '', title).strip().replace(" ", "-")
+            date_str = datetime.now().strftime("%Y%m%d")
+            out = Path.home() / "Desktop" / f"{safe}-{date_str}.docx"
+
+        out.parent.mkdir(parents=True, exist_ok=True)
+        doc.save(str(out))
+        os.system(f"open \"{out}\"")
+        return f"Word document created and opened: {out}"
+    except Exception as e:
+        return f"create_word_document failed: {e}"
+
 # ── take_screenshot() ─────────────────────────────────────────────────────────
 def take_screenshot() -> str:
     """Take a screenshot and save to Desktop."""
@@ -260,45 +340,47 @@ def spawn_subagent(task: str) -> str:
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 TOOLS: dict[str, callable] = {
-    "web_search":       web_search,
-    "fetch_url":        fetch_url,
-    "run_shell":        run_shell,
-    "read_file":        read_file,
-    "write_file":       write_file,
-    "append_file":      append_file,
-    "list_dir":         list_dir,
-    "open_app":         open_app,
-    "speak":            speak,
-    "create_document":  create_document,
-    "take_screenshot":  take_screenshot,
-    "get_clipboard":    get_clipboard,
-    "set_clipboard":    set_clipboard,
-    "http_request":     http_request,
-    "summarize":        summarize,
-    "remember":         remember,
-    "recall":           recall,
-    "spawn_subagent":   spawn_subagent,
+    "web_search":            web_search,
+    "fetch_url":             fetch_url,
+    "run_shell":             run_shell,
+    "read_file":             read_file,
+    "write_file":            write_file,
+    "append_file":           append_file,
+    "list_dir":              list_dir,
+    "open_app":              open_app,
+    "speak":                 speak,
+    "create_document":       create_document,
+    "create_word_document":  create_word_document,
+    "take_screenshot":       take_screenshot,
+    "get_clipboard":         get_clipboard,
+    "set_clipboard":         set_clipboard,
+    "http_request":          http_request,
+    "summarize":             summarize,
+    "remember":              remember,
+    "recall":                recall,
+    "spawn_subagent":        spawn_subagent,
 }
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
-    "web_search":       "web_search(query) — DuckDuckGo search, returns top 5 results with snippets",
-    "fetch_url":        "fetch_url(url) — Fetch webpage, extract clean text (up to 8000 chars)",
-    "run_shell":        "run_shell(cmd) — Run a shell command, returns stdout+stderr",
-    "read_file":        "read_file(path) — Read file contents",
-    "write_file":       "write_file(path, content) — Write content to file (creates dirs)",
-    "append_file":      "append_file(path, content) — Append content to existing file",
-    "list_dir":         "list_dir(path) — List directory contents",
-    "open_app":         "open_app(name) — Open a macOS application by name",
-    "speak":            "speak(text) — Speak text aloud via Jarvis TTS",
-    "create_document":  "create_document(title, content, fmt='md') — Create document on Desktop",
-    "take_screenshot":  "take_screenshot() — Take screenshot, returns path",
-    "get_clipboard":    "get_clipboard() — Get clipboard text contents",
-    "set_clipboard":    "set_clipboard(text) — Copy text to clipboard",
-    "http_request":     "http_request(url, method='GET', data=None) — HTTP request, returns response",
-    "summarize":        "summarize(text, instruction) — Use Qwen LLM to summarize or transform text",
-    "remember":         "remember(key, value) — Persist key-value to ~/cowork/agents/memory/",
-    "recall":           "recall(key) — Retrieve persisted value by key",
-    "spawn_subagent":   "spawn_subagent(task) — Spawn a child agent for a parallel subtask",
+    "web_search":            "web_search(query) — DuckDuckGo search, returns top 5 results with snippets",
+    "fetch_url":             "fetch_url(url) — Fetch webpage, extract clean text (up to 8000 chars)",
+    "run_shell":             "run_shell(cmd) — Run a shell command, returns stdout+stderr",
+    "read_file":             "read_file(path) — Read file contents",
+    "write_file":            "write_file(path, content) — Write content to file (creates dirs)",
+    "append_file":           "append_file(path, content) — Append content to existing file",
+    "list_dir":              "list_dir(path) — List directory contents",
+    "open_app":              "open_app(name) — Open a macOS application by name",
+    "speak":                 "speak(text) — Speak text aloud via Jarvis TTS",
+    "create_document":       "create_document(title, content, fmt='md') — Create plain text/markdown document on Desktop",
+    "create_word_document":  "create_word_document(title, content, path=None) — Create formatted Word .docx on Desktop, opens it automatically. PREFER THIS over create_document when user says 'create a document', 'write it up', 'document it', or 'write a report'.",
+    "take_screenshot":       "take_screenshot() — Take screenshot, returns path",
+    "get_clipboard":         "get_clipboard() — Get clipboard text contents",
+    "set_clipboard":         "set_clipboard(text) — Copy text to clipboard",
+    "http_request":          "http_request(url, method='GET', data=None) — HTTP request, returns response",
+    "summarize":             "summarize(text, instruction) — Use Qwen LLM to summarize or transform text",
+    "remember":              "remember(key, value) — Persist key-value to ~/cowork/agents/memory/",
+    "recall":                "recall(key) — Retrieve persisted value by key",
+    "spawn_subagent":        "spawn_subagent(task) — Spawn a child agent for a parallel subtask",
 }
 
 def get_tool_descriptions() -> str:

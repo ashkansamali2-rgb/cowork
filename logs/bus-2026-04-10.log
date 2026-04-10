@@ -180,3 +180,37 @@ websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
 [2026-04-10T16:16:16] connection open
 [2026-04-10T16:16:16] Client registered: cli (total: 3)
 [2026-04-10T16:16:16] [cli] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:39:55] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T16:39:55] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T16:39:55] server listening on 127.0.0.1:8002
+[2026-04-10T16:39:55] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T16:39:58] connection open
+[2026-04-10T16:39:58] Client registered: cli (total: 1)
+[2026-04-10T16:39:58] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T16:39:59] connection open
+[2026-04-10T16:39:59] Client registered: jarvis (total: 2)
+[2026-04-10T16:39:59] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T16:40:00] connection open
+[2026-04-10T16:40:00] Client registered: cantivia (total: 3)
+[2026-04-10T16:40:00] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:40:04] connection open
+[2026-04-10T16:41:22] connection open
+[2026-04-10T16:41:22] Client registered: agent-manager (total: 4)
+[2026-04-10T16:41:22] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:41:22] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775835682', 'status': 'running', 'message': 'Starting task: MediaPipe hand 
+[2026-04-10T16:41:22] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:41:22] AGENT_STATUS [AGENT-1775835682] running: Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:41:22] [agent-manager] AGENT_STATUS_RUNNING: agent=AGENT-1775835682 Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:41:22] Client disconnected: agent-manager
+[2026-04-10T16:41:22] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:41:22] connection open
+[2026-04-10T16:41:22] Client registered: agent-manager (total: 4)
+[2026-04-10T16:41:22] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:41:22] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775835682', 'status': 'done', 'message': 'Agent AGENT-1775835682 received t
+[2026-04-10T16:41:22] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:41:22] AGENT_STATUS [AGENT-1775835682] done: Agent AGENT-1775835682 received task: MediaPipe hand gestures and create a document in word
+(No handler matched — general task noted.)
+[2026-04-10T16:41:22] [agent-manager] AGENT_STATUS_DONE: agent=AGENT-1775835682 Agent AGENT-1775835682 received task: MediaPipe hand gestures and create a document in word
+(No hand
+[2026-04-10T16:41:22] Client disconnected: agent-manager
+[2026-04-10T16:41:22] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
