@@ -5,11 +5,13 @@ import asyncio
 import re
 import json
 import subprocess
+import time as _time
 from datetime import datetime
 sys.path.insert(0, os.path.expanduser('~/jarvis'))
 from core.tools import AVAILABLE_TOOLS
 from core.tool_learner import handle_missing_tool
 from config import LLAMA_CPP_URL
+from core.agents.runtime import create_agent
 
 C_CYAN = "\033[96m"
 C_GREEN = "\033[92m"
@@ -190,6 +192,49 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         mgr = get_manager()
         mgr.spawn(_research_match, agent_id)
         return f"Agent spawned. I'll research '{_research_match}' in the background. Results will be saved to ~/cowork/agents/{agent_id}/result.txt"
+
+    # Priority 2c: Autonomous AgentRuntime — research/automation tasks
+    agent_triggers = [
+        "research", "find information", "look up", "create a document",
+        "automate", "download", "fetch", "summarize and save", "write a report",
+    ]
+    if any(t in msg_lower for t in agent_triggers):
+        agent_id = f"AGENT-{int(_time.time())}"
+        task = user_message
+
+        async def _run_agent():
+            try:
+                runtime = create_agent(task, agent_id=agent_id)
+
+                async def _on_step(aid, step, action, obs):
+                    if websocket:
+                        try:
+                            await websocket.send_json({
+                                "type": "agent_update",
+                                "agent_id": aid,
+                                "step": step,
+                                "action": action,
+                                "observation": obs[:300],
+                            })
+                        except Exception:
+                            pass
+
+                runtime.on_step = _on_step
+                result = await runtime.run()
+                if websocket:
+                    try:
+                        await websocket.send_json({"type": "final", "msg": result})
+                    except Exception:
+                        pass
+            except Exception as e:
+                if websocket:
+                    try:
+                        await websocket.send_json({"type": "error", "msg": f"Agent failed: {e}"})
+                    except Exception:
+                        pass
+
+        asyncio.create_task(_run_agent())
+        return f"Agent spawned. Working on: {task[:80]}..."
 
     # Priority 3: Cantivia coding tasks → route to bus
     if "cantivia" in msg_lower:
