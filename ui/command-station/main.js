@@ -315,6 +315,64 @@ ipcMain.handle('window:close', () => {
   if (mainWindow) mainWindow.close()
 })
 
+ipcMain.handle('file:read', async (event, filePath) => {
+  try {
+    const resolved = path.resolve(filePath)
+    const contents = fs.readFileSync(resolved, 'utf8')
+    return { ok: true, contents }
+  } catch (err) {
+    throw new Error(`Failed to read file: ${err.message}`)
+  }
+})
+
+ipcMain.handle('project:listFiles', async (event, projectName) => {
+  try {
+    const filesDir = path.join(PROJECTS_DIR, projectName, 'files')
+    if (!fs.existsSync(filesDir)) return []
+    return fs.readdirSync(filesDir).filter(f => !f.startsWith('.'))
+  } catch (err) {
+    console.error('[project:listFiles]', err.message)
+    return []
+  }
+})
+
+ipcMain.handle('project:addFile', async (event, { projectName, filePath }) => {
+  try {
+    const filesDir = path.join(PROJECTS_DIR, projectName, 'files')
+    if (!fs.existsSync(filesDir)) fs.mkdirSync(filesDir, { recursive: true })
+    const filename = path.basename(filePath)
+    const dest = path.join(filesDir, filename)
+    fs.copyFileSync(filePath, dest)
+    return { ok: true, filename }
+  } catch (err) {
+    throw new Error(`Failed to add project file: ${err.message}`)
+  }
+})
+
+ipcMain.handle('project:removeFile', async (event, { projectName, filename }) => {
+  try {
+    const filesDir = path.join(PROJECTS_DIR, projectName, 'files')
+    const resolved = path.resolve(path.join(filesDir, filename))
+    if (!resolved.startsWith(path.resolve(filesDir))) throw new Error('Path not allowed')
+    if (fs.existsSync(resolved)) fs.unlinkSync(resolved)
+    return { ok: true }
+  } catch (err) {
+    throw new Error(`Failed to remove project file: ${err.message}`)
+  }
+})
+
+ipcMain.handle('project:readFile', async (event, { projectName, filename }) => {
+  try {
+    const filesDir = path.join(PROJECTS_DIR, projectName, 'files')
+    const resolved = path.resolve(path.join(filesDir, filename))
+    if (!resolved.startsWith(path.resolve(filesDir))) throw new Error('Path not allowed')
+    const contents = fs.readFileSync(resolved, 'utf8')
+    return { ok: true, contents }
+  } catch (err) {
+    throw new Error(`Failed to read project file: ${err.message}`)
+  }
+})
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 app.whenReady().then(createWindow)
 

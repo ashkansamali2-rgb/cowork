@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 
 const AGENT_DEFS = [
   { key: 'gemma',    label: 'Gemma',    desc: 'Vision + reasoning' },
@@ -132,14 +132,37 @@ export default function Sidebar({
   onCreateProject,
   onDeleteProject,
   projectChats,
+  projectFiles,
+  onAddProjectFile,
+  onRemoveProjectFile,
+  onExpandProject,
 }) {
   const [expandedProjects, setExpandedProjects] = useState({})
   const [showNewProject, setShowNewProject] = useState(false)
   const [contextMenuProject, setContextMenuProject] = useState(null)
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 })
+  const projectFileInputRef = useRef(null)
+  const addFileForProject = useRef(null)
 
-  const toggleProject = (name) => {
+  const toggleProject = (name, project) => {
+    const willExpand = !expandedProjects[name]
     setExpandedProjects(prev => ({ ...prev, [name]: !prev[name] }))
+    if (willExpand && onExpandProject && project) onExpandProject(project)
+  }
+
+  const handleAddFileClick = (projectName) => {
+    addFileForProject.current = projectName
+    projectFileInputRef.current?.click()
+  }
+
+  const handleProjectFileChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''
+    const projName = addFileForProject.current
+    if (!projName || !onAddProjectFile) return
+    for (const file of files) {
+      if (file.path) onAddProjectFile(projName, file.path)
+    }
   }
 
   const handleProjectRightClick = (e, projectName) => {
@@ -210,7 +233,7 @@ export default function Sidebar({
                 {/* Project header */}
                 <div
                   className="flex items-center gap-1 cursor-pointer select-none px-1 py-1 hover:bg-[#EDE9FE] group"
-                  onClick={() => toggleProject(project.name)}
+                  onClick={() => toggleProject(project.name, project)}
                   onContextMenu={(e) => handleProjectRightClick(e, project.name)}
                   style={{
                     borderLeft: activeProject === project.name ? '2px solid #7C3AED' : '2px solid transparent',
@@ -224,7 +247,7 @@ export default function Sidebar({
                   </span>
                 </div>
 
-                {/* Project chats (expanded) */}
+                {/* Project chats + files (expanded) */}
                 {expandedProjects[project.name] && (
                   <div className="pl-3">
                     <button
@@ -242,6 +265,41 @@ export default function Sidebar({
                         onDeleteChat={onDeleteChat}
                       />
                     ))}
+
+                    {/* Project Files */}
+                    <div className="mt-1.5 mb-1">
+                      <div className="flex items-center justify-between px-2 py-0.5">
+                        <span className="text-[9px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
+                          Project Files
+                        </span>
+                        <button
+                          onClick={() => handleAddFileClick(project.name)}
+                          className="no-drag text-[10px] text-[#7C3AED] hover:text-[#6D28D9]"
+                          title="Add file to project"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {(projectFiles && projectFiles[project.name] || []).length === 0 ? (
+                        <p className="px-2 text-[10px] text-[#C4BFB8]">No files</p>
+                      ) : (
+                        (projectFiles[project.name] || []).map(filename => (
+                          <div
+                            key={filename}
+                            className="flex items-center gap-1 px-2 py-0.5 text-[10px] text-[#6B7280] hover:bg-[#EDE9FE] group"
+                          >
+                            <span className="truncate flex-1">{filename}</span>
+                            <button
+                              onClick={() => onRemoveProjectFile && onRemoveProjectFile(project.name, filename)}
+                              className="no-drag opacity-0 group-hover:opacity-100 text-[#9CA3AF] hover:text-[#EF4444] flex-shrink-0"
+                              title="Remove file"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -301,6 +359,15 @@ export default function Sidebar({
           {connections.jarvis ? '● Connected' : '○ Offline'}
         </p>
       </div>
+
+      {/* Hidden file input for project files */}
+      <input
+        ref={projectFileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={handleProjectFileChange}
+      />
 
       {/* New Project Modal */}
       {showNewProject && (

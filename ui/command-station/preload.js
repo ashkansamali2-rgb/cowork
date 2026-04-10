@@ -18,4 +18,9 @@ contextBridge.exposeInMainWorld('jarvis', {
   minimize: () => ipcRenderer.invoke('window:minimize'),
   close: () => ipcRenderer.invoke('window:close'),
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
+  readFile: (filePath) => ipcRenderer.invoke('file:read', filePath),
+  listProjectFiles: (projectName) => ipcRenderer.invoke('project:listFiles', projectName),
+  addProjectFile: (projectName, filePath) => ipcRenderer.invoke('project:addFile', { projectName, filePath }),
+  removeProjectFile: (projectName, filename) => ipcRenderer.invoke('project:removeFile', { projectName, filename }),
+  readProjectFile: (projectName, filename) => ipcRenderer.invoke('project:readFile', { projectName, filename }),
 })
