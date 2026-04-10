@@ -1,0 +1,22 @@
+{
+  "id": "chat_1775835682019_z2imms",
+  "title": "research MediaPipe hand gestures and cre...",
+  "messages": [
+    {
+      "id": "msg_1775835682020",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775835682020,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775835682050",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775835682/result.txt",
+      "streaming": false,
+      "timestamp": 1775835682050
+    }
+  ],
+  "updatedAt": 1775836114974,
+  "projectName": null
+}

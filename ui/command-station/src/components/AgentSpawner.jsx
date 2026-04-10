@@ -1,244 +1,275 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-const PRESET_REPOS = [
-  '~/cowork',
-  '~/cowork/jarvis',
-  '~/cowork/vision',
-]
+// ── Helpers ────────────────────────────────────────────────────────────────────
 
-function ProgressLine({ entry }) {
-  const isError = entry.text?.toLowerCase().includes('error') || entry.text?.toLowerCase().includes('failed')
-  const isDone  = entry.text?.toLowerCase().includes('done')  || entry.text?.toLowerCase().includes('complete')
+function elapsed(startTime) {
+  if (!startTime) return ''
+  const secs = Math.floor((Date.now() - startTime) / 1000)
+  if (secs < 60) return `${secs}s`
+  return `${Math.floor(secs / 60)}m ${secs % 60}s`
+}
+
+function StatusIcon({ status }) {
+  if (status === 'running') {
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: '#7C3AED',
+          animation: 'pulse 1.4s ease-in-out infinite',
+          flexShrink: 0,
+        }}
+      />
+    )
+  }
+  if (status === 'done') {
+    return <span style={{ color: '#22C55E', fontSize: 12, lineHeight: 1 }}>✓</span>
+  }
+  if (status === 'error') {
+    return <span style={{ color: '#EF4444', fontSize: 12, lineHeight: 1 }}>✗</span>
+  }
+  return null
+}
+
+// ── AgentCard ──────────────────────────────────────────────────────────────────
+
+function AgentCard({ agentId, info }) {
+  const [expanded, setExpanded] = useState(true)
+  const { task = '', status = 'running', steps = [], startTime } = info
+  const [tick, setTick] = useState(0)
+
+  // Keep elapsed timer ticking while running
+  useEffect(() => {
+    if (status !== 'running') return
+    const t = setInterval(() => setTick(n => n + 1), 1000)
+    return () => clearInterval(t)
+  }, [status])
+
   return (
-    <div className="flex items-start gap-2 py-1 text-xs" style={{ borderBottom: '1px solid #F4F3F0' }}>
-      <span
-        className="flex-shrink-0 w-4 font-mono"
-        style={{ color: isError ? '#EF4444' : isDone ? '#22C55E' : '#7C3AED' }}
+    <div
+      style={{
+        border: '1px solid #EAE6DF',
+        borderLeft: `3px solid ${status === 'done' ? '#22C55E' : status === 'error' ? '#EF4444' : '#7C3AED'}`,
+        background: '#FAFAF8',
+        marginBottom: 8,
+      }}
+    >
+      {/* Card header */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left"
+        style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
       >
-        {isError ? 'x' : isDone ? 'v' : '-'}
-      </span>
-      <span
-        className="flex-1 leading-relaxed font-mono"
-        style={{ color: isError ? '#EF4444' : isDone ? '#1A1A1A' : '#6B7280' }}
-      >
-        {entry.text}
-      </span>
-      <span className="flex-shrink-0 text-[10px] text-[#6B7280]">
-        {new Date(entry.timestamp).toLocaleTimeString(undefined, {
-          hour: '2-digit', minute: '2-digit', second: '2-digit',
-        })}
-      </span>
+        <StatusIcon status={status} />
+        <span className="text-[11px] font-semibold flex-1 truncate" style={{ color: '#1A1A1A' }}>
+          {agentId}
+        </span>
+        {status === 'running' && (
+          <span className="text-[10px] flex-shrink-0" style={{ color: '#9CA3AF' }}>
+            {elapsed(startTime)}
+          </span>
+        )}
+        <span className="text-[10px] flex-shrink-0" style={{ color: '#9CA3AF' }}>
+          {expanded ? '▼' : '▶'}
+        </span>
+      </button>
+
+      {/* Task description */}
+      {task && (
+        <p className="px-3 pb-1 text-[10px] truncate" style={{ color: '#6B7280' }}>
+          {task.slice(0, 60)}{task.length > 60 ? '…' : ''}
+        </p>
+      )}
+
+      {/* Steps timeline */}
+      {expanded && steps.length > 0 && (
+        <div
+          className="mx-3 mb-2 overflow-y-auto"
+          style={{
+            maxHeight: 240,
+            borderTop: '1px solid #EAE6DF',
+            paddingTop: 6,
+          }}
+        >
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-start gap-1.5 mb-1">
+              {/* Step number */}
+              <span
+                className="flex-shrink-0 text-[9px] font-mono font-bold rounded px-1 mt-0.5"
+                style={{ background: '#EDE9FE', color: '#7C3AED', minWidth: 20, textAlign: 'center' }}
+              >
+                {s.step}
+              </span>
+              {/* Tool */}
+              <span
+                className="flex-shrink-0 text-[10px] font-semibold"
+                style={{ color: '#5B21B6', minWidth: 84 }}
+              >
+                {s.action}
+              </span>
+              {/* Observation preview */}
+              {s.observation && (
+                <span
+                  className="text-[10px] leading-relaxed"
+                  style={{ color: '#6B7280', wordBreak: 'break-word' }}
+                  title={s.observation}
+                >
+                  → {s.observation.slice(0, 90)}{s.observation.length > 90 ? '…' : ''}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {expanded && steps.length === 0 && status === 'running' && (
+        <p className="px-3 pb-2 text-[10px] italic" style={{ color: '#9CA3AF' }}>
+          Starting…
+        </p>
+      )}
     </div>
   )
 }
 
-export default function AgentSpawner({ taskProgress, connected, onClose }) {
-  const [repo, setRepo]               = useState('~/cowork')
-  const [customRepo, setCustomRepo]   = useState('')
-  const [useCustom, setUseCustom]     = useState(false)
-  const [description, setDescription] = useState('')
-  const [spawning, setSpawning]       = useState(false)
-  const [spawnError, setSpawnError]   = useState(null)
-  const [spawnSuccess, setSpawnSuccess] = useState(false)
-  const progressBottomRef = useRef(null)
+// ── LiveAgentMonitor (main component) ─────────────────────────────────────────
 
+export default function LiveAgentMonitor({ agents = {}, connected, onClose, onSpawnAgent }) {
+  const [task, setTask] = useState('')
+  const [spawning, setSpawning] = useState(false)
+  const [spawnErr, setSpawnErr] = useState(null)
+  const bottomRef = useRef(null)
+
+  const agentIds = Object.keys(agents)
+  const runningCount = agentIds.filter(id => agents[id]?.status === 'running').length
+
+  // Auto-scroll to bottom when new agents/steps arrive
   useEffect(() => {
-    if (progressBottomRef.current) {
-      progressBottomRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [taskProgress])
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [agents])
 
   const handleSpawn = async () => {
-    const targetRepo = useCustom ? customRepo.trim() : repo
-    if (!targetRepo || !description.trim()) return
-
+    if (!task.trim()) return
     setSpawning(true)
-    setSpawnError(null)
-    setSpawnSuccess(false)
-
+    setSpawnErr(null)
     try {
-      const api = window.jarvis
-      if (!api) throw new Error('Jarvis API not available')
-      await api.spawnAgent({ repo: targetRepo, description: description.trim() })
-      setSpawnSuccess(true)
-      setDescription('')
-      setTimeout(() => setSpawnSuccess(false), 3000)
-    } catch (err) {
-      setSpawnError(err.message)
+      if (onSpawnAgent) await onSpawnAgent(task.trim())
+      setTask('')
+    } catch (e) {
+      setSpawnErr(e.message)
     } finally {
       setSpawning(false)
     }
   }
 
-  const inputStyle = {
-    border: '1px solid #E5E4E0',
-    background: '#FAFAF8',
-    color: '#1A1A1A',
-    fontSize: 13,
-    padding: '6px 10px',
-    outline: 'none',
-    width: '100%',
-    fontFamily: 'inherit',
-    borderRadius: 0,
-  }
-
-  const inputFocusStyle = {
-    borderColor: '#7C3AED',
-  }
-
   return (
     <aside
       className="flex flex-col flex-shrink-0 overflow-hidden"
-      style={{
-        width: 280,
-        background: '#FAFAF8',
-        borderLeft: '1px solid #E5E4E0',
-      }}
+      style={{ width: 300, background: '#FBF8F4', borderLeft: '1px solid #EAE6DF' }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 flex-shrink-0"
-        style={{ height: 44, borderBottom: '1px solid #E5E4E0' }}
+        style={{ height: 44, borderBottom: '1px solid #EAE6DF' }}
       >
-        <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
-          Agents
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+            AGENTS
+          </span>
+          {runningCount > 0 && (
+            <span
+              className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+              style={{ background: '#EDE9FE', color: '#7C3AED' }}
+            >
+              {runningCount} running
+            </span>
+          )}
+        </div>
         <button
           onClick={onClose}
-          className="text-[#6B7280] hover:text-[#1A1A1A] transition-colors text-xs"
+          className="text-[#9CA3AF] hover:text-[#1A1A1A] transition-colors text-xs"
         >
-          Close
+          ✕
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-
-        {/* Spawn form */}
-        <div className="px-4 py-4" style={{ borderBottom: '1px solid #E5E4E0' }}>
-
-          {/* Bus status */}
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-semibold text-[#1A1A1A]">Cantivia Task</span>
-            <span
-              className="text-[10px]"
-              style={{ color: connected ? '#22C55E' : '#EF4444' }}
+      {/* Agent list */}
+      <div className="flex-1 overflow-y-auto px-3 py-3">
+        {agentIds.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center mb-3"
+              style={{ background: '#F3F0FF' }}
             >
-              {connected ? 'Bus live' : 'Bus offline'}
-            </span>
-          </div>
-
-          {/* Target repo */}
-          <div className="mb-3">
-            <label className="block text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
-              Target Repo
-            </label>
-            {!useCustom ? (
-              <div className="flex gap-1">
-                <select
-                  value={repo}
-                  onChange={e => setRepo(e.target.value)}
-                  style={{ ...inputStyle, flex: 1 }}
-                >
-                  {PRESET_REPOS.map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => setUseCustom(true)}
-                  className="px-2 text-[10px] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
-                  style={{ border: '1px solid #E5E4E0', background: '#FAFAF8', fontFamily: 'inherit' }}
-                  title="Custom path"
-                >
-                  ...
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-1">
-                <input
-                  type="text"
-                  value={customRepo}
-                  onChange={e => setCustomRepo(e.target.value)}
-                  placeholder="/path/to/repo"
-                  style={{ ...inputStyle, flex: 1 }}
-                  onFocus={e => Object.assign(e.target.style, inputFocusStyle)}
-                  onBlur={e => (e.target.style.borderColor = '#E5E4E0')}
-                />
-                <button
-                  onClick={() => setUseCustom(false)}
-                  className="px-2 text-[10px] text-[#6B7280] hover:text-[#1A1A1A] transition-colors"
-                  style={{ border: '1px solid #E5E4E0', background: '#FAFAF8', fontFamily: 'inherit' }}
-                >
-                  back
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Task description */}
-          <div className="mb-4">
-            <label className="block text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
-              Task Description
-            </label>
-            <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Describe what Cantivia should do..."
-              rows={4}
-              style={{ ...inputStyle, overflow: 'auto', resize: 'vertical', minHeight: 80 }}
-              onFocus={e => (e.target.style.borderColor = '#7C3AED')}
-              onBlur={e => (e.target.style.borderColor = '#E5E4E0')}
-            />
-          </div>
-
-          {/* Feedback */}
-          {spawnError && (
-            <p className="mb-3 text-xs text-red-600 py-2 px-3" style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
-              {spawnError}
+              <span style={{ fontSize: 16 }}>⚡</span>
+            </div>
+            <p className="text-[11px] text-[#9CA3AF] text-center">
+              No agents running
             </p>
-          )}
-          {spawnSuccess && (
-            <p className="mb-3 text-xs text-green-700 py-2 px-3" style={{ background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-              Task spawned. Monitor progress below.
+            <p className="text-[10px] text-[#C4C0BC] text-center mt-1">
+              Use the input below to spawn one
             </p>
-          )}
+          </div>
+        ) : (
+          agentIds.map(id => (
+            <AgentCard key={id} agentId={id} info={agents[id]} />
+          ))
+        )}
+        <div ref={bottomRef} />
+      </div>
 
-          {/* Spawn button */}
+      {/* Spawn agent input */}
+      <div style={{ borderTop: '1px solid #EAE6DF', padding: '10px 12px' }}>
+        <p className="text-[9px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1.5">
+          Spawn Agent
+        </p>
+        <div className="flex gap-1.5">
+          <input
+            type="text"
+            value={task}
+            onChange={e => setTask(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSpawn()}
+            placeholder="Research Python gesture libs..."
+            className="flex-1 text-[11px] px-2 py-1.5 outline-none"
+            style={{
+              border: '1px solid #E5E4E0',
+              background: '#FAFAF8',
+              color: '#1A1A1A',
+              fontFamily: 'inherit',
+            }}
+            onFocus={e => (e.target.style.borderColor = '#7C3AED')}
+            onBlur={e => (e.target.style.borderColor = '#E5E4E0')}
+          />
           <button
             onClick={handleSpawn}
-            disabled={spawning || !description.trim() || (!useCustom ? !repo : !customRepo.trim())}
-            className="btn-purple w-full py-2 text-xs font-medium"
-            style={{ borderRadius: 0 }}
+            disabled={spawning || !task.trim()}
+            className="px-3 py-1.5 text-[10px] font-semibold text-white transition-opacity"
+            style={{
+              background: '#7C3AED',
+              border: 'none',
+              cursor: spawning || !task.trim() ? 'not-allowed' : 'pointer',
+              opacity: spawning || !task.trim() ? 0.5 : 1,
+              fontFamily: 'inherit',
+            }}
           >
-            {spawning ? 'Spawning...' : 'Spawn Cantivia Task'}
+            {spawning ? '…' : 'Go'}
           </button>
         </div>
-
-        {/* Progress log */}
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
-              Task Progress
-            </span>
-            {taskProgress.length > 0 && (
-              <span className="text-[10px] text-[#6B7280]">{taskProgress.length} events</span>
-            )}
-          </div>
-
-          {taskProgress.length === 0 ? (
-            <p className="text-xs text-[#6B7280] py-4">No tasks running</p>
-          ) : (
-            <div
-              className="max-h-64 overflow-y-auto"
-              style={{ border: '1px solid #E5E4E0', background: '#F4F3F0', padding: '8px 10px' }}
-            >
-              {taskProgress.map(entry => (
-                <ProgressLine key={entry.id} entry={entry} />
-              ))}
-              <div ref={progressBottomRef} />
-            </div>
-          )}
+        {spawnErr && (
+          <p className="mt-1 text-[10px]" style={{ color: '#EF4444' }}>{spawnErr}</p>
+        )}
+        <div
+          className="flex items-center gap-1.5 mt-2"
+          style={{ color: connected ? '#9CA3AF' : '#EF4444' }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: connected ? '#22C55E' : '#EF4444', flexShrink: 0 }}
+          />
+          <span className="text-[9px]">{connected ? 'Bus connected' : 'Bus offline'}</span>
         </div>
-
       </div>
     </aside>
   )

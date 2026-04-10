@@ -26,11 +26,16 @@ export default function App() {
   const [agentStatuses, setAgentStatuses] = useState({
     gemma: 'idle', qwen: 'idle', cantivia: 'idle',
   })
-  const [agentSteps, setAgentSteps] = useState({}) // { agent_id: [{ step, action, observation }] }
+  // Structured agent registry: { [agentId]: { task, status, steps, startTime } }
+  const [agents, setAgents] = useState({})
+  const [agentDone, setAgentDone] = useState(false)
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [statusText, setStatusText] = useState('')
+
+  // Track the last sent user message for agent task labels
+  const lastUserMsgRef = useRef('')
 
   // Projects state
   const [projects, setProjects] = useState([])
@@ -73,13 +78,37 @@ export default function App() {
     api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
 
     const handleStream = (data) => {
-      // Handle live agent step updates
+      // Live agent step update → structured agents state + auto-open panel
       if (data.type === 'agent_update') {
         const { agent_id, step, action, observation } = data
-        setAgentSteps(prev => ({
-          ...prev,
-          [agent_id]: [...(prev[agent_id] || []), { step, action, observation }],
-        }))
+        setAgents(prev => {
+          const existing = prev[agent_id] || { task: lastUserMsgRef.current, status: 'running', steps: [], startTime: Date.now() }
+          return {
+            ...prev,
+            [agent_id]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
+          }
+        })
+        setSpawnerOpen(true)
+        return
+      }
+
+      // Agent final result → mark done, inject bubble
+      if (data.type === 'final' && data.msg) {
+        setAgents(prev => {
+          const updated = { ...prev }
+          Object.keys(updated).forEach(id => {
+            if (updated[id].status === 'running') updated[id] = { ...updated[id], status: 'done' }
+          })
+          return updated
+        })
+        setAgentDone(true)
+        setTimeout(() => setAgentDone(false), 3500)
+        setIsStreaming(false)
+        setStatusText('')
+        setMessages(prev => [
+          ...prev.filter(m => m.id !== TYPING_ID),
+          { id: `msg_${Date.now()}`, role: 'assistant', content: data.msg, timestamp: Date.now() },
+        ])
         return
       }
 
@@ -130,10 +159,14 @@ export default function App() {
         setAgentStatuses(prev => ({ ...prev, [event.agent]: event.status }))
       } else if (event.type === 'AGENT_UPDATE' || event.type === 'agent_update') {
         const { agent_id, step, action, observation } = event
-        setAgentSteps(prev => ({
-          ...prev,
-          [agent_id]: [...(prev[agent_id] || []), { step, action, observation }],
-        }))
+        setAgents(prev => {
+          const existing = prev[agent_id] || { task: '', status: 'running', steps: [], startTime: Date.now() }
+          return {
+            ...prev,
+            [agent_id]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
+          }
+        })
+        setSpawnerOpen(true)
       } else if (event.type === 'task_progress' || event.type === 'spawn_progress') {
         setTaskProgress(prev => [...prev, {
           id: Date.now(),
@@ -357,6 +390,8 @@ export default function App() {
     if (!text.trim() || isStreaming) return
     const api = window.jarvis
     if (!api) return
+    // Track for agent task labels
+    lastUserMsgRef.current = text.trim()
 
     let chatId = activeChatIdRef.current
     if (!chatId) {
@@ -425,6 +460,8 @@ export default function App() {
         connections={connections}
         spawnerOpen={spawnerOpen}
         onToggleSpawner={() => setSpawnerOpen(o => !o)}
+        activeAgents={Object.values(agents).filter(a => a.status === 'running').length}
+        agentDone={agentDone}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -458,7 +495,6 @@ export default function App() {
           <ChatArea
             messages={messages}
             statusText={statusText}
-            agentSteps={agentSteps}
           />
           <InputBar
             onSend={handleSendMessage}
@@ -468,9 +504,13 @@ export default function App() {
         </main>
         {spawnerOpen && (
           <AgentSpawner
-            taskProgress={taskProgress}
+            agents={agents}
             connected={connections.bus}
             onClose={() => setSpawnerOpen(false)}
+            onSpawnAgent={async (task) => {
+              lastUserMsgRef.current = task
+              await handleSendMessage(task)
+            }}
           />
         )}
       </div>
