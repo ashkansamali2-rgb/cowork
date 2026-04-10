@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('jarvis', {
   loadChats: () => ipcRenderer.invoke('chat:load'),
   saveChat: (chat) => ipcRenderer.invoke('chat:save', chat),
   deleteChat: (chatPath) => ipcRenderer.invoke('chat:delete', chatPath),
+  clearAllChats: () => ipcRenderer.invoke('chat:clearAll'),
   listProjects: () => ipcRenderer.invoke('projects:list'),
   createProject: (name, context) => ipcRenderer.invoke('projects:create', { name, context }),
   deleteProject: (name) => ipcRenderer.invoke('projects:delete', name),

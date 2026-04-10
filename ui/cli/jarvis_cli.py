@@ -141,10 +141,11 @@ Screen {
 }
 
 #prompt-symbol {
-    width: 3;
+    width: auto;
     color: #7C3AED;
     content-align: left middle;
     text-style: bold;
+    padding-right: 1;
 }
 
 #cmd-input {
@@ -417,16 +418,20 @@ class JarvisCLI(App):
 
     def __init__(self):
         super().__init__()
-        self._history:     list[str] = []
-        self._history_idx: int = -1
-        self._stopping:    bool = False
-        self._boot_done:   bool = False   # guard: finish_boot runs exactly once
-        self._cwd:         str  = os.getcwd()  # capture launch directory
+        self._history:       list[str] = []
+        self._history_idx:   int = -1
+        self._stopping:      bool = False
+        self._boot_done:     bool = False   # guard: finish_boot runs exactly once
+        self._cwd:           str  = os.getcwd()  # capture launch directory
+        self._agents:        dict = {}  # {id: {"task": str, "status": str}}
+        self._agent_counter: int  = 0
 
-        # Background WS thread state
-        self._ws_loop:    Optional[asyncio.AbstractEventLoop] = None
-        self._ws_thread:  Optional[threading.Thread] = None
-        self._send_queue: Optional[asyncio.Queue] = None  # lives in _ws_loop
+        # Background WS thread state (Jarvis)
+        self._ws_loop:       Optional[asyncio.AbstractEventLoop] = None
+        self._ws_thread:     Optional[threading.Thread] = None
+        self._send_queue:    Optional[asyncio.Queue] = None  # lives in _ws_loop
+        # Bus send queue (same background loop)
+        self._bus_send_queue: Optional[asyncio.Queue] = None
 
     # ── Layout ────────────────────────────────────────────────────────────────
 
@@ -493,6 +498,7 @@ class JarvisCLI(App):
             pass
         self._print_welcome()
         self._start_ws_thread()
+        self._update_cwd_prompt()
         try:
             self.query_one("#cmd-input", Input).focus()
         except NoMatches:
@@ -553,6 +559,18 @@ class JarvisCLI(App):
                 pass
         return self._cwd
 
+    def _update_cwd_prompt(self):
+        """Update the prompt label to show [~/shortened/path] >"""
+        try:
+            cwd = self._get_effective_cwd()
+            home = str(Path.home())
+            if cwd.startswith(home):
+                cwd = "~" + cwd[len(home):]
+            label = self.query_one("#prompt-symbol", Label)
+            label.update(f"[{cwd}] >")
+        except NoMatches:
+            pass
+
     # ── WebSocket thread ──────────────────────────────────────────────────────
     #
     # Architecture:
@@ -579,7 +597,15 @@ class JarvisCLI(App):
         """Runs entirely in the background daemon thread."""
         asyncio.set_event_loop(self._ws_loop)
         self._send_queue = asyncio.Queue()
-        self._ws_loop.run_until_complete(self._ws_worker())
+        self._bus_send_queue = asyncio.Queue()
+
+        async def _run_both():
+            await asyncio.gather(
+                self._ws_worker(),
+                self._bus_ws_worker(),
+            )
+
+        self._ws_loop.run_until_complete(_run_both())
 
     async def _ws_worker(self):
         """Reconnecting WebSocket loop — background thread only."""
@@ -638,11 +664,100 @@ class JarvisCLI(App):
             self.call_from_thread(self._handle_jarvis_msg, raw)
 
     def _enqueue_send(self, payload: str):
-        """Thread-safe send from Textual thread into the WS background loop."""
+        """Thread-safe send from Textual thread into the Jarvis WS background loop."""
         if self._ws_loop is not None and self._send_queue is not None:
             self._ws_loop.call_soon_threadsafe(
                 self._send_queue.put_nowait, payload
             )
+
+    def _enqueue_bus_send(self, payload: str):
+        """Thread-safe send from Textual thread into the bus WS background loop."""
+        if self._ws_loop is not None and self._bus_send_queue is not None:
+            self._ws_loop.call_soon_threadsafe(
+                self._bus_send_queue.put_nowait, payload
+            )
+
+    async def _bus_ws_worker(self):
+        """Reconnecting bus WebSocket loop — runs in the same background thread."""
+        while not self._stopping:
+            try:
+                async with websockets.connect(
+                    BUS_WS,
+                    ping_interval=20,
+                    ping_timeout=10,
+                    open_timeout=5,
+                ) as ws:
+                    await ws.send(json.dumps({"register": "cli"}))
+                    self.call_from_thread(self._on_bus_connected)
+
+                    async def bus_sender():
+                        while True:
+                            payload = await self._bus_send_queue.get()
+                            if payload is None:
+                                return
+                            try:
+                                await ws.send(payload)
+                            except Exception:
+                                return
+
+                    async def bus_receiver():
+                        async for raw in ws:
+                            self.call_from_thread(self._handle_bus_msg, raw)
+
+                    sender   = asyncio.create_task(bus_sender())
+                    receiver = asyncio.create_task(bus_receiver())
+                    _done, pending = await asyncio.wait(
+                        [sender, receiver],
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                    for task in pending:
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            pass
+
+            except (ConnectionRefusedError, OSError, TimeoutError):
+                pass
+            except websockets.exceptions.ConnectionClosed:
+                pass
+            except Exception as exc:
+                self.call_from_thread(self._write_bus, f"[ERR] Bus: {exc}")
+            finally:
+                self.call_from_thread(self._on_bus_disconnected)
+
+            if not self._stopping:
+                await asyncio.sleep(3)
+
+    def _on_bus_connected(self):
+        self._update_conn_label("bus", True)
+        self._write_bus("[OK] Bus connected")
+
+    def _on_bus_disconnected(self):
+        self._update_conn_label("bus", False)
+
+    def _handle_bus_msg(self, raw: str):
+        """Handle messages received from the bus (e.g. AGENT_STATUS)."""
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return
+
+        etype = data.get("type", "")
+
+        if etype == "AGENT_STATUS":
+            agent_id = data.get("agent_id", "?")
+            status   = data.get("status", "")
+            message  = data.get("message", "")
+            if agent_id in self._agents:
+                self._agents[agent_id]["status"] = "done" if status == "done" else status
+            label = f"[{agent_id}] {status}: {message[:80]}" if message else f"[{agent_id}] {status}"
+            self._write_chat(make_jarvis_line(label, "status"))
+
+        elif etype in ("STATUS", "RESULT"):
+            msg = strip_ansi(str(data.get("msg", "") or data.get("content", ""))).strip()
+            if msg:
+                self._write_bus(msg)
 
     # ── WS callbacks (called on Textual thread via call_from_thread) ──────────
 
@@ -743,7 +858,9 @@ class JarvisCLI(App):
                 _cmd_line("/projects",        "List all projects"),
                 _cmd_line("/cd [path]",       "Change working directory for tasks"),
                 _cmd_line("/pwd",             "Show current working directory"),
-                _cmd_line("/agents",          "Show agent statuses"),
+                _cmd_line("/agent [task]",    "Spawn a background agent for a task"),
+                _cmd_line("/agents",          "List all spawned agents and their status"),
+                _cmd_line("/kill [id]",       "Cancel a running agent (e.g. /kill AGENT-1)"),
                 _cmd_line("/cantivia [task]", "Send task directly to cantivia"),
                 _cmd_line("/exit",            "Quit the CLI"),
                 Text(""),
@@ -774,6 +891,8 @@ class JarvisCLI(App):
             if os.path.isdir(expanded):
                 COWORK_DIR.mkdir(parents=True, exist_ok=True)
                 CWD_FILE.write_text(expanded)
+                self._cwd = expanded
+                self._update_cwd_prompt()
                 self._write_chat(make_jarvis_line(f"Working dir set to: {expanded}", "status"))
             else:
                 self._write_chat(make_jarvis_line(f"Directory not found: {expanded}", "error"))
@@ -805,11 +924,46 @@ class JarvisCLI(App):
                     self._write_chat(make_jarvis_line(f"  {p}{marker}", "final"))
             return True
 
+        if cmd == "/agent":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /agent [task description]", "error"))
+                return True
+            self._agent_counter += 1
+            agent_id = f"AGENT-{self._agent_counter}"
+            self._agents[agent_id] = {"task": arg, "status": "running"}
+            cwd = self._get_effective_cwd()
+            payload = {
+                "type": "TASK_CODING",
+                "msg": arg,
+                "cwd": cwd,
+                "agent_id": agent_id,
+            }
+            self._write_chat(make_jarvis_line(f"[{agent_id}] Spawned: {arg}", "status"))
+            self._enqueue_bus_send(json.dumps(payload))
+            return True
+
         if cmd == "/agents":
-            self._write_chat(make_jarvis_line("Agent statuses:", "status"))
-            # Trigger a redraw of agent cards by writing their status to chat
-            for name in ("Gemma", "Qwen", "Cantivia"):
-                self._write_chat(make_jarvis_line(f"  {name}: check agent panel →", "status"))
+            if not self._agents:
+                self._write_chat(make_jarvis_line("No agents running.", "status"))
+            else:
+                self._write_chat(make_jarvis_line("Running agents:", "status"))
+                for aid, info in self._agents.items():
+                    status_style = "final" if info["status"] == "done" else "status"
+                    self._write_chat(make_jarvis_line(
+                        f"  [{aid}]  {info['status']:<8}  {info['task']}", status_style
+                    ))
+            return True
+
+        if cmd == "/kill":
+            if not arg:
+                self._write_chat(make_jarvis_line("Usage: /kill [agent-id]  e.g. /kill AGENT-1", "error"))
+                return True
+            aid = arg.upper()
+            if aid in self._agents:
+                self._agents.pop(aid)
+                self._write_chat(make_jarvis_line(f"[{aid}] Cancelled.", "status"))
+            else:
+                self._write_chat(make_jarvis_line(f"No agent with id: {aid}", "error"))
             return True
 
         if cmd == "/cantivia":

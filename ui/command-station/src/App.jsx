@@ -52,7 +52,20 @@ export default function App() {
     const api = window.jarvis
     if (!api) return
 
-    api.loadChats().then(loaded => setChats(loaded || [])).catch(console.error)
+    api.loadChats().then(loaded => {
+      const chatsLoaded = loaded || []
+      setChats(chatsLoaded)
+      const savedId = localStorage.getItem('activeChatId')
+      const toRestore = savedId
+        ? chatsLoaded.find(c => c.id === savedId) || chatsLoaded[0]
+        : chatsLoaded[0]
+      if (toRestore) {
+        setActiveChatId(toRestore.id)
+        setMessages(toRestore.messages || [])
+        isFirstMessageRef.current = false
+        localStorage.setItem('activeChatId', toRestore.id)
+      }
+    }).catch(console.error)
     api.getConnectionStatus().then(s => setConnections({ jarvis: s.jarvis, bus: s.bus })).catch(() => {})
 
     // Load projects
@@ -179,7 +192,9 @@ export default function App() {
 
   // ── Actions ─────────────────────────────────────────────────────────────────
   const handleNewChat = useCallback(() => {
-    setActiveChatId(generateId())
+    const newId = generateId()
+    setActiveChatId(newId)
+    localStorage.setItem('activeChatId', newId)
     setMessages([])
     setIsStreaming(false)
     setStatusText('')
@@ -189,10 +204,26 @@ export default function App() {
 
   const handleSelectChat = useCallback((chat) => {
     setActiveChatId(chat.id)
+    localStorage.setItem('activeChatId', chat.id)
     setMessages(chat.messages || [])
     setIsStreaming(false)
     setStatusText('')
     isFirstMessageRef.current = false
+  }, [])
+
+  const handleClearAllChats = useCallback(async () => {
+    const api = window.jarvis
+    if (!api) return
+    if (!window.confirm('Delete all chats? This cannot be undone.')) return
+    try {
+      await api.clearAllChats()
+      setChats([])
+      setActiveChatId(null)
+      setMessages([])
+      localStorage.removeItem('activeChatId')
+    } catch (err) {
+      console.error('Failed to clear all chats:', err)
+    }
   }, [])
 
   const handleDeleteChat = useCallback(async (chat) => {
@@ -314,6 +345,7 @@ export default function App() {
     if (!chatId) {
       chatId = generateId()
       setActiveChatId(chatId)
+      localStorage.setItem('activeChatId', chatId)
     }
 
     // Inject project context + project files on first message
@@ -396,6 +428,7 @@ export default function App() {
           onAddProjectFile={handleAddProjectFile}
           onRemoveProjectFile={handleRemoveProjectFile}
           onExpandProject={handleSelectProjectChatAndLoadChats}
+          onClearAllChats={handleClearAllChats}
         />
         <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
           {activeProject && (

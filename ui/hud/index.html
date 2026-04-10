@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: transparent;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    -webkit-app-region: no-drag;
+    user-select: none;
+  }
+
+  #hud {
+    width: 600px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 0 16px 16px;
+    background: rgba(15, 10, 30, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-top: none;
+    opacity: 0;
+    transform: translateY(-80px);
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 0 20px;
+    gap: 12px;
+  }
+
+  #hud.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Thinking dots */
+  #dots {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #7C3AED;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50%       { opacity: 1;   transform: scale(1.2); }
+  }
+
+  /* Response text */
+  #text {
+    color: #f0eaff;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 500px;
+    display: none;
+  }
+
+  #text.visible { display: block; }
+
+  /* Purple left border accent */
+  #accent {
+    width: 3px;
+    height: 40px;
+    background: linear-gradient(180deg, #7C3AED, #a855f7);
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: none;
+  }
+  #accent.visible { display: block; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="dots">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+  <div id="accent"></div>
+  <div id="text"></div>
+</div>
+
+<script>
+  const hud    = document.getElementById('hud');
+  const dots   = document.getElementById('dots');
+  const accent = document.getElementById('accent');
+  const text   = document.getElementById('text');
+
+  let hideTimer = null;
+
+  function showThinking() {
+    clearTimeout(hideTimer);
+    dots.style.display   = 'flex';
+    accent.classList.remove('visible');
+    text.classList.remove('visible');
+    hud.classList.add('visible');
+  }
+
+  function showResponse(msg) {
+    clearTimeout(hideTimer);
+    const snippet = msg.slice(0, 80) + (msg.length > 80 ? '…' : '');
+    text.textContent = snippet;
+    dots.style.display = 'none';
+    accent.classList.add('visible');
+    text.classList.add('visible');
+    hud.classList.add('visible');
+
+    hideTimer = setTimeout(hideHud, 4000);
+  }
+
+  function hideHud() {
+    hud.classList.remove('visible');
+  }
+
+  // WebSocket connection with auto-reconnect
+  function connect() {
+    const ws = new WebSocket('ws://127.0.0.1:8001/ws');
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ register: 'hud' }));
+    };
+
+    ws.onmessage = (event) => {
+      let data;
+      try { data = JSON.parse(event.data); } catch { return; }
+
+      const type = data.type || data.event || '';
+
+      // Thinking: user sent a message
+      if (type === 'status' && data.msg && data.msg.includes('thinking')) {
+        showThinking();
+        return;
+      }
+
+      // Jarvis responded
+      if (type === 'response' || type === 'RESPONSE' || type === 'assistant') {
+        const msg = data.msg || data.content || data.text || '';
+        if (msg) showResponse(msg);
+        return;
+      }
+
+      // Generic status from Jarvis (shows briefly)
+      if (type === 'status' && data.msg) {
+        showThinking();
+        return;
+      }
+    };
+
+    ws.onclose = () => {
+      setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }
+
+  connect();
+</script>
+</body>
+</html>

@@ -139,3 +139,25 @@ websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
 [2026-04-10T12:16:31] Client registered: cantivia (total: 2)
 [2026-04-10T12:16:31] [cantivia] CLIENT_CONNECT: total_clients=2
 [2026-04-10T12:16:41] connection open
+[2026-04-10T12:29:04] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:29:04] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:29:04] server listening on 127.0.0.1:8002
+[2026-04-10T12:29:04] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:29:08] connection open
+[2026-04-10T12:29:08] Client registered: jarvis (total: 1)
+[2026-04-10T12:29:08] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:29:09] connection open
+[2026-04-10T12:29:09] Client registered: cantivia (total: 2)
+[2026-04-10T12:29:09] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:29:13] connection open
+[2026-04-10T12:39:11] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:39:11] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:39:11] server listening on 127.0.0.1:8002
+[2026-04-10T12:39:11] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:39:16] connection open
+[2026-04-10T12:39:16] Client registered: jarvis (total: 1)
+[2026-04-10T12:39:16] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:39:16] connection open
+[2026-04-10T12:39:16] Client registered: cantivia (total: 2)
+[2026-04-10T12:39:16] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:39:21] connection open

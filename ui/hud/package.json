@@ -1,0 +1,10 @@
+{
+  "name": "jarvis-hud",
+  "version": "1.0.0",
+  "description": "Jarvis always-on-top HUD overlay",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {}
+}
