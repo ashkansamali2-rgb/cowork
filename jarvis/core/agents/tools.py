@@ -17,7 +17,10 @@ AGENTS_MEM_DIR = Path.home() / "cowork" / "agents" / "memory"
 def web_search(query: str) -> str:
     """DuckDuckGo search. Returns top 5 results with titles, URLs, snippets."""
     try:
-        from duckduckgo_search import DDGS
+        try:
+            from ddgs import DDGS  # new package name
+        except ImportError:
+            from duckduckgo_search import DDGS  # legacy fallback
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=5))
         if not results:

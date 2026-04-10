@@ -1,0 +1,4 @@
+Task: research Python asyncio and write a 3 sentence summary
+
+Result:
+Python asyncio is a library designed for concurrent programming that uses coroutines and awaitable tasks instead of traditional multi-threading or multi-processing approaches. It enables efficient I/O operations by allowing non-blocking programs to handle multiple tasks concurrently without the overhead of threads. The library provides tools like EventLoop, run(), and async/await syntax to manage asynchronous operations effectively.
