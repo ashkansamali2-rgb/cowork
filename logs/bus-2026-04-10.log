@@ -552,3 +552,31 @@ websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
 [2026-04-10T16:57:20] Pruned dead client: agent-AGENT-1775836622
 [2026-04-10T16:57:20] Client disconnected: agent-AGENT-1775836622
 [2026-04-10T16:57:20] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T17:00:17] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:00:17] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:00:17] server listening on 127.0.0.1:8002
+[2026-04-10T17:00:17] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:00:20] connection open
+[2026-04-10T17:00:20] Client registered: cli (total: 1)
+[2026-04-10T17:00:20] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:00:21] connection open
+[2026-04-10T17:00:21] Client registered: jarvis (total: 2)
+[2026-04-10T17:00:21] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:00:22] connection open
+[2026-04-10T17:00:22] Client registered: cantivia (total: 3)
+[2026-04-10T17:00:22] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:00:26] connection open
+[2026-04-10T17:02:35] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:02:35] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:02:35] server listening on 127.0.0.1:8002
+[2026-04-10T17:02:35] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:02:38] connection open
+[2026-04-10T17:02:38] Client registered: cli (total: 1)
+[2026-04-10T17:02:38] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:02:39] connection open
+[2026-04-10T17:02:39] Client registered: jarvis (total: 2)
+[2026-04-10T17:02:39] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:02:40] connection open
+[2026-04-10T17:02:40] Client registered: cantivia (total: 3)
+[2026-04-10T17:02:40] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:02:45] connection open
