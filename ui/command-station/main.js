@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -6,6 +6,7 @@ const WebSocket = require('ws')
 
 const isDev = process.env.NODE_ENV !== 'production'
 const CHATS_DIR = path.join(__dirname, 'chats')
+const PROJECTS_DIR = path.join(os.homedir(), 'cowork', 'projects')
 const JARVIS_WS_URL = 'ws://127.0.0.1:8001/ws'
 const BUS_WS_URL = 'ws://127.0.0.1:8002'
 
@@ -15,9 +16,12 @@ let busWs = null
 let jarvisConnected = false
 let busConnected = false
 
-// Ensure chats directory exists
+// Ensure chats and projects directories exist
 if (!fs.existsSync(CHATS_DIR)) {
   fs.mkdirSync(CHATS_DIR, { recursive: true })
+}
+if (!fs.existsSync(PROJECTS_DIR)) {
+  fs.mkdirSync(PROJECTS_DIR, { recursive: true })
 }
 
 function createWindow() {
@@ -68,6 +72,8 @@ function connectJarvis() {
 
     jarvisWs.on('open', () => {
       jarvisConnected = true
+      // Identify this connection so responses are isolated to this client
+      jarvisWs.send(JSON.stringify({ register: 'desktop', client: 'command-station' }))
       sendToRenderer('connection:status', { service: 'jarvis', connected: true })
     })
 
@@ -170,7 +176,12 @@ ipcMain.handle('chat:send', async (event, message) => {
 ipcMain.handle('chat:save', async (event, chat) => {
   try {
     const filename = `${chat.id || Date.now()}.json`
-    const filepath = path.join(CHATS_DIR, filename)
+    let dir = CHATS_DIR
+    if (chat.projectName) {
+      dir = path.join(PROJECTS_DIR, chat.projectName, 'chats')
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+    }
+    const filepath = path.join(dir, filename)
     fs.writeFileSync(filepath, JSON.stringify(chat, null, 2), 'utf8')
     return { ok: true, filepath }
   } catch (err) {
@@ -184,8 +195,9 @@ ipcMain.handle('chat:load', async () => {
     const files = fs.readdirSync(CHATS_DIR).filter(f => f.endsWith('.json'))
     const chats = files.map(file => {
       try {
-        const raw = fs.readFileSync(path.join(CHATS_DIR, file), 'utf8')
-        return JSON.parse(raw)
+        const filepath = path.join(CHATS_DIR, file)
+        const raw = fs.readFileSync(filepath, 'utf8')
+        return { ...JSON.parse(raw), _filePath: filepath }
       } catch {
         return null
       }
@@ -194,6 +206,84 @@ ipcMain.handle('chat:load', async () => {
     return chats
   } catch (err) {
     console.error('[chat:load]', err.message)
+    return []
+  }
+})
+
+ipcMain.handle('chat:delete', async (event, chatPath) => {
+  try {
+    // Security: only allow deleting files within CHATS_DIR or PROJECTS_DIR
+    const resolved = path.resolve(chatPath)
+    const inChats = resolved.startsWith(path.resolve(CHATS_DIR))
+    const inProjects = resolved.startsWith(path.resolve(PROJECTS_DIR))
+    if (!inChats && !inProjects) throw new Error('Path not allowed')
+    if (fs.existsSync(resolved)) fs.unlinkSync(resolved)
+    return { ok: true }
+  } catch (err) {
+    throw new Error(`Failed to delete chat: ${err.message}`)
+  }
+})
+
+ipcMain.handle('projects:list', async () => {
+  try {
+    if (!fs.existsSync(PROJECTS_DIR)) return []
+    const entries = fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })
+    return entries
+      .filter(e => e.isDirectory())
+      .map(e => {
+        const contextPath = path.join(PROJECTS_DIR, e.name, 'context.md')
+        let context = ''
+        try { context = fs.readFileSync(contextPath, 'utf8') } catch {}
+        return { name: e.name, context }
+      })
+  } catch (err) {
+    console.error('[projects:list]', err.message)
+    return []
+  }
+})
+
+ipcMain.handle('projects:create', async (event, { name, context }) => {
+  try {
+    const projectDir = path.join(PROJECTS_DIR, name)
+    const chatsDir = path.join(projectDir, 'chats')
+    fs.mkdirSync(chatsDir, { recursive: true })
+    fs.writeFileSync(path.join(projectDir, 'context.md'), context || '', 'utf8')
+    return { ok: true }
+  } catch (err) {
+    throw new Error(`Failed to create project: ${err.message}`)
+  }
+})
+
+ipcMain.handle('projects:delete', async (event, name) => {
+  try {
+    const projectDir = path.join(PROJECTS_DIR, name)
+    const resolved = path.resolve(projectDir)
+    if (!resolved.startsWith(path.resolve(PROJECTS_DIR))) throw new Error('Path not allowed')
+    if (fs.existsSync(resolved)) fs.rmSync(resolved, { recursive: true, force: true })
+    return { ok: true }
+  } catch (err) {
+    throw new Error(`Failed to delete project: ${err.message}`)
+  }
+})
+
+ipcMain.handle('projects:listChats', async (event, projectName) => {
+  try {
+    const chatsDir = path.join(PROJECTS_DIR, projectName, 'chats')
+    if (!fs.existsSync(chatsDir)) return []
+    const files = fs.readdirSync(chatsDir).filter(f => f.endsWith('.json'))
+    const chats = files.map(file => {
+      try {
+        const filepath = path.join(chatsDir, file)
+        const raw = fs.readFileSync(filepath, 'utf8')
+        return { ...JSON.parse(raw), _filePath: filepath }
+      } catch {
+        return null
+      }
+    }).filter(Boolean)
+    chats.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    return chats
+  } catch (err) {
+    console.error('[projects:listChats]', err.message)
     return []
   }
 })

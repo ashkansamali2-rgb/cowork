@@ -421,6 +421,7 @@ class JarvisCLI(App):
         self._history_idx: int = -1
         self._stopping:    bool = False
         self._boot_done:   bool = False   # guard: finish_boot runs exactly once
+        self._cwd:         str  = os.getcwd()  # capture launch directory
 
         # Background WS thread state
         self._ws_loop:    Optional[asyncio.AbstractEventLoop] = None
@@ -540,6 +541,17 @@ class JarvisCLI(App):
             t.append(f"[{ts()}] ", style="dim #2D2D3F")
             t.append(text, style="#6B6B8A")
             log.write(t)
+
+    def _get_effective_cwd(self) -> str:
+        """Return active working directory: /cd override > launch cwd."""
+        if CWD_FILE.exists():
+            try:
+                val = CWD_FILE.read_text().strip()
+                if val:
+                    return val
+            except Exception:
+                pass
+        return self._cwd
 
     # ── WebSocket thread ──────────────────────────────────────────────────────
     #
@@ -834,7 +846,7 @@ class JarvisCLI(App):
         self._history_idx = -1
 
         self._write_chat(make_user_line(text))
-        self._enqueue_send(json.dumps({"message": text}))
+        self._enqueue_send(json.dumps({"message": text, "cwd": self._get_effective_cwd()}))
 
     # ── Actions ───────────────────────────────────────────────────────────────
 

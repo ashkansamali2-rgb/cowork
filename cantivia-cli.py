@@ -159,13 +159,14 @@ async def run_agent(task: str, agent_id: str, repo_path: str, ws) -> str:
     return f"[Agent {agent_id}] {clean_task[:40]}\n{result[:300]}"
 
 
-async def handle_coding_task(message: str, ws) -> str:
+async def handle_coding_task(message: str, ws, repo_path: str = None) -> str:
+    if repo_path is None:
+        repo_path = DEFAULT_REPO
     # Phase 4: browser fix tasks
     browser_triggers = ["fix localhost", "fix http", "screenshot", "check localhost", "debug localhost"]
     if any(t in message.lower() for t in browser_triggers):
         return await handle_browser_task(message, ws)
 
-    repo_path = DEFAULT_REPO
     if " in ~/" in message:
         parts = message.split(" in ~/")
         message = parts[0].strip()
@@ -207,7 +208,8 @@ async def main():
                 async for raw in ws:
                     event = json.loads(raw)
                     if event.get("type") == "TASK_CODING":
-                        result = await handle_coding_task(event.get("msg", ""), ws)
+                        event_cwd = event.get("cwd") or DEFAULT_REPO
+                        result = await handle_coding_task(event.get("msg", ""), ws, repo_path=event_cwd)
                         await ws.send(json.dumps({"type": "TASK_VOICE", "msg": result}))
                     elif event.get("type") == "STATUS":
                         log.info(f"[BUS] {event.get('msg')}")

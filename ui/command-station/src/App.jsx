@@ -29,10 +29,19 @@ export default function App() {
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
-  const [statusText, setStatusText] = useState('')   // subtle status indicator
+  const [statusText, setStatusText] = useState('')
+
+  // Projects state
+  const [projects, setProjects] = useState([])
+  const [activeProject, setActiveProject] = useState(null)
+  const [projectChats, setProjectChats] = useState({})
+  const isFirstMessageRef = useRef(true)
 
   const activeChatIdRef = useRef(null)
   activeChatIdRef.current = activeChatId
+
+  const activeProjectRef = useRef(null)
+  activeProjectRef.current = activeProject
 
   // ── Setup listeners on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -42,16 +51,17 @@ export default function App() {
     api.loadChats().then(loaded => setChats(loaded || [])).catch(console.error)
     api.getConnectionStatus().then(s => setConnections({ jarvis: s.jarvis, bus: s.bus })).catch(() => {})
 
-    // Stream handler — only 'final' type messages arrive here (after main.js routing)
+    // Load projects
+    api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
+
     const handleStream = (data) => {
       if (data.done) {
         setIsStreaming(false)
         setStatusText('')
-        // Finalize: mark last assistant message as not streaming
         setMessages(prev => {
           const updated = prev.map(m =>
             m.id === TYPING_ID
-              ? null  // remove stale typing bubble if final arrived without content
+              ? null
               : m.role === 'assistant' && m.streaming
               ? { ...m, streaming: false }
               : m
@@ -61,7 +71,6 @@ export default function App() {
       } else if (data.content) {
         setIsStreaming(true)
         setMessages(prev => {
-          // Replace typing bubble with real content, or append to existing streaming msg
           const withoutTyping = prev.filter(m => m.id !== TYPING_ID)
           const last = withoutTyping[withoutTyping.length - 1]
           if (last && last.role === 'assistant' && last.streaming) {
@@ -84,7 +93,6 @@ export default function App() {
       }
     }
 
-    // Status handler — show as subtle text indicator, not a chat bubble
     const handleStatus = (data) => {
       if (data.text) setStatusText(data.text)
     }
@@ -134,17 +142,33 @@ export default function App() {
           .filter(m => m.id !== TYPING_ID)
           .map(m => ({ ...m, streaming: false })),
         updatedAt: Date.now(),
+        projectName: activeProjectRef.current?.name || null,
       }
       api.saveChat(chat).then(() => {
-        setChats(prev => {
-          const idx = prev.findIndex(c => c.id === activeChatIdRef.current)
-          if (idx >= 0) {
-            const updated = [...prev]
-            updated[idx] = chat
-            return updated
-          }
-          return [chat, ...prev]
-        })
+        if (activeProjectRef.current) {
+          // Update project chats
+          setProjectChats(prev => {
+            const projName = activeProjectRef.current.name
+            const existing = prev[projName] || []
+            const idx = existing.findIndex(c => c.id === chat.id)
+            if (idx >= 0) {
+              const updated = [...existing]
+              updated[idx] = chat
+              return { ...prev, [projName]: updated }
+            }
+            return { ...prev, [projName]: [chat, ...existing] }
+          })
+        } else {
+          setChats(prev => {
+            const idx = prev.findIndex(c => c.id === activeChatIdRef.current)
+            if (idx >= 0) {
+              const updated = [...prev]
+              updated[idx] = chat
+              return updated
+            }
+            return [chat, ...prev]
+          })
+        }
       }).catch(console.error)
     }, 1000)
   }, [messages, isStreaming])
@@ -155,6 +179,8 @@ export default function App() {
     setMessages([])
     setIsStreaming(false)
     setStatusText('')
+    setActiveProject(null)
+    isFirstMessageRef.current = true
   }, [])
 
   const handleSelectChat = useCallback((chat) => {
@@ -162,7 +188,87 @@ export default function App() {
     setMessages(chat.messages || [])
     setIsStreaming(false)
     setStatusText('')
+    isFirstMessageRef.current = false
   }, [])
+
+  const handleDeleteChat = useCallback(async (chat) => {
+    const api = window.jarvis
+    if (!api) return
+    if (!window.confirm('Delete this chat?')) return
+    try {
+      if (chat._filePath) await api.deleteChat(chat._filePath)
+      if (activeProject) {
+        setProjectChats(prev => {
+          const projName = activeProject.name
+          return { ...prev, [projName]: (prev[projName] || []).filter(c => c.id !== chat.id) }
+        })
+      } else {
+        setChats(prev => prev.filter(c => c.id !== chat.id))
+      }
+      if (activeChatId === chat.id) {
+        setActiveChatId(null)
+        setMessages([])
+      }
+    } catch (err) {
+      console.error('Failed to delete chat:', err)
+    }
+  }, [activeChatId, activeProject])
+
+  const handleNewProjectChat = useCallback(async (project) => {
+    const api = window.jarvis
+    const chatId = generateId()
+    setActiveChatId(chatId)
+    setMessages([])
+    setIsStreaming(false)
+    setStatusText('')
+    setActiveProject(project)
+    isFirstMessageRef.current = true
+
+    // Load project chats if not already loaded
+    if (api && !projectChats[project.name]) {
+      const chats = await api.listProjectChats(project.name).catch(() => [])
+      setProjectChats(prev => ({ ...prev, [project.name]: chats }))
+    }
+  }, [projectChats])
+
+  const handleSelectProjectChatAndLoadChats = useCallback(async (project) => {
+    const api = window.jarvis
+    if (!api) return
+    if (!projectChats[project.name]) {
+      const chats = await api.listProjectChats(project.name).catch(() => [])
+      setProjectChats(prev => ({ ...prev, [project.name]: chats }))
+    }
+  }, [projectChats])
+
+  const handleCreateProject = useCallback(async (name, context) => {
+    const api = window.jarvis
+    if (!api) return
+    try {
+      await api.createProject(name, context)
+      const loaded = await api.listProjects()
+      setProjects(loaded || [])
+    } catch (err) {
+      console.error('Failed to create project:', err)
+    }
+  }, [])
+
+  const handleDeleteProject = useCallback(async (name) => {
+    const api = window.jarvis
+    if (!api) return
+    if (!window.confirm(`Delete project "${name}" and all its chats?`)) return
+    try {
+      await api.deleteProject(name)
+      setProjects(prev => prev.filter(p => p.name !== name))
+      setProjectChats(prev => { const n = { ...prev }; delete n[name]; return n })
+      if (activeProject?.name === name) {
+        setActiveProject(null)
+        setActiveChatId(null)
+        setMessages([])
+      }
+    } catch (err) {
+      console.error('Failed to delete project:', err)
+    }
+  }, [activeProject])
 
   const handleSendMessage = useCallback(async (text) => {
     if (!text.trim() || isStreaming) return
@@ -175,14 +281,23 @@ export default function App() {
       setActiveChatId(chatId)
     }
 
+    // Inject project context on first message
+    let messageToSend = text.trim()
+    const proj = activeProjectRef.current
+    if (proj && isFirstMessageRef.current && proj.context) {
+      messageToSend = `[Project Context]\n${proj.context}\n\n[User]\n${text.trim()}`
+      isFirstMessageRef.current = false
+    } else {
+      isFirstMessageRef.current = false
+    }
+
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: 'user',
-      content: text.trim(),
+      content: text.trim(), // display original text, not the injected version
       timestamp: Date.now(),
     }
 
-    // Push user message + immediate typing bubble
     const typingBubble = {
       id: TYPING_ID,
       role: 'assistant',
@@ -193,9 +308,8 @@ export default function App() {
     setIsStreaming(true)
 
     try {
-      await api.sendMessage(text.trim())
+      await api.sendMessage(messageToSend)
     } catch (err) {
-      // Remove typing bubble, show error
       setMessages(prev => [
         ...prev.filter(m => m.id !== TYPING_ID),
         {
@@ -226,8 +340,22 @@ export default function App() {
           connections={connections}
           onNewChat={handleNewChat}
           onSelectChat={handleSelectChat}
+          onDeleteChat={handleDeleteChat}
+          projects={projects}
+          activeProject={activeProject?.name}
+          onNewProjectChat={handleNewProjectChat}
+          onCreateProject={handleCreateProject}
+          onDeleteProject={handleDeleteProject}
+          projectChats={projectChats}
         />
         <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
+          {activeProject && (
+            <div className="flex-shrink-0 px-4 py-1.5 border-b border-[#EAE6DF] bg-[#F5F1EB]">
+              <span className="text-xs text-[#7C3AED] font-medium">
+                Project: {activeProject.name}
+              </span>
+            </div>
+          )}
           <ChatArea
             messages={messages}
             statusText={statusText}
