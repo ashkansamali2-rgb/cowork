@@ -26,6 +26,7 @@ export default function App() {
   const [agentStatuses, setAgentStatuses] = useState({
     gemma: 'idle', qwen: 'idle', cantivia: 'idle',
   })
+  const [agentSteps, setAgentSteps] = useState({}) // { agent_id: [{ step, action, observation }] }
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
@@ -66,12 +67,22 @@ export default function App() {
         localStorage.setItem('activeChatId', toRestore.id)
       }
     }).catch(console.error)
-    api.getConnectionStatus().then(s => setConnections({ jarvis: s.jarvis, bus: s.bus })).catch(() => {})
+    api.getConnectionStatus().then(s => setConnections({ jarvis: s.jarvis, bus: s.bus })).catch(() => { })
 
     // Load projects
     api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
 
     const handleStream = (data) => {
+      // Handle live agent step updates
+      if (data.type === 'agent_update') {
+        const { agent_id, step, action, observation } = data
+        setAgentSteps(prev => ({
+          ...prev,
+          [agent_id]: [...(prev[agent_id] || []), { step, action, observation }],
+        }))
+        return
+      }
+
       if (data.done) {
         setIsStreaming(false)
         setStatusText('')
@@ -80,8 +91,8 @@ export default function App() {
             m.id === TYPING_ID
               ? null
               : m.role === 'assistant' && m.streaming
-              ? { ...m, streaming: false }
-              : m
+                ? { ...m, streaming: false }
+                : m
           ).filter(Boolean)
           return updated
         })
@@ -117,6 +128,12 @@ export default function App() {
     const handleBusEvent = (event) => {
       if (event.type === 'agent_status') {
         setAgentStatuses(prev => ({ ...prev, [event.agent]: event.status }))
+      } else if (event.type === 'AGENT_UPDATE' || event.type === 'agent_update') {
+        const { agent_id, step, action, observation } = event
+        setAgentSteps(prev => ({
+          ...prev,
+          [agent_id]: [...(prev[agent_id] || []), { step, action, observation }],
+        }))
       } else if (event.type === 'task_progress' || event.type === 'spawn_progress') {
         setTaskProgress(prev => [...prev, {
           id: Date.now(),
@@ -360,7 +377,7 @@ export default function App() {
           const result = await window.jarvis.readProjectFile(proj.name, filename)
           const ext = filename.split('.').pop() || ''
           contextBlock += `[Project File: ${filename}]\n\`\`\`${ext}\n${result.contents}\n\`\`\`\n\n`
-        } catch {}
+        } catch { }
       }
       if (contextBlock) messageToSend = `${contextBlock}[User]\n${text.trim()}`
       isFirstMessageRef.current = false
@@ -441,6 +458,7 @@ export default function App() {
           <ChatArea
             messages={messages}
             statusText={statusText}
+            agentSteps={agentSteps}
           />
           <InputBar
             onSend={handleSendMessage}

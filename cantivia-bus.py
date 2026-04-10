@@ -61,6 +61,7 @@ TASK_SHELL     = "TASK_SHELL"     # either → run shell command via Jarvis tool
 HEARTBEAT      = "HEARTBEAT"      # Jarvis heartbeat engine events
 AGENT_SPAWN    = "AGENT_SPAWN"    # autonomous background agent task
 AGENT_STATUS   = "AGENT_STATUS"   # agent progress/completion update: {agent_id, status, message}
+AGENT_UPDATE   = "AGENT_UPDATE"   # live ReAct step update: {agent_id, step, action, observation}
 SCREENSHOT     = "SCREENSHOT"     # Playwright screenshot result from CLI
 STATUS         = "STATUS"         # generic status update
 RESULT         = "RESULT"         # task result
@@ -165,6 +166,14 @@ async def route_event(sender_id: str, event: dict):
         log.info(f"AGENT_STATUS [{agent_id}] {status}: {message}")
         bus_log(sender_id, f"AGENT_STATUS_{status.upper()}", f"agent={agent_id} {message[:100]}")
         await broadcast(event, exclude=sender_id)
+
+    elif etype == AGENT_UPDATE:
+        # Live ReAct step update from AgentRuntime — broadcast to all clients
+        agent_id = event.get("agent_id", "unknown")
+        step     = event.get("step", 0)
+        log.info(f"AGENT_UPDATE [{agent_id}] step={step}: {str(event.get('action', ''))[:80]}")
+        bus_log(sender_id, "AGENT_UPDATE", f"agent_id={agent_id} step={step}")
+        await broadcast(event)  # all clients including sender (desktop needs it too)
 
     elif etype == SCREENSHOT:
         # Playwright screenshot from Cantivia → send to Jarvis for visual analysis

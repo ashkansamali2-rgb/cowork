@@ -809,6 +809,21 @@ class JarvisCLI(App):
             if content:
                 self._write_chat(make_jarvis_line(content, "stream"))
 
+        elif msg_type == "agent_update":
+            agent_id = data.get("agent_id", "?")
+            step     = data.get("step", 0)
+            action   = data.get("action", "?")
+            obs      = strip_ansi(str(data.get("observation", ""))).strip()
+            t = Text()
+            t.append(f"[{ts()}] ", style="dim #6B6B8A")
+            t.append(f"[AGENT-{agent_id}] ", style="bold #F59E0B")
+            t.append(f"Step {step}: ", style="#FCD34D")
+            t.append(f"{action}", style="bold #FBBF24")
+            if obs:
+                t.append(f" — {obs[:100]}", style="#9CA3AF")
+            self._write_chat(t)
+            self._write_bus(f"[AGENT-{agent_id}] step={step} {action}")
+
         # all other types: silently ignore
 
     def _update_conn_label(self, which: str, connected: bool):
