@@ -580,3 +580,17 @@ websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
 [2026-04-10T17:02:40] Client registered: cantivia (total: 3)
 [2026-04-10T17:02:40] [cantivia] CLIENT_CONNECT: total_clients=3
 [2026-04-10T17:02:45] connection open
+[2026-04-10T17:07:08] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:07:08] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:07:08] server listening on 127.0.0.1:8002
+[2026-04-10T17:07:08] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:07:11] connection open
+[2026-04-10T17:07:11] Client registered: cli (total: 1)
+[2026-04-10T17:07:11] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:07:12] connection open
+[2026-04-10T17:07:12] Client registered: jarvis (total: 2)
+[2026-04-10T17:07:12] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:07:13] connection open
+[2026-04-10T17:07:13] Client registered: cantivia (total: 3)
+[2026-04-10T17:07:13] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:07:18] connection open
