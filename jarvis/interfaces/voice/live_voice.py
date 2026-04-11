@@ -175,7 +175,7 @@ async def listen_and_send():
                         if any(w in text for w in ["stop", "cancel", "abort"]):
                             print("[Ears] Kill switch.")
                             asyncio.run_coroutine_threadsafe(
-                                ws.send(json.dumps({"message": "SYSTEM_COMMAND_STOP"})), loop
+                                ws.send(json.dumps({"message": "SYSTEM_COMMAND_STOP", "source": "voice"})), loop
                             )
                             waiting_since_ref[0] = None
                             continue
@@ -186,7 +186,7 @@ async def listen_and_send():
                                 print(f"[Ears] → Brain: {command}")
                                 waiting_since_ref[0] = time.monotonic()
                                 asyncio.run_coroutine_threadsafe(
-                                    ws.send(json.dumps({"message": command})), loop
+                                    ws.send(json.dumps({"message": command, "source": "voice"})), loop
                                 )
                             else:
                                 print("[Ears] Wake word heard, no command.")
