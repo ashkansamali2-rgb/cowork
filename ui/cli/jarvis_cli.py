@@ -17,6 +17,12 @@ from typing import Optional
 
 import websockets
 from rich.text import Text
+
+try:
+    import pyperclip
+    _PYPERCLIP_OK = True
+except ImportError:
+    _PYPERCLIP_OK = False
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
@@ -111,6 +117,7 @@ Screen {
     width: 70%;
     border-right: tall #2D2D3F;
     layout: vertical;
+    scrollbar-gutter: stable;
 }
 
 #chat-log {
@@ -410,11 +417,12 @@ class JarvisCLI(App):
     TITLE = "JARVIS CLI"
 
     BINDINGS = [
-        Binding("ctrl+c", "quit",         "Quit",        show=True),
-        Binding("ctrl+q", "quit",         "Quit",        show=True),
-        Binding("ctrl+l", "clear_chat",   "Clear",       show=True),
-        Binding("up",     "history_up",   "Hist-up",     show=False),
-        Binding("down",   "history_down", "Hist-dn",     show=False),
+        Binding("ctrl+c",       "quit",         "Quit",        show=True),
+        Binding("ctrl+q",       "quit",         "Quit",        show=True),
+        Binding("ctrl+l",       "clear_chat",   "Clear",       show=True),
+        Binding("ctrl+shift+c", "copy_last",    "Copy",        show=False),
+        Binding("up",           "history_up",   "Hist-up",     show=False),
+        Binding("down",         "history_down", "Hist-dn",     show=False),
     ]
 
     def __init__(self):
@@ -427,6 +435,8 @@ class JarvisCLI(App):
         self._agents:        dict = {}  # {id: {"task": str, "status": str}}
         self._agent_counter: int  = 0
         self._pending_rm:    str  = ""  # path awaiting /rm confirmation
+        self._last_response: str  = ""  # last Jarvis response text
+        self._chat_lines:    list = []  # plain-text log for /save
 
         # Background WS thread state (Jarvis)
         self._ws_loop:       Optional[asyncio.AbstractEventLoop] = None
@@ -541,6 +551,10 @@ class JarvisCLI(App):
         log = self._chat_log()
         if log:
             log.write(line)
+        # record plain text for /save
+        plain = line.plain if isinstance(line, Text) else str(line)
+        if plain.strip():
+            self._chat_lines.append(plain)
 
     def _write_bus(self, text: str):
         log = self._bus_log()
@@ -796,6 +810,7 @@ class JarvisCLI(App):
 
         elif msg_type in ("final", "done"):
             if content:
+                self._last_response = content
                 for line in parse_and_render(content, "final"):
                     self._write_chat(line)
             sep = Text()
@@ -937,6 +952,8 @@ class JarvisCLI(App):
                 _cmd_line("/project [name]",      "Set current project context"),
                 _dim_line("─── General ─────────────────────────────────────────────"),
                 _cmd_line("/clear",               "Clear chat panel"),
+                _cmd_line("/copy",                "Copy last Jarvis response to clipboard"),
+                _cmd_line("/save [filename]",     "Save chat history to ~/Desktop/[filename].txt"),
                 _cmd_line("/exit",                "Quit the CLI"),
                 Text(""),
             ]
@@ -1265,6 +1282,30 @@ class JarvisCLI(App):
             self._write_chat(make_jarvis_line(f"Working dir: {home}", "status"))
             return True
 
+        if cmd == "/copy":
+            if not self._last_response:
+                self._write_chat(make_jarvis_line("No Jarvis response to copy yet.", "error"))
+                return True
+            if not _PYPERCLIP_OK:
+                self._write_chat(make_jarvis_line(
+                    "pyperclip not installed. Run: pip install pyperclip", "error"))
+                return True
+            pyperclip.copy(self._last_response)
+            self._write_chat(make_jarvis_line("[Copied to clipboard]", "status"))
+            return True
+
+        if cmd == "/save":
+            filename = arg if arg else f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            if not filename.endswith(".txt"):
+                filename += ".txt"
+            dest = Path.home() / "Desktop" / filename
+            try:
+                dest.write_text("\n".join(self._chat_lines), encoding="utf-8")
+                self._write_chat(make_jarvis_line(f"Chat saved to: {dest}", "status"))
+            except Exception as e:
+                self._write_chat(make_jarvis_line(f"Save failed: {e}", "error"))
+            return True
+
         return False  # unknown slash command — fall through to Jarvis
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -1323,6 +1364,18 @@ class JarvisCLI(App):
         if self._ws_loop is not None and self._send_queue is not None:
             self._ws_loop.call_soon_threadsafe(self._send_queue.put_nowait, None)
         self.exit()
+
+    def action_copy_last(self):
+        """Ctrl+Shift+C — copy last Jarvis response to clipboard."""
+        if not self._last_response:
+            self._write_chat(make_jarvis_line("No Jarvis response to copy yet.", "error"))
+            return
+        if not _PYPERCLIP_OK:
+            self._write_chat(make_jarvis_line(
+                "pyperclip not installed. Run: pip install pyperclip", "error"))
+            return
+        pyperclip.copy(self._last_response)
+        self._write_chat(make_jarvis_line("[Copied to clipboard]", "status"))
 
     def action_clear_chat(self):
         log = self._chat_log()
