@@ -85,18 +85,18 @@ function connectJarvis() {
         const clean = raw.replace(/\x1b\[[0-9;]*m/g, '').trim()
 
         if (msg.type === 'final') {
-          // Only final messages appear as Jarvis chat responses
-          sendToRenderer('chat:stream', { content: clean, done: false })
-          sendToRenderer('chat:stream', { content: '', done: true })
+          // Forward with type intact so App.jsx agent-done handler fires
+          sendToRenderer('chat:stream', { type: 'final', msg: clean })
         } else if (msg.type === 'status') {
-          // Status messages shown as a subtle indicator, not a chat bubble
           sendToRenderer('chat:status', { text: clean })
         } else if (msg.type === 'ack') {
-          // Ignored entirely
+          sendToRenderer('chat:stream', { type: 'ack', msg: clean })
         } else if (msg.type === 'stream') {
           sendToRenderer('chat:stream', { content: clean, done: false })
+        } else if (msg.type === 'agent_start' || msg.type === 'agent_update') {
+          // Forward agent events to renderer for agent panel
+          sendToRenderer('chat:stream', msg)
         }
-        // All other types: silently ignore
       } catch {
         // Non-JSON: ignore
       }

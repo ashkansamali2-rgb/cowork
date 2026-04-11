@@ -11,9 +11,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Callable
 
-import anthropic
-from config import ANTHROPIC_API_KEY
-
 AGENTS_DIR = Path.home() / "cowork" / "agents"
 
 _THINK_SYSTEM = """\
@@ -246,14 +243,14 @@ class AgentRuntime:
         return action, args
 
     def _think(self, prompt: str) -> str:
-        """Call Claude API for ReAct Think steps (tool selection)."""
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return message.content[0].text
+        """Call local Qwen for ReAct Think steps (tool selection)."""
+        import requests
+        r = requests.post("http://localhost:8081/v1/chat/completions", json={
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,
+            "max_tokens": 500
+        }, timeout=120)
+        return r.json()["choices"][0]["message"]["content"].strip()
 
     def _call_qwen(self, system_prompt: str, user_prompt: str) -> str:
         import requests
