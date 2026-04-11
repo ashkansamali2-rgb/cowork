@@ -227,20 +227,82 @@ class AgentRuntime:
         return "\n".join(lines)
 
     def _parse_action(self, text: str) -> tuple[Optional[str], Any]:
-        """Parse ACTION/ARGS from LLM response."""
-        action_m = re.search(r'ACTION:\s*(\w+)', text)
-        args_m   = re.search(r'ARGS:\s*(\{.*?\})', text, re.DOTALL)
-        if not action_m:
-            return None, {}
-        action = action_m.group(1).strip()
-        args = {}
-        if args_m:
-            try:
-                args = json.loads(args_m.group(1))
-            except json.JSONDecodeError:
-                # Try to extract key-value pairs
-                args = {}
-        return action, args
+        """Parse tool call from LLM response. Handles multiple formats:
+          - ACTION: tool_name\nARGS: {"key": "value"}
+          - TOOL: tool_name\nARGS: {"key": "value"}
+          - ACTION: tool_name\nINPUT: value
+          - tool_name({"key": "value"})
+          - tool_name("simple string arg")
+          - tool_name: simple string arg
+        For single-argument tools, unwraps dict to the plain value.
+        """
+        SINGLE_ARG_TOOLS = {"web_search", "fetch_url", "open_app", "speak",
+                            "run_shell", "read_file", "list_dir", "set_clipboard",
+                            "spawn_subagent", "focus_app", "recall", "summarize"}
+
+        def _unwrap_single(tool_name: str, args):
+            """If tool takes a single arg and args is a 1-key dict, extract the value."""
+            if tool_name in SINGLE_ARG_TOOLS and isinstance(args, dict) and len(args) == 1:
+                return next(iter(args.values()))
+            return args
+
+        # 1. ACTION/TOOL: name  +  ARGS/INPUT: json-or-string
+        action_m = re.search(r'(?:ACTION|TOOL):\s*(\w+)', text)
+        if action_m:
+            action = action_m.group(1).strip()
+            # Try ARGS: {...}
+            args_m = re.search(r'ARGS:\s*(\{.*?\})', text, re.DOTALL)
+            if args_m:
+                try:
+                    args = json.loads(args_m.group(1))
+                    return action, _unwrap_single(action, args)
+                except json.JSONDecodeError:
+                    pass
+            # Try INPUT: value
+            input_m = re.search(r'INPUT:\s*(.+)', text)
+            if input_m:
+                val = input_m.group(1).strip()
+                # Try to parse as JSON
+                try:
+                    args = json.loads(val)
+                    return action, _unwrap_single(action, args)
+                except (json.JSONDecodeError, ValueError):
+                    return action, val
+            return action, {}
+
+        # 2. tool_name({"key": "value"})  or  tool_name("string")
+        call_m = re.search(r'(\w+)\s*\(\s*(.*?)\s*\)\s*$', text, re.DOTALL)
+        if call_m:
+            action = call_m.group(1).strip()
+            raw    = call_m.group(2).strip()
+            if raw:
+                # Try JSON object
+                try:
+                    args = json.loads(raw)
+                    return action, _unwrap_single(action, args)
+                except (json.JSONDecodeError, ValueError):
+                    pass
+                # Try quoted string
+                if (raw.startswith('"') and raw.endswith('"')) or \
+                   (raw.startswith("'") and raw.endswith("'")):
+                    return action, raw[1:-1]
+                return action, raw
+            return action, {}
+
+        # 3. tool_name: simple string arg  (no parens)
+        colon_m = re.match(r'(\w+)\s*:\s*(.+)', text.strip())
+        if colon_m:
+            action = colon_m.group(1).strip()
+            val    = colon_m.group(2).strip()
+            # Only treat as tool call if action is a known keyword-free identifier
+            if action not in ("FINAL_ANSWER", "OBSERVE", "THOUGHT", "THINK"):
+                try:
+                    args = json.loads(val)
+                    return action, _unwrap_single(action, args)
+                except (json.JSONDecodeError, ValueError):
+                    return action, val
+
+        return None, {}
 
     def _think(self, prompt: str) -> str:
         """Call local Qwen for ReAct Think steps (tool selection)."""

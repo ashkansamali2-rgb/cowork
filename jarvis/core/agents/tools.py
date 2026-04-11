@@ -16,6 +16,8 @@ AGENTS_MEM_DIR = Path.home() / "cowork" / "agents" / "memory"
 # ── web_search(query: str) ─────────────────────────────────────────────────────
 def web_search(query: str) -> str:
     """DuckDuckGo search. Returns top 5 results with titles, URLs, snippets."""
+    if not query:
+        return "Error: query is required"
     try:
         try:
             from ddgs import DDGS  # new package name
@@ -38,6 +40,8 @@ def web_search(query: str) -> str:
 # ── fetch_url(url: str) ────────────────────────────────────────────────────────
 def fetch_url(url: str) -> str:
     """Fetch webpage and extract clean text using BeautifulSoup."""
+    if not url:
+        return "Error: url is required"
     try:
         import requests
         from bs4 import BeautifulSoup
@@ -201,26 +205,165 @@ def focus_app(name: str) -> str:
 
 
 # ── create_keynote_presentation(title, slides) ────────────────────────────────
-def create_keynote_presentation(title: str, slides: list) -> str:
-    """Create a Keynote presentation. slides = list of {title, content} dicts."""
-    try:
-        import os as _os
-        output_path = _os.path.expanduser(f"~/Desktop/{title}.key")
-        slide_lines = []
-        for i, slide in enumerate(slides):
-            st = slide.get('title', f'Slide {i+1}').replace('"', '\\"')
-            sc = slide.get('content', '').replace('"', '\\"').replace('\n', '\\n')
-            if i == 0:
-                slide_lines.append(f'set the object text of the default title item of slide 1 to "{st}"')
-                if sc:
-                    slide_lines.append(f'set the object text of the default body item of slide 1 to "{sc}"')
+def create_keynote_presentation(title=None, slides=None, content=None) -> str:
+    """Create a dark-themed PowerPoint presentation using python-pptx.
+    Can be called as:
+      create_keynote_presentation(title, slides)  where slides = list of {title, content} dicts
+      create_keynote_presentation(content=string)  where string is parsed to extract title/slides
+      create_keynote_presentation(string)          single positional string argument
+    Falls back to osascript Keynote if python-pptx fails.
+    """
+    import re as _re
+
+    # ── Normalise arguments ────────────────────────────────────────────────────
+    # If called with a single positional string (title is actually the content)
+    if title is not None and slides is None and content is None and isinstance(title, str) and '\n' in title:
+        # Looks like full content was passed as title
+        content = title
+        title = None
+
+    # Parse content string into title + slides list
+    if content is not None and isinstance(content, str):
+        lines = content.strip().splitlines()
+        # Try to extract a title from the first non-empty line
+        parsed_title = None
+        for line in lines:
+            stripped = line.strip()
+            if stripped:
+                parsed_title = _re.sub(r'^#+\s*', '', stripped)
+                break
+        title = parsed_title or "Presentation"
+        # Build slides from sections (## headings or numbered items)
+        slides = []
+        current = None
+        for line in lines[1:]:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if _re.match(r'^#{1,3}\s+', stripped) or _re.match(r'^\d+[\.\)]\s+', stripped):
+                if current:
+                    slides.append(current)
+                slide_title = _re.sub(r'^#{1,3}\s+', '', stripped)
+                slide_title = _re.sub(r'^\d+[\.\)]\s+', '', slide_title)
+                current = {"title": slide_title, "content": ""}
             else:
-                slide_lines.append(f'set ns to duplicate slide 1 to end of slides')
-                slide_lines.append(f'set the object text of the default title item of ns to "{st}"')
-                if sc:
-                    slide_lines.append(f'set the object text of the default body item of ns to "{sc}"')
-        slides_script = '\n'.join(slide_lines)
-        script = f'''tell application "Keynote"
+                if current is None:
+                    current = {"title": title, "content": ""}
+                current["content"] = (current["content"] + "\n" + stripped).strip()
+        if current:
+            slides.append(current)
+        if not slides:
+            slides = [{"title": title, "content": content[:500]}]
+
+    # Final defaults
+    if title is None:
+        title = "Presentation"
+    if not slides:
+        slides = [{"title": title, "content": ""}]
+
+    # ── python-pptx primary method ─────────────────────────────────────────────
+    try:
+        from pptx import Presentation as _Presentation
+        from pptx.util import Inches, Pt
+        from pptx.dml.color import RGBColor
+        from pptx.enum.text import PP_ALIGN
+
+        COLOR_BG      = RGBColor(0x1a, 0x1a, 0x2e)
+        COLOR_ACCENT  = RGBColor(0x7C, 0x3A, 0xED)
+        COLOR_WHITE   = RGBColor(0xFF, 0xFF, 0xFF)
+        COLOR_LIGHT   = RGBColor(0xCC, 0xCC, 0xFF)
+
+        prs = _Presentation()
+        prs.slide_width  = Inches(13.33)
+        prs.slide_height = Inches(7.5)
+
+        blank_layout = prs.slide_layouts[6]  # completely blank
+
+        def _set_bg(slide):
+            fill = slide.background.fill
+            fill.solid()
+            fill.fore_color.rgb = COLOR_BG
+
+        def _add_rect(slide, left, top, width, height, color):
+            from pptx.util import Emu
+            shape = slide.shapes.add_shape(
+                1,  # MSO_SHAPE_TYPE.RECTANGLE
+                left, top, width, height
+            )
+            shape.fill.solid()
+            shape.fill.fore_color.rgb = color
+            shape.line.fill.background()  # no border
+
+        def _add_textbox(slide, text, left, top, width, height, font_size=24,
+                         bold=False, color=None, align=PP_ALIGN.LEFT, wrap=True):
+            txb = slide.shapes.add_textbox(left, top, width, height)
+            tf  = txb.text_frame
+            tf.word_wrap = wrap
+            p   = tf.paragraphs[0]
+            p.alignment = align
+            run = p.add_run()
+            run.text = text
+            run.font.size = Pt(font_size)
+            run.font.bold = bold
+            run.font.color.rgb = color or COLOR_WHITE
+
+        # Title slide
+        title_slide = prs.slides.add_slide(blank_layout)
+        _set_bg(title_slide)
+        # Accent bar
+        _add_rect(title_slide, Inches(0), Inches(3.2), Inches(13.33), Inches(0.08), COLOR_ACCENT)
+        _add_textbox(title_slide, title,
+                     Inches(1), Inches(2.2), Inches(11.33), Inches(1.5),
+                     font_size=44, bold=True, color=COLOR_WHITE, align=PP_ALIGN.CENTER)
+        _add_textbox(title_slide, f"{len(slides)} topics",
+                     Inches(1), Inches(3.5), Inches(11.33), Inches(0.6),
+                     font_size=20, color=COLOR_LIGHT, align=PP_ALIGN.CENTER)
+
+        # Content slides
+        for slide_data in slides:
+            sl = prs.slides.add_slide(blank_layout)
+            _set_bg(sl)
+            # Top accent bar
+            _add_rect(sl, Inches(0), Inches(0), Inches(13.33), Inches(0.06), COLOR_ACCENT)
+            slide_title   = slide_data.get("title", "")
+            slide_content = slide_data.get("content", "")
+            _add_textbox(sl, slide_title,
+                         Inches(0.5), Inches(0.2), Inches(12.33), Inches(1.0),
+                         font_size=32, bold=True, color=COLOR_ACCENT)
+            if slide_content:
+                # Split into bullet lines
+                bullet_lines = [ln.strip() for ln in slide_content.splitlines() if ln.strip()]
+                display_text = "\n".join(f"• {ln}" for ln in bullet_lines[:12])
+                _add_textbox(sl, display_text,
+                             Inches(0.5), Inches(1.4), Inches(12.33), Inches(5.5),
+                             font_size=20, color=COLOR_LIGHT)
+
+        safe_title = _re.sub(r'[^a-zA-Z0-9_\- ]', '', title).strip().replace(' ', '-') or 'Presentation'
+        output_path = os.path.expanduser(f"~/Desktop/{safe_title}.pptx")
+        prs.save(output_path)
+        os.system(f'open "{output_path}"')
+        return f"PowerPoint presentation created and opened: {output_path}"
+
+    except Exception as pptx_err:
+        # ── osascript Keynote fallback ─────────────────────────────────────────
+        try:
+            import os as _os
+            output_path = _os.path.expanduser(f"~/Desktop/{title}.key")
+            slide_lines = []
+            for i, slide in enumerate(slides):
+                st = slide.get('title', f'Slide {i+1}').replace('"', '\\"')
+                sc = slide.get('content', '').replace('"', '\\"').replace('\n', '\\n')
+                if i == 0:
+                    slide_lines.append(f'set the object text of the default title item of slide 1 to "{st}"')
+                    if sc:
+                        slide_lines.append(f'set the object text of the default body item of slide 1 to "{sc}"')
+                else:
+                    slide_lines.append(f'set ns to duplicate slide 1 to end of slides')
+                    slide_lines.append(f'set the object text of the default title item of ns to "{st}"')
+                    if sc:
+                        slide_lines.append(f'set the object text of the default body item of ns to "{sc}"')
+            slides_script = '\n'.join(slide_lines)
+            script = f'''tell application "Keynote"
     activate
     set newDoc to make new document with properties {{document theme:theme "White"}}
     tell newDoc
@@ -228,12 +371,12 @@ def create_keynote_presentation(title: str, slides: list) -> str:
     end tell
     save newDoc in POSIX file "{output_path}"
 end tell'''
-        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-        if result.returncode == 0:
-            return f"Keynote presentation created: {output_path}"
-        return f"create_keynote_presentation error: {result.stderr.strip()}"
-    except Exception as e:
-        return f"create_keynote_presentation failed: {e}"
+            result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+            if result.returncode == 0:
+                return f"Keynote presentation created (pptx failed: {pptx_err}): {output_path}"
+            return f"create_keynote_presentation pptx error: {pptx_err}; osascript error: {result.stderr.strip()}"
+        except Exception as e:
+            return f"create_keynote_presentation failed entirely: pptx={pptx_err}, keynote={e}"
 
 
 # ── create_pages_document(title, content) ─────────────────────────────────────
@@ -594,7 +737,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "press_key":                    "press_key(key) — Press a key or combo (return, tab, space, escape, cmd+n, cmd+s, cmd+v, etc.)",
     "get_screen_text":              "get_screen_text() — Take a screenshot and return the file path for vision analysis",
     "focus_app":                    "focus_app(name) — Bring a Mac application to the foreground",
-    "create_keynote_presentation":  "create_keynote_presentation(title, slides) — Create a Keynote .key file on Desktop. slides = list of {title, content} dicts",
+    "create_keynote_presentation":  "create_keynote_presentation(title, slides) — Create a dark-themed PowerPoint .pptx on Desktop (opens automatically). slides = list of {title, content} dicts. Also accepts a single string content argument.",
     "create_pages_document":        "create_pages_document(title, content) — Create a Pages document on the Desktop",
     "send_notification":            "send_notification(title, message) — Show a macOS notification banner",
     "clipboard_paste":              "clipboard_paste() — Paste clipboard contents at current cursor (Cmd+V)",
