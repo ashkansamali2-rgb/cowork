@@ -11,6 +11,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Callable
 
+import anthropic
+from config import ANTHROPIC_API_KEY
+
 AGENTS_DIR = Path.home() / "cowork" / "agents"
 
 _THINK_SYSTEM = """\
@@ -72,6 +75,19 @@ class AgentRuntime:
 
     async def run(self, websocket=None) -> str:
         self.status = "running"
+        self.websocket = websocket
+
+        # Announce agent start immediately so the UI panel shows it
+        if websocket:
+            try:
+                await websocket.send_json({
+                    "type": "agent_start",
+                    "agent_id": self.agent_id,
+                    "task": self.task,
+                })
+            except Exception:
+                pass
+
         AGENTS_DIR.mkdir(parents=True, exist_ok=True)
         agent_dir = AGENTS_DIR / self.agent_id
         agent_dir.mkdir(parents=True, exist_ok=True)
@@ -102,8 +118,9 @@ class AgentRuntime:
             system_prompt = _THINK_SYSTEM.format(tool_descriptions=self.tool_descriptions)
 
             try:
+                combined_prompt = system_prompt + "\n\n" + think_prompt
                 llm_response = await asyncio.to_thread(
-                    self._call_qwen, system_prompt, think_prompt
+                    self._think, combined_prompt
                 )
             except Exception as e:
                 observation = f"LLM call failed: {e}"
@@ -170,6 +187,7 @@ class AgentRuntime:
                 "step":        step,
                 "action":      action,
                 "observation": observation[:300],
+                "task":        self.task,
             }
             if websocket:
                 try:
@@ -226,6 +244,16 @@ class AgentRuntime:
                 # Try to extract key-value pairs
                 args = {}
         return action, args
+
+    def _think(self, prompt: str) -> str:
+        """Call Claude API for ReAct Think steps (tool selection)."""
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return message.content[0].text
 
     def _call_qwen(self, system_prompt: str, user_prompt: str) -> str:
         import requests

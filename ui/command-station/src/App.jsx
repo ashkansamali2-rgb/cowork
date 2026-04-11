@@ -28,6 +28,7 @@ export default function App() {
   })
   // Structured agent registry: { [agentId]: { task, status, steps, startTime } }
   const [agents, setAgents] = useState({})
+  const agentsRef = useRef({})
   const [agentDone, setAgentDone] = useState(false)
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
@@ -78,17 +79,38 @@ export default function App() {
     api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
 
     const handleStream = (data) => {
+      console.log('[DEBUG WS]', JSON.stringify(data))
       console.log('[WS]', data.type, data)
+
+      // Agent announced → create entry immediately before first step
+      if (data.type === 'agent_start') {
+        const agentId = data.agent_id || data.agentId
+        if (agentId) {
+          const newAgents = {
+            ...agentsRef.current,
+            [agentId]: { task: data.task || lastUserMsgRef.current, status: 'running', steps: [], startTime: Date.now() },
+          }
+          agentsRef.current = newAgents
+          setAgents(newAgents)
+          setSpawnerOpen(true)
+        }
+        return
+      }
+
       // Live agent step update → structured agents state + auto-open panel
       if (data.type === 'agent_update') {
-        const { agent_id, step, action, observation } = data
+        const agentId = data.agent_id || data.agentId
+        const { step, action, observation } = data
         setAgents(prev => {
-          const existing = prev[agent_id] || { task: lastUserMsgRef.current, status: 'running', steps: [], startTime: Date.now() }
-          return {
+          const existing = prev[agentId] || { task: data.task || lastUserMsgRef.current, status: 'running', steps: [], startTime: Date.now() }
+          const newAgents = {
             ...prev,
-            [agent_id]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
+            [agentId]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
           }
+          agentsRef.current = newAgents
+          return newAgents
         })
+        setAgents(prev => ({ ...prev }))
         setSpawnerOpen(true)
         return
       }
@@ -160,14 +182,18 @@ export default function App() {
       if (event.type === 'agent_status') {
         setAgentStatuses(prev => ({ ...prev, [event.agent]: event.status }))
       } else if (event.type === 'AGENT_UPDATE' || event.type === 'agent_update') {
-        const { agent_id, step, action, observation } = event
+        const agentId = event.agent_id || event.agentId
+        const { step, action, observation } = event
         setAgents(prev => {
-          const existing = prev[agent_id] || { task: '', status: 'running', steps: [], startTime: Date.now() }
-          return {
+          const existing = prev[agentId] || { task: event.task || '', status: 'running', steps: [], startTime: Date.now() }
+          const newAgents = {
             ...prev,
-            [agent_id]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
+            [agentId]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
           }
+          agentsRef.current = newAgents
+          return newAgents
         })
+        setAgents(prev => ({ ...prev }))
         setSpawnerOpen(true)
       } else if (event.type === 'task_progress' || event.type === 'spawn_progress') {
         setTaskProgress(prev => [...prev, {
