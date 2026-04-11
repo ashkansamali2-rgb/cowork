@@ -48,6 +48,9 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# HUD observer connections — receive all responses as read-only observers
+hud_connections: set = set()
+
 
 class SenderSocket:
     """Wraps a specific WebSocket so agent_loop replies go only to the sender."""
@@ -56,6 +59,12 @@ class SenderSocket:
 
     async def send_json(self, data):
         await manager.send_to(self._ws, data)
+        # Broadcast to all HUD observers
+        for hud_ws in list(hud_connections):
+            try:
+                await hud_ws.send_json(data)
+            except Exception:
+                hud_connections.discard(hud_ws)
 
 
 @app.on_event("startup")
@@ -87,6 +96,17 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+
+            # ── HUD observer registration ─────────────────────────────────────
+            if not registered and data.get("register") == "hud":
+                hud_connections.add(websocket)
+                await websocket.send_json({"type": "ack", "msg": "hud registered"})
+                try:
+                    while True:
+                        await websocket.receive_json()  # keep alive, ignore messages
+                except (WebSocketDisconnect, Exception):
+                    hud_connections.discard(websocket)
+                return
 
             # ── Registration handshake ────────────────────────────────────────
             if not registered and "register" in data:
@@ -128,23 +148,23 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
     """Process a single user message and reply only to the originating WebSocket."""
     global current_task
 
+    sender = SenderSocket(websocket)
+
     if user_msg == "SYSTEM_COMMAND_STOP":
         if current_task and not current_task.done():
             print("\n[!] KILL SWITCH ACTIVATED. NUKE IMMINENT.")
             current_task.cancel()
-            await manager.send_to(websocket, {"type": "final", "msg": "Task aborted by user."})
+            await sender.send_json({"type": "final", "msg": "Task aborted by user."})
         return
 
     if current_task and not current_task.done():
         current_task.cancel()
 
-    sender = SenderSocket(websocket)
-
     async def run_task(msg, ws=websocket, sid=session_id, _cwd=cwd):
         try:
-            await manager.send_to(ws, {"type": "ack", "msg": f"Heard: {msg}"})
+            await sender.send_json({"type": "ack", "msg": f"Heard: {msg}"})
             final_result = await agent_loop(msg, sender, session_id=sid, cwd=_cwd)
-            await manager.send_to(ws, {"type": "final", "msg": final_result})
+            await sender.send_json({"type": "final", "msg": final_result})
         except asyncio.CancelledError:
             pass
 
