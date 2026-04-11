@@ -183,6 +183,9 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         "automate", "download and save", "fetch and summarize", "write a report",
         "document it", "create a word", "make a word doc", "write it up",
         "summarize and save", "find out about", "search for and",
+        "create a presentation", "make a presentation", "build a presentation",
+        "create a keynote", "make a keynote", "open safari", "open chrome",
+        "click on", "type in", "press enter", "take a screenshot of",
     ]
     if any(t in msg_lower for t in agent_triggers):
         agent_id = f"AGENT-{int(_time.time() * 1000)}"

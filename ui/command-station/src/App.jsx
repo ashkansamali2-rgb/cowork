@@ -78,6 +78,7 @@ export default function App() {
     api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
 
     const handleStream = (data) => {
+      console.log('[WS]', data.type, data)
       // Live agent step update → structured agents state + auto-open panel
       if (data.type === 'agent_update') {
         const { agent_id, step, action, observation } = data
@@ -155,6 +156,7 @@ export default function App() {
     }
 
     const handleBusEvent = (event) => {
+      console.log('[WS bus]', event.type, event)
       if (event.type === 'agent_status') {
         setAgentStatuses(prev => ({ ...prev, [event.agent]: event.status }))
       } else if (event.type === 'AGENT_UPDATE' || event.type === 'agent_update') {

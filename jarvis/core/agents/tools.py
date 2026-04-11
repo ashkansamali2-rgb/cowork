@@ -119,12 +119,205 @@ def list_dir(path: str = ".") -> str:
 
 # ── open_app(name: str) ────────────────────────────────────────────────────────
 def open_app(name: str) -> str:
-    """Open a macOS application."""
+    """Open a macOS application and verify it opened."""
     try:
-        result = subprocess.run(["open", "-a", name], capture_output=True, text=True)
-        return f"Opened {name}" if result.returncode == 0 else f"open_app failed: {result.stderr}"
+        import time as _time
+        subprocess.run(["open", "-a", name], capture_output=True, text=True)
+        _time.sleep(1)
+        verify = subprocess.run(["pgrep", "-x", name], capture_output=True, text=True)
+        if verify.returncode == 0:
+            return f"Opened {name} successfully (pid: {verify.stdout.strip()})"
+        return f"Opened {name} (could not verify via pgrep)"
     except Exception as e:
         return f"open_app failed: {e}"
+
+
+# ── click_menu(app, menu, item) ────────────────────────────────────────────────
+def click_menu(app: str, menu: str, item: str) -> str:
+    """Click a menu item in a Mac application via osascript."""
+    try:
+        script = f'tell application "System Events" to tell process "{app}" to click menu item "{item}" of menu "{menu}" of menu bar 1'
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if result.returncode == 0:
+            return f"Clicked {app} > {menu} > {item}"
+        return f"click_menu error: {result.stderr.strip()}"
+    except Exception as e:
+        return f"click_menu failed: {e}"
+
+
+# ── type_text(text: str) ───────────────────────────────────────────────────────
+def type_text(text: str) -> str:
+    """Type text using keyboard via System Events."""
+    try:
+        escaped = text.replace('"', '\\"')
+        script = f'tell application "System Events" to keystroke "{escaped}"'
+        subprocess.run(["osascript", "-e", script])
+        return f"Typed: {text[:50]}"
+    except Exception as e:
+        return f"type_text failed: {e}"
+
+
+# ── press_key(key: str) ────────────────────────────────────────────────────────
+def press_key(key: str) -> str:
+    """Press a key or combo. Supports: return, tab, space, escape, delete, cmd+n, cmd+s, etc."""
+    try:
+        key_map = {"return": 36, "tab": 48, "space": 49, "escape": 53, "delete": 51}
+        modifier_map = {"cmd": "command down", "shift": "shift down", "alt": "option down", "ctrl": "control down"}
+        parts = key.lower().split("+")
+        if len(parts) > 1:
+            mods = ", ".join(modifier_map.get(p, f"{p} down") for p in parts[:-1])
+            char = parts[-1]
+            script = f'tell application "System Events" to keystroke "{char}" using {{{mods}}}'
+        elif key in key_map:
+            script = f'tell application "System Events" to key code {key_map[key]}'
+        else:
+            script = f'tell application "System Events" to keystroke "{key}"'
+        subprocess.run(["osascript", "-e", script])
+        return f"Pressed: {key}"
+    except Exception as e:
+        return f"press_key failed: {e}"
+
+
+# ── get_screen_text() ─────────────────────────────────────────────────────────
+def get_screen_text() -> str:
+    """Take a screenshot and return the file path for vision analysis."""
+    try:
+        import time as _time
+        path = f"/tmp/screenshot_{int(_time.time())}.png"
+        subprocess.run(["screencapture", "-x", path])
+        return f"Screenshot saved to {path}"
+    except Exception as e:
+        return f"get_screen_text failed: {e}"
+
+
+# ── focus_app(name: str) ──────────────────────────────────────────────────────
+def focus_app(name: str) -> str:
+    """Bring a Mac application to the foreground."""
+    try:
+        subprocess.run(["osascript", "-e", f'tell application "{name}" to activate'])
+        return f"Focused {name}"
+    except Exception as e:
+        return f"focus_app failed: {e}"
+
+
+# ── create_keynote_presentation(title, slides) ────────────────────────────────
+def create_keynote_presentation(title: str, slides: list) -> str:
+    """Create a Keynote presentation. slides = list of {title, content} dicts."""
+    try:
+        import os as _os
+        output_path = _os.path.expanduser(f"~/Desktop/{title}.key")
+        slide_lines = []
+        for i, slide in enumerate(slides):
+            st = slide.get('title', f'Slide {i+1}').replace('"', '\\"')
+            sc = slide.get('content', '').replace('"', '\\"').replace('\n', '\\n')
+            if i == 0:
+                slide_lines.append(f'set the object text of the default title item of slide 1 to "{st}"')
+                if sc:
+                    slide_lines.append(f'set the object text of the default body item of slide 1 to "{sc}"')
+            else:
+                slide_lines.append(f'set ns to duplicate slide 1 to end of slides')
+                slide_lines.append(f'set the object text of the default title item of ns to "{st}"')
+                if sc:
+                    slide_lines.append(f'set the object text of the default body item of ns to "{sc}"')
+        slides_script = '\n'.join(slide_lines)
+        script = f'''tell application "Keynote"
+    activate
+    set newDoc to make new document with properties {{document theme:theme "White"}}
+    tell newDoc
+        {slides_script}
+    end tell
+    save newDoc in POSIX file "{output_path}"
+end tell'''
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if result.returncode == 0:
+            return f"Keynote presentation created: {output_path}"
+        return f"create_keynote_presentation error: {result.stderr.strip()}"
+    except Exception as e:
+        return f"create_keynote_presentation failed: {e}"
+
+
+# ── create_pages_document(title, content) ─────────────────────────────────────
+def create_pages_document(title: str, content: str) -> str:
+    """Create a Pages document on the Desktop."""
+    try:
+        import os as _os
+        output_path = _os.path.expanduser(f"~/Desktop/{title}.pages")
+        safe_content = content.replace('"', '\\"').replace('\n', '\\n')
+        script = f'''tell application "Pages"
+    activate
+    set newDoc to make new document
+    tell body text of newDoc
+        set its paragraphs to "{safe_content}"
+    end tell
+    save newDoc in POSIX file "{output_path}"
+end tell'''
+        result = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if result.returncode == 0:
+            return f"Pages document created: {output_path}"
+        return f"create_pages_document error: {result.stderr.strip()}"
+    except Exception as e:
+        return f"create_pages_document failed: {e}"
+
+
+# ── send_notification(title, message) ────────────────────────────────────────
+def send_notification(title: str, message: str) -> str:
+    """Send a macOS notification banner."""
+    try:
+        safe_msg = message.replace('"', '\\"')
+        safe_title = title.replace('"', '\\"')
+        subprocess.run(["osascript", "-e", f'display notification "{safe_msg}" with title "{safe_title}"'])
+        return f"Notification sent: {title}"
+    except Exception as e:
+        return f"send_notification failed: {e}"
+
+
+# ── clipboard_paste() ─────────────────────────────────────────────────────────
+def clipboard_paste() -> str:
+    """Paste clipboard contents at current cursor position."""
+    try:
+        subprocess.run(["osascript", "-e", 'tell application "System Events" to keystroke "v" using command down'])
+        return "Pasted from clipboard"
+    except Exception as e:
+        return f"clipboard_paste failed: {e}"
+
+
+# ── move_mouse(x, y) ─────────────────────────────────────────────────────────
+def move_mouse(x: int, y: int) -> str:
+    """Move mouse cursor to screen coordinates."""
+    try:
+        import pyautogui
+        pyautogui.moveTo(x, y)
+        return f"Moved mouse to ({x}, {y})"
+    except ImportError:
+        subprocess.run([sys.executable, "-m", "pip", "install", "pyautogui", "pillow", "-q"])
+        return "pyautogui not installed — installing now, retry next step"
+    except Exception as e:
+        return f"move_mouse failed: {e}"
+
+
+# ── click_at(x, y) ───────────────────────────────────────────────────────────
+def click_at(x: int, y: int) -> str:
+    """Click at screen coordinates."""
+    try:
+        import pyautogui
+        pyautogui.click(x, y)
+        return f"Clicked at ({x}, {y})"
+    except ImportError:
+        return "pyautogui not available — run move_mouse first to install"
+    except Exception as e:
+        return f"click_at failed: {e}"
+
+
+# ── screenshot_region(x, y, w, h) ────────────────────────────────────────────
+def screenshot_region(x: int, y: int, w: int, h: int) -> str:
+    """Take a screenshot of a specific screen region."""
+    try:
+        import time as _time
+        path = f"/tmp/region_{int(_time.time())}.png"
+        subprocess.run(["screencapture", "-x", "-R", f"{x},{y},{w},{h}", path])
+        return f"Region screenshot saved to {path}"
+    except Exception as e:
+        return f"screenshot_region failed: {e}"
 
 # ── speak(text: str) ──────────────────────────────────────────────────────────
 def speak(text: str) -> str:
@@ -343,47 +536,71 @@ def spawn_subagent(task: str) -> str:
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 TOOLS: dict[str, callable] = {
-    "web_search":            web_search,
-    "fetch_url":             fetch_url,
-    "run_shell":             run_shell,
-    "read_file":             read_file,
-    "write_file":            write_file,
-    "append_file":           append_file,
-    "list_dir":              list_dir,
-    "open_app":              open_app,
-    "speak":                 speak,
-    "create_document":       create_document,
-    "create_word_document":  create_word_document,
-    "take_screenshot":       take_screenshot,
-    "get_clipboard":         get_clipboard,
-    "set_clipboard":         set_clipboard,
-    "http_request":          http_request,
-    "summarize":             summarize,
-    "remember":              remember,
-    "recall":                recall,
-    "spawn_subagent":        spawn_subagent,
+    "web_search":                   web_search,
+    "fetch_url":                    fetch_url,
+    "run_shell":                    run_shell,
+    "read_file":                    read_file,
+    "write_file":                   write_file,
+    "append_file":                  append_file,
+    "list_dir":                     list_dir,
+    "open_app":                     open_app,
+    "speak":                        speak,
+    "create_document":              create_document,
+    "create_word_document":         create_word_document,
+    "take_screenshot":              take_screenshot,
+    "get_clipboard":                get_clipboard,
+    "set_clipboard":                set_clipboard,
+    "http_request":                 http_request,
+    "summarize":                    summarize,
+    "remember":                     remember,
+    "recall":                       recall,
+    "spawn_subagent":               spawn_subagent,
+    "click_menu":                   click_menu,
+    "type_text":                    type_text,
+    "press_key":                    press_key,
+    "get_screen_text":              get_screen_text,
+    "focus_app":                    focus_app,
+    "create_keynote_presentation":  create_keynote_presentation,
+    "create_pages_document":        create_pages_document,
+    "send_notification":            send_notification,
+    "clipboard_paste":              clipboard_paste,
+    "move_mouse":                   move_mouse,
+    "click_at":                     click_at,
+    "screenshot_region":            screenshot_region,
 }
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
-    "web_search":            "web_search(query) — DuckDuckGo search, returns top 5 results with snippets",
-    "fetch_url":             "fetch_url(url) — Fetch webpage, extract clean text (up to 8000 chars)",
-    "run_shell":             "run_shell(cmd) — Run a shell command, returns stdout+stderr",
-    "read_file":             "read_file(path) — Read file contents",
-    "write_file":            "write_file(path, content) — Write content to file (creates dirs)",
-    "append_file":           "append_file(path, content) — Append content to existing file",
-    "list_dir":              "list_dir(path) — List directory contents",
-    "open_app":              "open_app(name) — Open a macOS application by name",
-    "speak":                 "speak(text) — Speak text aloud via Jarvis TTS",
-    "create_document":       "create_document(title, content, fmt='md') — Create plain text/markdown document on Desktop",
-    "create_word_document":  "create_word_document(title, content, path=None) — Create formatted Word .docx on Desktop, opens it automatically. PREFER THIS over create_document when user says 'create a document', 'write it up', 'document it', or 'write a report'.",
-    "take_screenshot":       "take_screenshot() — Take screenshot, returns path",
-    "get_clipboard":         "get_clipboard() — Get clipboard text contents",
-    "set_clipboard":         "set_clipboard(text) — Copy text to clipboard",
-    "http_request":          "http_request(url, method='GET', data=None) — HTTP request, returns response",
-    "summarize":             "summarize(text, instruction) — Use Qwen LLM to summarize or transform text",
-    "remember":              "remember(key, value) — Persist key-value to ~/cowork/agents/memory/",
-    "recall":                "recall(key) — Retrieve persisted value by key",
-    "spawn_subagent":        "spawn_subagent(task) — Spawn a child agent for a parallel subtask",
+    "web_search":                   "web_search(query) — DuckDuckGo search, returns top 5 results with snippets",
+    "fetch_url":                    "fetch_url(url) — Fetch webpage, extract clean text (up to 8000 chars)",
+    "run_shell":                    "run_shell(cmd) — Run a shell command, returns stdout+stderr",
+    "read_file":                    "read_file(path) — Read file contents",
+    "write_file":                   "write_file(path, content) — Write content to file (creates dirs)",
+    "append_file":                  "append_file(path, content) — Append content to existing file",
+    "list_dir":                     "list_dir(path) — List directory contents",
+    "open_app":                     "open_app(name) — Open a macOS application by name, verifies it opened",
+    "speak":                        "speak(text) — Speak text aloud via Jarvis TTS",
+    "create_document":              "create_document(title, content, fmt='md') — Create plain text/markdown document on Desktop",
+    "create_word_document":         "create_word_document(title, content, path=None) — Create formatted Word .docx on Desktop, opens it automatically. PREFER THIS over create_document when user says 'create a document', 'write it up', 'document it', or 'write a report'.",
+    "take_screenshot":              "take_screenshot() — Take screenshot, saves to Desktop, returns path",
+    "get_clipboard":                "get_clipboard() — Get clipboard text contents",
+    "set_clipboard":                "set_clipboard(text) — Copy text to clipboard",
+    "http_request":                 "http_request(url, method='GET', data=None) — HTTP request, returns response",
+    "summarize":                    "summarize(text, instruction) — Use Qwen LLM to summarize or transform text",
+    "remember":                     "remember(key, value) — Persist key-value to ~/cowork/agents/memory/",
+    "recall":                       "recall(key) — Retrieve persisted value by key",
+    "spawn_subagent":               "spawn_subagent(task) — Spawn a child agent for a parallel subtask",
+    "click_menu":                   "click_menu(app, menu, item) — Click a menu item in any Mac app via osascript",
+    "type_text":                    "type_text(text) — Type text at current cursor position via keyboard",
+    "press_key":                    "press_key(key) — Press a key or combo (return, tab, space, escape, cmd+n, cmd+s, cmd+v, etc.)",
+    "get_screen_text":              "get_screen_text() — Take a screenshot and return the file path for vision analysis",
+    "focus_app":                    "focus_app(name) — Bring a Mac application to the foreground",
+    "create_keynote_presentation":  "create_keynote_presentation(title, slides) — Create a Keynote .key file on Desktop. slides = list of {title, content} dicts",
+    "create_pages_document":        "create_pages_document(title, content) — Create a Pages document on the Desktop",
+    "send_notification":            "send_notification(title, message) — Show a macOS notification banner",
+    "clipboard_paste":              "clipboard_paste() — Paste clipboard contents at current cursor (Cmd+V)",
+    "move_mouse":                   "move_mouse(x, y) — Move mouse cursor to screen coordinates",
+    "click_at":                     "click_at(x, y) — Click at screen coordinates",
+    "screenshot_region":            "screenshot_region(x, y, w, h) — Take screenshot of a specific screen region, returns path",
 }
 
 def get_tool_descriptions() -> str:

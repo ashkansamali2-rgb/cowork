@@ -43,8 +43,22 @@
       "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775836370/result.txt",
       "streaming": false,
       "timestamp": 1775836370085
+    },
+    {
+      "id": "msg_1775919948440",
+      "role": "user",
+      "content": "what time is it",
+      "timestamp": 1775919948441,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775919948462",
+      "role": "assistant",
+      "content": "04:05 PM",
+      "streaming": false,
+      "timestamp": 1775919948462
     }
   ],
-  "updatedAt": 1775837239244,
+  "updatedAt": 1775921984175,
   "projectName": null
 }

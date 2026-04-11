@@ -1,0 +1,626 @@
+[2026-04-10T11:45:02] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T11:45:02] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T11:45:02] server listening on 127.0.0.1:8002
+[2026-04-10T11:45:02] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T11:45:03] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-10T11:45:06] connection open
+[2026-04-10T11:45:06] Client registered: jarvis (total: 1)
+[2026-04-10T11:45:06] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T11:45:06] connection open
+[2026-04-10T11:45:06] Client registered: cantivia (total: 2)
+[2026-04-10T11:45:06] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T11:45:08] connection open
+[2026-04-10T11:45:49] Client disconnected: jarvis
+[2026-04-10T11:45:49] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-10T11:48:03] connection open
+[2026-04-10T11:53:51] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T11:53:51] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T11:53:51] server listening on 127.0.0.1:8002
+[2026-04-10T11:53:51] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T11:53:52] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-10T11:53:54] connection open
+[2026-04-10T11:53:54] Client registered: jarvis (total: 1)
+[2026-04-10T11:53:54] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T11:53:55] connection open
+[2026-04-10T11:53:55] Client registered: cantivia (total: 2)
+[2026-04-10T11:53:55] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T11:53:56] connection open
+[2026-04-10T12:00:51] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:00:51] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:00:51] server listening on 127.0.0.1:8002
+[2026-04-10T12:00:51] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:00:51] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-10T12:00:54] connection open
+[2026-04-10T12:00:54] Client registered: jarvis (total: 1)
+[2026-04-10T12:00:54] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:00:55] connection open
+[2026-04-10T12:00:55] Client registered: cantivia (total: 2)
+[2026-04-10T12:00:55] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:00:55] connection open
+[2026-04-10T12:01:03] connection open
+[2026-04-10T12:08:42] Client disconnected: jarvis
+[2026-04-10T12:08:42] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-10T12:16:28] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:16:28] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:16:28] server listening on 127.0.0.1:8002
+[2026-04-10T12:16:28] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:16:29] connection open
+[2026-04-10T12:16:31] connection open
+[2026-04-10T12:16:31] Client registered: jarvis (total: 1)
+[2026-04-10T12:16:31] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:16:31] connection open
+[2026-04-10T12:16:31] Client registered: cantivia (total: 2)
+[2026-04-10T12:16:31] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:16:41] connection open
+[2026-04-10T12:29:04] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:29:04] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:29:04] server listening on 127.0.0.1:8002
+[2026-04-10T12:29:04] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:29:08] connection open
+[2026-04-10T12:29:08] Client registered: jarvis (total: 1)
+[2026-04-10T12:29:08] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:29:09] connection open
+[2026-04-10T12:29:09] Client registered: cantivia (total: 2)
+[2026-04-10T12:29:09] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:29:13] connection open
+[2026-04-10T12:39:11] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T12:39:11] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T12:39:11] server listening on 127.0.0.1:8002
+[2026-04-10T12:39:11] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T12:39:16] connection open
+[2026-04-10T12:39:16] Client registered: jarvis (total: 1)
+[2026-04-10T12:39:16] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T12:39:16] connection open
+[2026-04-10T12:39:16] Client registered: cantivia (total: 2)
+[2026-04-10T12:39:16] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T12:39:21] connection open
+[2026-04-10T16:15:25] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T16:15:25] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T16:15:25] server listening on 127.0.0.1:8002
+[2026-04-10T16:15:25] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T16:15:29] connection open
+[2026-04-10T16:15:29] Client registered: jarvis (total: 1)
+[2026-04-10T16:15:29] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T16:15:30] connection open
+[2026-04-10T16:15:30] Client registered: cantivia (total: 2)
+[2026-04-10T16:15:30] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T16:15:34] connection open
+[2026-04-10T16:16:02] connection open
+[2026-04-10T16:16:02] Client registered: cli (total: 3)
+[2026-04-10T16:16:02] [cli] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:16:11] Client disconnected: cli
+[2026-04-10T16:16:11] [cli] CLIENT_DISCONNECT: remaining_clients=2
+[2026-04-10T16:16:16] connection open
+[2026-04-10T16:16:16] Client registered: cli (total: 3)
+[2026-04-10T16:16:16] [cli] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:39:55] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T16:39:55] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T16:39:55] server listening on 127.0.0.1:8002
+[2026-04-10T16:39:55] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T16:39:58] connection open
+[2026-04-10T16:39:58] Client registered: cli (total: 1)
+[2026-04-10T16:39:58] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T16:39:59] connection open
+[2026-04-10T16:39:59] Client registered: jarvis (total: 2)
+[2026-04-10T16:39:59] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T16:40:00] connection open
+[2026-04-10T16:40:00] Client registered: cantivia (total: 3)
+[2026-04-10T16:40:00] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:40:04] connection open
+[2026-04-10T16:41:22] connection open
+[2026-04-10T16:41:22] Client registered: agent-manager (total: 4)
+[2026-04-10T16:41:22] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:41:22] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775835682', 'status': 'running', 'message': 'Starting task: MediaPipe hand 
+[2026-04-10T16:41:22] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:41:22] AGENT_STATUS [AGENT-1775835682] running: Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:41:22] [agent-manager] AGENT_STATUS_RUNNING: agent=AGENT-1775835682 Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:41:22] Client disconnected: agent-manager
+[2026-04-10T16:41:22] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:41:22] connection open
+[2026-04-10T16:41:22] Client registered: agent-manager (total: 4)
+[2026-04-10T16:41:22] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:41:22] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775835682', 'status': 'done', 'message': 'Agent AGENT-1775835682 received t
+[2026-04-10T16:41:22] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:41:22] AGENT_STATUS [AGENT-1775835682] done: Agent AGENT-1775835682 received task: MediaPipe hand gestures and create a document in word
+(No handler matched — general task noted.)
+[2026-04-10T16:41:22] [agent-manager] AGENT_STATUS_DONE: agent=AGENT-1775835682 Agent AGENT-1775835682 received task: MediaPipe hand gestures and create a document in word
+(No hand
+[2026-04-10T16:41:22] Client disconnected: agent-manager
+[2026-04-10T16:41:22] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:52:03] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T16:52:03] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T16:52:03] server listening on 127.0.0.1:8002
+[2026-04-10T16:52:03] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T16:52:06] connection open
+[2026-04-10T16:52:06] Client registered: cli (total: 1)
+[2026-04-10T16:52:06] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T16:52:07] connection open
+[2026-04-10T16:52:07] Client registered: jarvis (total: 2)
+[2026-04-10T16:52:07] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T16:52:08] connection open
+[2026-04-10T16:52:08] Client registered: cantivia (total: 3)
+[2026-04-10T16:52:08] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T16:52:13] connection open
+[2026-04-10T16:52:25] connection open
+[2026-04-10T16:52:25] Client registered: agent-manager (total: 4)
+[2026-04-10T16:52:25] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:52:25] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775836345', 'status': 'running', 'message': 'Starting task: MediaPipe hand 
+[2026-04-10T16:52:25] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:52:25] AGENT_STATUS [AGENT-1775836345] running: Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:52:25] [agent-manager] AGENT_STATUS_RUNNING: agent=AGENT-1775836345 Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:52:25] Client disconnected: agent-manager
+[2026-04-10T16:52:25] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:52:25] connection open
+[2026-04-10T16:52:25] Client registered: agent-manager (total: 4)
+[2026-04-10T16:52:25] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:52:25] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775836345', 'status': 'done', 'message': 'Agent AGENT-1775836345 received t
+[2026-04-10T16:52:25] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:52:25] AGENT_STATUS [AGENT-1775836345] done: Agent AGENT-1775836345 received task: MediaPipe hand gestures and create a document in word
+(No handler matched — general task noted.)
+[2026-04-10T16:52:25] [agent-manager] AGENT_STATUS_DONE: agent=AGENT-1775836345 Agent AGENT-1775836345 received task: MediaPipe hand gestures and create a document in word
+(No hand
+[2026-04-10T16:52:25] Client disconnected: agent-manager
+[2026-04-10T16:52:25] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:52:50] connection open
+[2026-04-10T16:52:50] Client registered: agent-manager (total: 4)
+[2026-04-10T16:52:50] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:52:50] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775836370', 'status': 'running', 'message': 'Starting task: MediaPipe hand 
+[2026-04-10T16:52:50] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:52:50] AGENT_STATUS [AGENT-1775836370] running: Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:52:50] [agent-manager] AGENT_STATUS_RUNNING: agent=AGENT-1775836370 Starting task: MediaPipe hand gestures and create a document in word
+[2026-04-10T16:52:50] Client disconnected: agent-manager
+[2026-04-10T16:52:50] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:52:50] connection open
+[2026-04-10T16:52:50] Client registered: agent-manager (total: 4)
+[2026-04-10T16:52:50] [agent-manager] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:52:50] [agent-manager] → AGENT_STATUS: {'type': 'AGENT_STATUS', 'agent_id': 'AGENT-1775836370', 'status': 'done', 'message': 'Agent AGENT-1775836370 received t
+[2026-04-10T16:52:50] [agent-manager] EVENT_AGENT_STATUS: 
+[2026-04-10T16:52:50] AGENT_STATUS [AGENT-1775836370] done: Agent AGENT-1775836370 received task: MediaPipe hand gestures and create a document in word
+(No handler matched — general task noted.)
+[2026-04-10T16:52:50] [agent-manager] AGENT_STATUS_DONE: agent=AGENT-1775836370 Agent AGENT-1775836370 received task: MediaPipe hand gestures and create a document in word
+(No hand
+[2026-04-10T16:52:50] Client disconnected: agent-manager
+[2026-04-10T16:52:50] [agent-manager] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:55:56] connection open
+[2026-04-10T16:55:56] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:55:56] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:55:56] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 0, 'action': 'start', 'observation': 'Starting task.'}
+[2026-04-10T16:55:56] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:55:56] AGENT_UPDATE [AGENT-1775836556] step=0: start
+[2026-04-10T16:55:56] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=0
+[2026-04-10T16:55:56] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:55:56] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:55:56] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:55:56] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:00] connection open
+[2026-04-10T16:56:00] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 1, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:00] AGENT_UPDATE [AGENT-1775836556] step=1: web_search
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=1
+[2026-04-10T16:56:00] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:00] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:00] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:00] connection open
+[2026-04-10T16:56:00] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 1, 'action': 'web_search', 'observation': 'No results f
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:00] AGENT_UPDATE [AGENT-1775836556] step=1: web_search
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=1
+[2026-04-10T16:56:00] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:00] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:00] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:00] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:03] connection open
+[2026-04-10T16:56:03] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 2, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:03] AGENT_UPDATE [AGENT-1775836556] step=2: web_search
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=2
+[2026-04-10T16:56:03] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:03] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:03] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:03] connection open
+[2026-04-10T16:56:03] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 2, 'action': 'web_search', 'observation': 'No results f
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:03] AGENT_UPDATE [AGENT-1775836556] step=2: web_search
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=2
+[2026-04-10T16:56:03] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:03] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:03] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:03] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:07] connection open
+[2026-04-10T16:56:07] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 3, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:07] AGENT_UPDATE [AGENT-1775836556] step=3: web_search
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=3
+[2026-04-10T16:56:07] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:07] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:07] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:07] connection open
+[2026-04-10T16:56:07] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 3, 'action': 'web_search', 'observation': 'Search resul
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:07] AGENT_UPDATE [AGENT-1775836556] step=3: web_search
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=3
+[2026-04-10T16:56:07] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:07] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:13] connection open
+[2026-04-10T16:56:13] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 4, 'action': 'web_search', 'observation': 'Calling web_
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:13] AGENT_UPDATE [AGENT-1775836556] step=4: web_search
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=4
+[2026-04-10T16:56:13] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:13] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:13] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:13] connection open
+[2026-04-10T16:56:13] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 4, 'action': 'web_search', 'observation': "Tool web_sea
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:13] AGENT_UPDATE [AGENT-1775836556] step=4: web_search
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=4
+[2026-04-10T16:56:13] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:13] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:13] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:13] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:16] connection open
+[2026-04-10T16:56:16] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 5, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:16] AGENT_UPDATE [AGENT-1775836556] step=5: web_search
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=5
+[2026-04-10T16:56:16] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:16] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:16] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:16] connection open
+[2026-04-10T16:56:16] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 5, 'action': 'web_search', 'observation': 'No results f
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:16] AGENT_UPDATE [AGENT-1775836556] step=5: web_search
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=5
+[2026-04-10T16:56:16] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:16] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:16] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:16] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:20] connection open
+[2026-04-10T16:56:20] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 6, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:20] AGENT_UPDATE [AGENT-1775836556] step=6: web_search
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=6
+[2026-04-10T16:56:20] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:20] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:20] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:20] connection open
+[2026-04-10T16:56:20] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 6, 'action': 'web_search', 'observation': 'Search resul
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:20] AGENT_UPDATE [AGENT-1775836556] step=6: web_search
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=6
+[2026-04-10T16:56:20] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:20] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:20] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:20] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:28] connection open
+[2026-04-10T16:56:28] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:28] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:28] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 7, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:28] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:28] AGENT_UPDATE [AGENT-1775836556] step=7: web_search
+[2026-04-10T16:56:28] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=7
+[2026-04-10T16:56:28] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:28] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:28] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:28] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:29] connection open
+[2026-04-10T16:56:29] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:29] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:29] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 7, 'action': 'web_search', 'observation': 'No results f
+[2026-04-10T16:56:29] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:29] AGENT_UPDATE [AGENT-1775836556] step=7: web_search
+[2026-04-10T16:56:29] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=7
+[2026-04-10T16:56:29] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:29] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:29] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:29] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:34] connection open
+[2026-04-10T16:56:34] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 8, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:34] AGENT_UPDATE [AGENT-1775836556] step=8: web_search
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=8
+[2026-04-10T16:56:34] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:34] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:34] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:34] connection open
+[2026-04-10T16:56:34] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 8, 'action': 'web_search', 'observation': 'No results f
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:34] AGENT_UPDATE [AGENT-1775836556] step=8: web_search
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=8
+[2026-04-10T16:56:34] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:34] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:34] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:34] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:39] connection open
+[2026-04-10T16:56:39] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 9, 'action': 'fetch_url', 'observation': "Calling fetch
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:39] AGENT_UPDATE [AGENT-1775836556] step=9: fetch_url
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=9
+[2026-04-10T16:56:39] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:39] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:39] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:39] connection open
+[2026-04-10T16:56:39] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 9, 'action': 'fetch_url', 'observation': 'asyncio â\x80
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:39] AGENT_UPDATE [AGENT-1775836556] step=9: fetch_url
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=9
+[2026-04-10T16:56:39] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:39] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:39] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:39] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:52] connection open
+[2026-04-10T16:56:52] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 10, 'action': 'FINAL_ANSWER', 'observation': 'Python as
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:52] AGENT_UPDATE [AGENT-1775836556] step=10: FINAL_ANSWER
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=10
+[2026-04-10T16:56:52] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:52] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:52] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:56:52] connection open
+[2026-04-10T16:56:52] Client registered: agent-AGENT-1775836556 (total: 4)
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836556', 'step': 0, 'action': 'done', 'observation': 'Python asyncio is 
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:56:52] AGENT_UPDATE [AGENT-1775836556] step=0: done
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] AGENT_UPDATE: agent_id=AGENT-1775836556 step=0
+[2026-04-10T16:56:52] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836556
+[2026-04-10T16:56:52] Pruned dead client: agent-AGENT-1775836556
+[2026-04-10T16:56:52] Client disconnected: agent-AGENT-1775836556
+[2026-04-10T16:56:52] [agent-AGENT-1775836556] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:57:02] connection open
+[2026-04-10T16:57:02] Client registered: agent-AGENT-1775836622 (total: 4)
+[2026-04-10T16:57:02] [agent-AGENT-1775836622] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:57:02] [agent-AGENT-1775836622] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836622', 'step': 0, 'action': 'start', 'observation': 'Starting task.'}
+[2026-04-10T16:57:02] [agent-AGENT-1775836622] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:57:02] AGENT_UPDATE [AGENT-1775836622] step=0: start
+[2026-04-10T16:57:02] [agent-AGENT-1775836622] AGENT_UPDATE: agent_id=AGENT-1775836622 step=0
+[2026-04-10T16:57:02] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836622
+[2026-04-10T16:57:02] Pruned dead client: agent-AGENT-1775836622
+[2026-04-10T16:57:02] Client disconnected: agent-AGENT-1775836622
+[2026-04-10T16:57:02] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:57:06] connection open
+[2026-04-10T16:57:06] Client registered: agent-AGENT-1775836622 (total: 4)
+[2026-04-10T16:57:06] [agent-AGENT-1775836622] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:57:06] [agent-AGENT-1775836622] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836622', 'step': 1, 'action': 'web_search', 'observation': "Calling web_
+[2026-04-10T16:57:06] [agent-AGENT-1775836622] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:57:06] AGENT_UPDATE [AGENT-1775836622] step=1: web_search
+[2026-04-10T16:57:06] [agent-AGENT-1775836622] AGENT_UPDATE: agent_id=AGENT-1775836622 step=1
+[2026-04-10T16:57:06] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836622
+[2026-04-10T16:57:06] Pruned dead client: agent-AGENT-1775836622
+[2026-04-10T16:57:06] Client disconnected: agent-AGENT-1775836622
+[2026-04-10T16:57:06] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:57:08] connection open
+[2026-04-10T16:57:08] Client registered: agent-AGENT-1775836622 (total: 4)
+[2026-04-10T16:57:08] [agent-AGENT-1775836622] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:57:08] [agent-AGENT-1775836622] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836622', 'step': 1, 'action': 'web_search', 'observation': "Search resul
+[2026-04-10T16:57:08] [agent-AGENT-1775836622] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:57:08] AGENT_UPDATE [AGENT-1775836622] step=1: web_search
+[2026-04-10T16:57:08] [agent-AGENT-1775836622] AGENT_UPDATE: agent_id=AGENT-1775836622 step=1
+[2026-04-10T16:57:08] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836622
+[2026-04-10T16:57:08] Pruned dead client: agent-AGENT-1775836622
+[2026-04-10T16:57:08] Client disconnected: agent-AGENT-1775836622
+[2026-04-10T16:57:08] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:57:20] connection open
+[2026-04-10T16:57:20] Client registered: agent-AGENT-1775836622 (total: 4)
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836622', 'step': 2, 'action': 'FINAL_ANSWER', 'observation': 'Python asy
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:57:20] AGENT_UPDATE [AGENT-1775836622] step=2: FINAL_ANSWER
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] AGENT_UPDATE: agent_id=AGENT-1775836622 step=2
+[2026-04-10T16:57:20] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836622
+[2026-04-10T16:57:20] Pruned dead client: agent-AGENT-1775836622
+[2026-04-10T16:57:20] Client disconnected: agent-AGENT-1775836622
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T16:57:20] connection open
+[2026-04-10T16:57:20] Client registered: agent-AGENT-1775836622 (total: 4)
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] CLIENT_CONNECT: total_clients=4
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] → AGENT_UPDATE: {'type': 'AGENT_UPDATE', 'agent_id': 'AGENT-1775836622', 'step': 0, 'action': 'done', 'observation': 'Python asyncio is 
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] EVENT_AGENT_UPDATE: 
+[2026-04-10T16:57:20] AGENT_UPDATE [AGENT-1775836622] step=0: done
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] AGENT_UPDATE: agent_id=AGENT-1775836622 step=0
+[2026-04-10T16:57:20] [bus] CLIENT_PRUNED: dead client removed: agent-AGENT-1775836622
+[2026-04-10T16:57:20] Pruned dead client: agent-AGENT-1775836622
+[2026-04-10T16:57:20] Client disconnected: agent-AGENT-1775836622
+[2026-04-10T16:57:20] [agent-AGENT-1775836622] CLIENT_DISCONNECT: remaining_clients=3
+[2026-04-10T17:00:17] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:00:17] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:00:17] server listening on 127.0.0.1:8002
+[2026-04-10T17:00:17] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:00:20] connection open
+[2026-04-10T17:00:20] Client registered: cli (total: 1)
+[2026-04-10T17:00:20] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:00:21] connection open
+[2026-04-10T17:00:21] Client registered: jarvis (total: 2)
+[2026-04-10T17:00:21] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:00:22] connection open
+[2026-04-10T17:00:22] Client registered: cantivia (total: 3)
+[2026-04-10T17:00:22] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:00:26] connection open
+[2026-04-10T17:02:35] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:02:35] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:02:35] server listening on 127.0.0.1:8002
+[2026-04-10T17:02:35] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:02:38] connection open
+[2026-04-10T17:02:38] Client registered: cli (total: 1)
+[2026-04-10T17:02:38] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:02:39] connection open
+[2026-04-10T17:02:39] Client registered: jarvis (total: 2)
+[2026-04-10T17:02:39] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:02:40] connection open
+[2026-04-10T17:02:40] Client registered: cantivia (total: 3)
+[2026-04-10T17:02:40] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:02:45] connection open
+[2026-04-10T17:07:08] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:07:08] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:07:08] server listening on 127.0.0.1:8002
+[2026-04-10T17:07:08] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:07:11] connection open
+[2026-04-10T17:07:11] Client registered: cli (total: 1)
+[2026-04-10T17:07:11] [cli] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:07:12] connection open
+[2026-04-10T17:07:12] Client registered: jarvis (total: 2)
+[2026-04-10T17:07:12] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:07:13] connection open
+[2026-04-10T17:07:13] Client registered: cantivia (total: 3)
+[2026-04-10T17:07:13] [cantivia] CLIENT_CONNECT: total_clients=3
+[2026-04-10T17:07:18] connection open
+[2026-04-10T17:10:53] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T17:10:53] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T17:10:53] server listening on 127.0.0.1:8002
+[2026-04-10T17:10:53] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T17:10:57] connection open
+[2026-04-10T17:10:57] Client registered: jarvis (total: 1)
+[2026-04-10T17:10:57] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T17:10:58] connection open
+[2026-04-10T17:10:58] Client registered: cantivia (total: 2)
+[2026-04-10T17:10:58] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T17:11:03] connection open
+[2026-04-10T23:07:18] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-10T23:07:18] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-10T23:07:18] server listening on 127.0.0.1:8002
+[2026-04-10T23:07:18] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-10T23:07:22] connection open
+[2026-04-10T23:07:22] Client registered: jarvis (total: 1)
+[2026-04-10T23:07:22] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-10T23:07:23] connection open
+[2026-04-10T23:07:23] Client registered: cantivia (total: 2)
+[2026-04-10T23:07:23] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-10T23:07:28] connection open
+[2026-04-10T23:12:13] connection open
+[2026-04-10T23:12:13] Client registered: hud (total: 3)
+[2026-04-10T23:12:13] [hud] CLIENT_CONNECT: total_clients=3
+[2026-04-10T23:15:23] Client disconnected: hud
+[2026-04-10T23:15:23] [hud] CLIENT_DISCONNECT: remaining_clients=2
+[2026-04-10T23:15:26] connection open
+[2026-04-10T23:15:26] Client registered: hud (total: 3)
+[2026-04-10T23:15:26] [hud] CLIENT_CONNECT: total_clients=3
