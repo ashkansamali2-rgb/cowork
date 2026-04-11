@@ -41,9 +41,9 @@ def listen_for_double_clap():
             in_clap = False
 
 def start_cowork():
-    print("[Clap] Starting Cowork via start_cowork.sh...")
+    print("[Clap] Starting Cowork...")
     subprocess.Popen(
-        ["/bin/zsh", START_SCRIPT],
+        ["/bin/zsh", "-c", "source ~/.zshrc && start"],
         stdout=None,   # inherit terminal so coloured output is visible
         stderr=None,
     )

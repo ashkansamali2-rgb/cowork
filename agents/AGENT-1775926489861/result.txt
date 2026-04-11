@@ -1,0 +1,4 @@
+Task: Research the top 5 laptops available right now and create a PowerPoint presentation called "The Ultimate Laptop Guide" with a title slide, one slide per laptop with name, specs, pros and cons, and a conclusion slide comparing all 5. Dark theme with purple accents. Save to my Desktop.
+
+Result:
+Max steps (30) reached. Last observation: PowerPoint presentation created and opened: /Users/ashkansamali/Desktop/Presentation.pptx

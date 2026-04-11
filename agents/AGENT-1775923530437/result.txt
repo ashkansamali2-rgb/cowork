@@ -1,0 +1,4 @@
+Task: Research the top 5 laptops available right now. Look at real reviews and specs. Then create a stunning PowerPoint presentation called "The Ultimate Laptop Guide" with one slide per laptop showing the name, key specs, pros and cons, and who it's best for. Make the design creative — use a dark theme with accent colors. Add a title slide and a conclusion slide comparing all 5. Save it to my Desktop.
+
+Result:
+Max steps (30) reached. Last observation: LLM call failed: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CZxGaVDKBa69uxnoXD67n'}

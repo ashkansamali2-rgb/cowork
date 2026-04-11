@@ -38,6 +38,34 @@ def normalise_app_name(raw: str) -> str:
     """Return the canonical macOS app name for a given raw string."""
     return APP_NAME_MAP.get(raw.lower().strip(), raw)
 
+# ── Known apps for instant "open [app]" fast routes ──────────────────────────
+KNOWN_APPS = {
+    "safari": "Safari",
+    "chrome": "Google Chrome",
+    "google chrome": "Google Chrome",
+    "spotify": "Spotify",
+    "terminal": "Terminal",
+    "vscode": "Visual Studio Code",
+    "vs code": "Visual Studio Code",
+    "slack": "Slack",
+    "notion": "Notion",
+    "figma": "Figma",
+    "xcode": "Xcode",
+    "finder": "Finder",
+    "notes": "Notes",
+    "calendar": "Calendar",
+    "messages": "Messages",
+    "mail": "Mail",
+    "facetime": "FaceTime",
+    "photos": "Photos",
+    "music": "Music",
+    "podcasts": "Podcasts",
+    "word": "Microsoft Word",
+    "excel": "Microsoft Excel",
+    "powerpoint": "Microsoft PowerPoint",
+    "antigravity": "Antigravity",
+}
+
 # ── Fast hardcoded routes (no LLM required) ───────────────────────────────────
 def _fast_route(msg_lower: str):
     """
@@ -87,6 +115,36 @@ def _fast_route(msg_lower: str):
         os.system("pmset sleepnow")
         return "Going to sleep..."
 
+    # Greetings
+    if msg_lower in ("hi", "hello", "hey"):
+        return "Hey! What do you need?"
+
+    # Thanks
+    if msg_lower in ("thanks", "thank you"):
+        return "Of course."
+
+    # Stop / cancel
+    if msg_lower in ("stop", "cancel"):
+        return "Stopping."
+
+    # Weather
+    if msg_lower == "weather":
+        subprocess.run(["open", "-a", "Weather"])
+        return "Opening Weather."
+
+    # Time (flexible match)
+    if re.search(r"what.*time", msg_lower):
+        return datetime.now().strftime("%I:%M %p")
+
+    # Open <app> — instant route for known apps
+    open_match = re.match(r"open\s+(.+)", msg_lower)
+    if open_match:
+        app_key = open_match.group(1).strip().rstrip(".?!")
+        if app_key in KNOWN_APPS:
+            app_name = KNOWN_APPS[app_key]
+            subprocess.run(["open", "-a", app_name])
+            return f"Opening {app_name}."
+
     return None
 
 _session_memory: dict[str, list] = {}
@@ -100,8 +158,10 @@ def save_memory(session_id: str, mem_list: list) -> None:
 def clean_response(text):
     return re.sub(r'<think>.*?(</think>|$)', '', text, flags=re.DOTALL).strip()
 
-def make_request(messages):
-    r = requests.post(LLAMA_CPP_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": 2000}, timeout=120)
+_LONG_FORM_KEYWORDS = ("write", "essay", "long", "detailed", "explain", "list all")
+
+def make_request(messages, max_tokens=800):
+    r = requests.post(LLAMA_CPP_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
     return r.json()['choices'][0]['message']['content']
 
 async def agent_loop(user_message: str, websocket=None, session_id: str = "", cwd: str = None):
@@ -264,13 +324,21 @@ Be concise and useful. Skip filler phrases.{_cwd_hint}"""
 
     if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Asking 9B Brain...{C_RESET}"})
 
-    try:
-        task = asyncio.create_task(asyncio.to_thread(make_request, messages))
-        while not task.done():
-            if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Brain is thinking...{C_RESET}"})
-            await asyncio.sleep(2)
+    # Use larger token budget for long-form requests
+    _tokens = 2000 if any(kw in msg_lower for kw in _LONG_FORM_KEYWORDS) else 800
 
-        raw_text = task.result()
+    try:
+        async def _llm_call():
+            return await asyncio.to_thread(make_request, messages, _tokens)
+
+        try:
+            raw_text = await asyncio.wait_for(_llm_call(), timeout=25)
+        except asyncio.TimeoutError:
+            print(f"{C_RED}[JARVIS] LLM timeout after 25s for: {user_message[:80]}{C_RESET}")
+            if websocket:
+                await websocket.send_json({"type": "final", "msg": "Give me a moment..."})
+            return "Give me a moment..."
+
         response_text = clean_response(raw_text)
 
         conversation_memory.append({"role": "user", "content": msg_lower})

@@ -50,7 +50,7 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
             />
           )}
           {showDone && !hasRunning && (
-            <span style={{ color: '#22C55E', fontSize: 11, lineHeight: 1 }}>✓</span>
+            <span style={{ color: '#22C55E', fontSize: 11, lineHeight: 1 }}>✅</span>
           )}
           <span
             className="text-[10px] font-medium"
@@ -58,7 +58,7 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
           >
             {hasRunning
               ? `Agent running${activeAgents > 1 ? ` (${activeAgents})` : ''}`
-              : 'Agent done'}
+              : 'Agent done 🎉'}
           </span>
         </div>
       )}
@@ -70,7 +70,7 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
           style={{ backgroundColor: connected ? '#22C55E' : '#D1D5DB' }}
         />
         <span style={{ color: connected ? '#9CA3AF' : '#EF4444' }}>
-          {connected ? 'Connected' : 'Offline'}
+          {connected ? 'Connected 🔗' : 'Offline ❌'}
         </span>
       </div>
 

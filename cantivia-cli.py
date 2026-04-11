@@ -23,14 +23,13 @@ def parse_tasks(message: str) -> list[str]:
     return [t.strip() for t in tasks if t.strip()]
 
 
-def extract_file(task: str) -> tuple[str, list[str]]:
-    match = re.search(r'(?:in|to|from|file)\s+([\w\-/]+\.py)', task, re.IGNORECASE)
-    if match:
-        fname = match.group(1)
-        fpath = os.path.expanduser(f"~/cowork/{fname}")
-        if os.path.exists(fpath):
-            return task, ["--file", fpath]
-    return task, []
+def extract_file(task: str) -> tuple[str, str | None]:
+    file_match = re.search(
+        r'\b[\w/.-]+\.(py|js|ts|jsx|tsx|json|yaml|yml|sh|md|txt|html|css)\b',
+        task
+    )
+    detected_file = file_match.group(0) if file_match else None
+    return task, detected_file
 
 
 def screenshot_url(url: str) -> str | None:
@@ -88,24 +87,38 @@ def diagnose_page(url: str, task: str) -> str:
         return f"Diagnosis error: {e}"
 
 
-def run_aider(task: str, repo_path: str, file_args: list[str]) -> str:
+async def run_aider(task: str, repo_path: str, detected_file: str | None, ws) -> str:
     cmd = [
         VENV_AIDER,
         "--model", "openai/gemma",
         "--openai-api-base", ARCHITECT_URL,
         "--openai-api-key", "dummy",
-        "--yes",
+        "--yes-always",
+        "--no-suggest-shell-commands",
         "--no-auto-commits",
-    ] + file_args + ["--message", task]
+        "--no-show-model-warnings",
+        "--edit-format", "whole",
+        "--message", task,
+    ]
+    if detected_file and os.path.exists(detected_file):
+        cmd.append(detected_file)
     try:
-        result = subprocess.run(
-            cmd, cwd=repo_path,
-            capture_output=True, text=True, timeout=300
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, cwd=repo_path
         )
-        output = result.stdout + result.stderr
-        return output[-1000:] if len(output) > 1000 else output
-    except subprocess.TimeoutExpired:
-        return f"Agent timed out: {task[:50]}"
+        output_lines = []
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line:
+                output_lines.append(line)
+                await ws.send(json.dumps({"type": "STATUS", "msg": line, "source": "cantivia"}))
+        proc.wait()
+        rc = proc.returncode
+        output = "\n".join(output_lines)
+        suffix = f"\n[exit {rc}]"
+        full = output + suffix
+        return full[-1000:] if len(full) > 1000 else full
     except Exception as e:
         return f"Agent error: {e}"
 
@@ -137,7 +150,7 @@ async def handle_browser_task(message: str, ws) -> str:
     await ws.send(json.dumps({"type": "STATUS", "msg": "Qwen is writing the fix..."}))
 
     # Run aider with the diagnosis as the task
-    fix_result = await asyncio.to_thread(run_aider, diagnosis, DEFAULT_REPO, [])
+    fix_result = await run_aider(diagnosis, DEFAULT_REPO, None, ws)
 
     # Take a second screenshot to verify
     await ws.send(json.dumps({"type": "STATUS", "msg": "Verifying fix..."}))
@@ -148,13 +161,13 @@ async def handle_browser_task(message: str, ws) -> str:
 
 
 async def run_agent(task: str, agent_id: str, repo_path: str, ws) -> str:
-    clean_task, file_args = extract_file(task)
-    log.info(f"[Agent {agent_id}] Task: {clean_task[:60]} | Files: {file_args}")
+    clean_task, detected_file = extract_file(task)
+    log.info(f"[Agent {agent_id}] Task: {clean_task[:60]} | File: {detected_file}")
     await ws.send(json.dumps({
         "type": "STATUS",
         "msg": f"Agent {agent_id}: {clean_task[:60]}"
     }))
-    result = await asyncio.to_thread(run_aider, clean_task, repo_path, file_args)
+    result = await run_aider(clean_task, repo_path, detected_file, ws)
     log.info(f"[Agent {agent_id}] Done")
     return f"[Agent {agent_id}] {clean_task[:40]}\n{result[:300]}"
 
@@ -176,8 +189,8 @@ async def handle_coding_task(message: str, ws, repo_path: str = None) -> str:
 
     if len(tasks) == 1:
         await ws.send(json.dumps({"type": "STATUS", "msg": "Cantivia coding..."}))
-        clean_task, file_args = extract_file(tasks[0])
-        result = await asyncio.to_thread(run_aider, clean_task, repo_path, file_args)
+        clean_task, detected_file = extract_file(tasks[0])
+        result = await run_aider(clean_task, repo_path, detected_file, ws)
         return f"Done. {result[:400]}"
 
     capped = tasks[:MAX_AGENTS]

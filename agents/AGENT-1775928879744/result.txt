@@ -1,0 +1,4 @@
+Task: Research top 3 laptops and create a PowerPoint on my Desktop
+
+Result:
+PowerPoint presentation created and opened: /Users/ashkansamali/Desktop/Presentation.pptx

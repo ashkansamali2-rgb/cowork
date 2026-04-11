@@ -1,65 +1,83 @@
 Task: research top 3 laptops 2026 and create a PowerPoint presentation
 
 Result:
-Max steps (30) reached. Last observation: Best Laptops of 2026: Top Picks Tested by CNET - CNET
+Max steps (30) reached. Last observation: Best Laptops 2026: Our benchmarked picks for productivity, portability, and battery life | Tom's Hardware
+Skip to main content
+Jump to:
+Best Overall
+Best Windows laptop
+Best 2-in-1
+Another great Windows clamshell
+Best budget
+Best for work
+Best Windows Tablet
+A more powerful Mac laptop
+Best Gaming laptop
+Shopping Tips
+Finding Discounts
+Don't miss these
+(Image credit: Tom's Hardware)
+Jump to:
+Best Overall
+Best Windows laptop
+Best 2-in-1
+Another great Windows clamshell
+Best budget
+Best for work
+Best Windows Tablet
+A more powerful Mac laptop
+Best Gaming laptop
+Shopping Tips
+Finding Discounts
+Copy link
+Facebook
 X
-Tech
-Computing
-Laptops
-Best Laptops of 2026: Top Picks Tested by CNET
-These are the best laptops my colleagues and I have reviewed, from basic models to high-powered gaming systems and everything in between.
-Our Experts
-Written by
-Matt Elliott
-Article updated on
-April 3, 2026 at 10:57 AM PDT
-Matt Elliott
-Senior Editor
-Matt Elliott is a senior editor at CNET with a focus on laptops and streaming services. Matt has more than 20 years of experience testing and reviewing laptops. He has worked for CNET in New York and San Francisco and now lives in New Hampshire. When he's not writing about laptops, Matt likes to play and watch sports. He loves to play tennis and hates the number of streaming services he has to subscribe to in order to watch the various sports he wants to watch.
-Expertise
-Laptops | Desktops | All-in-one PCs | Streaming devices | Streaming platforms
-See full bio
-Why You Can Trust CNET
-30+
-Years of Experience
-35
-Product Reviewers
-15k
-Sq. Feet of Lab Space
-CNET staff -- not advertisers, partners or business interests -- determine how we review products and services. If you buy through our links, we may earn a commission.
-Reviews ethics statement
-How we test
-vs
-Compare
-Back to selection
-I’ve tested a wide range of laptops in the past few months and have favorites across a broad range of categories, from sleek, long-lasting ultraportables and MacBooks to high-powered laptops for gamers and creators. The two newest additions are a study in contrast, with the budget
-MacBook Neo
-and the over-the-top
-Alienware 18 Area-51
-gaming laptop. The Neo is the best $600 laptop you can buy, and the 18-inch Area-51 I tested costs more than $5,000 but is a wonderland of RGB lights and laptop tech.
-Our Picks
-Best laptop overall
-M5 MacBook Air (15-inch, 2026)
-$1,249 at Amazon
-9.0/10
-CNET Score
-CNET Score
-CNET provides expert, unbiased reviews of products and services. When we assign a score, we use a scale of 1-10. Each product we score is evaluated by criteria specific to its category with most assessing pricing, quality, features and performance.
-Read more on: How we test
-The 15-inch MacBook Air is proof that you don't need a Pro to get a larger display. It supplies a larger screen that you once found only on the pricier Pro models. If you're eyeing the 14- or 16-inch Pro models primarily for the added screen size, the MacBook Air 15 is the more affordable option you should go for.
-Read full review
-Jump to details
-Pros
-Optimal balance of screen size and system weight
-Improved app, graphics and AI performance from M5 chip
-Cons
-Costs $500 more than MacBook Neo
-Smooth ProMotion display still exclusive to MacBook Pro
-Expand Pros & Cons
-Best laptop for students between $500-$900
-MacBook Neo
-$599 at Amazon
-8.3/10
-CNET Score
-CNET Score
-CNET provides expert, unbiased reviews of products and services. When we assign a score, we use a scale of 1-10. Each product we score is evaluated by criteria specific to it
+Whatsapp
+Reddit
+Pinterest
+Flipboard
+Email
+Share this article
+7
+Join the conversation
+Follow us
+Add us as a preferred source on Google
+Newsletter
+Stay On the Cutting Edge: Get the Tom's Hardware Newsletter
+Get Tom's Hardware's best news and in-depth reviews, straight to your inbox.
+Contact me with news and offers from other Future brands
+Receive email from us on behalf of our trusted partners or sponsors
+By submitting your information you agree to the
+Terms & Conditions
+and
+Privacy Policy
+and are aged 16 or over.
+You are now subscribed
+Your newsletter sign-up was successful
+An account already exists for this email address, please log in.
+Subscribe to our newsletter
+Whether you're a student submitting homework, at work typing away at documents, spreadsheets or presentations, or you're just someone who wants to access resources online and connect with family and friends, you want a laptop with the components and features you'll need to get the job done. That means a great screen, a comfortable keyboard, and long battery life (and nice design doesn't hurt, either!).
+The laptop space is more competitive than ever. Windows machines come from many companies using silicon from three major CPU vendors: Intel, AMD, and Qualcomm (with rumors of Nvidia planning to enter the fray before long, as well). Apple, meanwhile, has a range of powerful and portable systems based on its own Apple Silicon.
+In 2026, Intel's most recent chips are its Intel Core Ultra (Series 3) chips, code-named Panther Lake, while AMD launched its "Gorgon Point" Ryzen AI processors at
+CES
+.
+On Macs, Apple's top chips are the M5 series, including the M5 Pro and M5 Max, can be found in the MacBook Pro and MacBook Air lineup. Qualcomm's Snapdragon Elite Extreme, Elite, and Plus series chips are pushing Windows on Arm, with the second generation in the process of launching this year.
+Best Laptops You Can Buy Today
+Why you can trust Tom's Hardware
+Our expert reviewers spend hours testing and comparing products and services so you can choose the best for you.
+Find out more about how we test
+.
+The Best Laptop (and Mac) overall
+(Image credit: Tom's Hardware)
+1. MacBook Air (M5)
+The Best Laptop (and Mac) overall
+Our expert review:
+Specifications
+CPU:
+Apple M5 (10-core CPU)
+GPU:
+10-core GPU (integrated)
+Display:
+13.6-inch, 2560 x 1664, Liquid Retina, IPS, LED, True Tone
+Weight:
+2.7 pounds (1.2

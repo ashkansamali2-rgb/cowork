@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react'
 
+// Strip ANSI escape codes
+const stripAnsi = (str) => typeof str === 'string' ? str.replace(/\x1b\[[0-9;]*m/g, '') : str
+
 function formatContent(content) {
   const parts = content.split(/(```[\s\S]*?```)/g)
   return parts.map((part, i) => {
@@ -47,7 +50,13 @@ function formatTime(ts) {
 export default function MessageBubble({ message }) {
   const { role, content, streaming, error, typing, timestamp } = message
   const isUser = role === 'user'
-  const formattedContent = useMemo(() => formatContent(content || ''), [content])
+  // Safely convert content: strip ANSI, stringify objects
+  const safeStr = useMemo(() => {
+    if (content === null || content === undefined) return ''
+    if (typeof content === 'object') return JSON.stringify(content)
+    return stripAnsi(String(content))
+  }, [content])
+  const formattedContent = useMemo(() => formatContent(safeStr), [safeStr])
 
   // Typing bubble — three pulsing dots
   if (typing) {
@@ -84,7 +93,7 @@ export default function MessageBubble({ message }) {
             className="px-4 py-3"
             style={{ background: '#7C3AED' }}
           >
-            <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{content}</p>
+            <p className="text-sm text-white leading-relaxed whitespace-pre-wrap">{safeStr}</p>
           </div>
           <p className="text-[10px] text-[#9CA3AF] text-right mt-1.5">{formatTime(timestamp)}</p>
         </div>
@@ -125,7 +134,7 @@ export default function MessageBubble({ message }) {
           </div>
         </div>
         <p className="text-[10px] text-[#9CA3AF] mt-2 pl-3">
-          {streaming ? 'Responding...' : formatTime(timestamp)}
+          {formatTime(timestamp)}
         </p>
       </div>
     </div>

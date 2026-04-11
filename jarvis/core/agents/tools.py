@@ -8,16 +8,39 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 AGENTS_MEM_DIR = Path.home() / "cowork" / "agents" / "memory"
+
+# ── In-memory result cache ─────────────────────────────────────────────────────
+_CACHE: dict = {}       # key -> (timestamp, result)
+_CACHE_TTL: int = 600   # 10 minutes
+
+
+def _cache_get(key: str):
+    """Return cached value for key if still fresh, else None."""
+    if key in _CACHE:
+        ts, val = _CACHE[key]
+        if time.time() - ts < _CACHE_TTL:
+            return val
+        del _CACHE[key]
+    return None
+
+
+def _cache_set(key: str, val: str) -> None:
+    """Store val in cache under key with current timestamp."""
+    _CACHE[key] = (time.time(), val)
 
 # ── web_search(query: str) ─────────────────────────────────────────────────────
 def web_search(query: str) -> str:
     """DuckDuckGo search. Returns top 5 results with titles, URLs, snippets."""
     if not query:
         return "Error: query is required"
+    cached = _cache_get(query)
+    if cached is not None:
+        return cached
     try:
         try:
             from ddgs import DDGS  # new package name
@@ -33,7 +56,9 @@ def web_search(query: str) -> str:
             lines.append(f"   URL: {r.get('href', '')}")
             lines.append(f"   {r.get('body', '')[:300]}")
             lines.append("")
-        return "\n".join(lines)
+        result = "\n".join(lines)
+        _cache_set(query, result)
+        return result
     except Exception as e:
         return f"web_search failed: {e}"
 
@@ -42,6 +67,9 @@ def fetch_url(url: str) -> str:
     """Fetch webpage and extract clean text using BeautifulSoup."""
     if not url:
         return "Error: url is required"
+    cached = _cache_get(url)
+    if cached is not None:
+        return cached
     try:
         import requests
         from bs4 import BeautifulSoup
@@ -55,7 +83,9 @@ def fetch_url(url: str) -> str:
         # Collapse blank lines
         import re
         text = re.sub(r'\n{3,}', '\n\n', text)
-        return text[:8000]
+        result = text[:8000]
+        _cache_set(url, result)
+        return result
     except Exception as e:
         return f"fetch_url failed for {url}: {e}"
 

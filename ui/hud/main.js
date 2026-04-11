@@ -4,13 +4,13 @@ const path = require('path');
 let win;
 
 app.whenReady().then(() => {
-  const { width } = screen.getPrimaryDisplay().workAreaSize;
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   win = new BrowserWindow({
-    width: 600,
-    height: 100,
-    x: Math.floor((width - 600) / 2),
-    y: 0,
+    width: 56,
+    height: 56,
+    x: width - 66,
+    y: height - 66,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
