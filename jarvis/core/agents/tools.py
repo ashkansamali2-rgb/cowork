@@ -753,3 +753,11 @@ def register_tool(name: str, fn: callable, description: str = ""):
     """Dynamically register a new tool at runtime."""
     TOOLS[name] = fn
     TOOL_DESCRIPTIONS[name] = description or f"{name}(...) — dynamically loaded skill"
+
+# Meta-skill: create new skills on the fly
+try:
+    from core.agents.skills.skill_creator import skill_creator
+    TOOLS["skill_creator"] = skill_creator
+    TOOL_DESCRIPTIONS["skill_creator"] = "Create a brand new tool/skill when you need a capability that doesn't exist. Args: task_description (str)"
+except ImportError:
+    pass
