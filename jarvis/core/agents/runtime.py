@@ -4,6 +4,8 @@ runtime.py — Autonomous AgentRuntime with ReAct loop.
 Think → Act → Observe → repeat until FINAL_ANSWER or max_steps.
 """
 import asyncio
+import importlib.util
+import inspect
 import json
 import re
 import time
@@ -36,7 +38,17 @@ Rules:
 _THINK_USER = """\
 TASK: {task}
 
-STEP HISTORY:
+STEP BUDGET:
+You have {remaining_steps} steps remaining.
+RULES:
+- Do web_search MAX 2 times
+- Do fetch_url MAX 3 times total
+- After 5 steps of research, you MUST synthesize and create the output
+- Never fetch the same URL twice
+- If a URL returns 403, skip it immediately
+- After collecting enough data, call create_keynote_presentation or create_word_document immediately
+
+{force_finish_warning}STEP HISTORY:
 {history}
 
 CURRENT OBSERVATION:
@@ -44,6 +56,8 @@ CURRENT OBSERVATION:
 
 What is your next action? Choose a tool or provide FINAL_ANSWER.
 """
+
+OUTPUT_TOOLS = {"create_keynote_presentation", "create_word_document"}
 
 
 class AgentRuntime:
@@ -69,6 +83,29 @@ class AgentRuntime:
         self.history: list[dict] = []
         self.result: Optional[str] = None
         self.status: str = "pending"
+
+        # Load persistent skills from skills/ directory
+        skills_dir = Path(__file__).parent / "skills"
+        if skills_dir.exists():
+            for skill_file in skills_dir.glob("skill_*.py"):
+                try:
+                    spec = importlib.util.spec_from_file_location(skill_file.stem, skill_file)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    for name, func in inspect.getmembers(module, inspect.isfunction):
+                        if name.startswith("skill_"):
+                            self.tools[name] = func
+                            print(f"[Skills] Loaded: {name}")
+                except Exception as e:
+                    print(f"[Skills] Failed to load {skill_file.name}: {e}")
+
+        # Wire up SkillBuilder if not provided
+        if self.skill_builder is None:
+            try:
+                from core.agents.skill_builder import SkillBuilder
+                self.skill_builder = SkillBuilder(tools=self.tools)
+            except Exception:
+                pass
 
     async def run(self, websocket=None) -> str:
         self.status = "running"
@@ -103,12 +140,40 @@ class AgentRuntime:
         observation = initial_obs
         await self._publish_update(0, "start", observation)
 
+        # Tracking state for smart step budgeting
+        called_tools: set[str] = set()
+        fetched_urls: set[str] = set()
+        web_search_count: int = 0
+        fetch_url_count: int = 0
+
         for step in range(1, self.max_steps + 1):
             # ── THINK ──────────────────────────────────────────────────────────
             print(f"[AGENT {self.agent_id}] STEP {step}/{self.max_steps} — thinking...")
             history_text = self._format_history()
+            remaining_steps = self.max_steps - step + 1
+
+            # Build force_finish warning if needed
+            force_finish_warning = ""
+            output_tool_called = bool(called_tools & OUTPUT_TOOLS)
+            if step > 20 and not output_tool_called:
+                force_finish_warning = (
+                    "CRITICAL: You must create the output NOW. "
+                    "Stop researching. Call create_keynote_presentation with what you have.\n\n"
+                )
+
+            # Inject warnings for exceeded tool limits
+            warnings = []
+            if web_search_count >= 2:
+                warnings.append("WARNING: web_search limit reached (2/2). Do NOT call web_search again.")
+            if fetch_url_count >= 3:
+                warnings.append("WARNING: fetch_url limit reached (3/3). Do NOT call fetch_url again.")
+            if warnings:
+                force_finish_warning += "\n".join(warnings) + "\n\n"
+
             think_prompt = _THINK_USER.format(
                 task=self.task,
+                remaining_steps=remaining_steps,
+                force_finish_warning=force_finish_warning,
                 history=history_text or "(none)",
                 observation=observation,
             )
@@ -137,6 +202,20 @@ class AgentRuntime:
                 self.history.append({"step": step, "action": "parse_error", "observation": observation})
                 continue
 
+            # ── Duplicate URL guard ─────────────────────────────────────────────
+            if action == "fetch_url":
+                url_arg = args if isinstance(args, str) else (args.get("url", "") if isinstance(args, dict) else "")
+                if url_arg and url_arg in fetched_urls:
+                    observation = f"Skipped: URL already fetched: {url_arg}"
+                    self.history.append({"step": step, "action": action, "args": args, "observation": observation})
+                    continue
+                if url_arg:
+                    fetched_urls.add(url_arg)
+                fetch_url_count += 1
+
+            if action == "web_search":
+                web_search_count += 1
+
             # ── ACT ────────────────────────────────────────────────────────────
             print(f"[AGENT {self.agent_id}] ACT: {action}({args})")
             await self._publish_update(step, action, f"Calling {action}({args})")
@@ -160,19 +239,32 @@ class AgentRuntime:
                     continue
 
             # Execute
+            tool_name = action
             try:
                 if isinstance(args, dict):
                     observation = await asyncio.to_thread(tool_fn, **args)
                 else:
                     observation = await asyncio.to_thread(tool_fn, args)
                 observation = str(observation)[:3000]
+                called_tools.add(tool_name)
             except Exception as e:
                 observation = f"Tool {action} raised: {e}"
-                # Let skill builder try to handle
+                # Let skill builder try to handle the failure
                 if self.skill_builder:
-                    fix = self.skill_builder.handle_failure(self.task, str(e), {"action": action, "args": args})
-                    if fix:
-                        observation += f"\nSkillBuilder: {fix}"
+                    try:
+                        new_skill = await asyncio.to_thread(
+                            self.skill_builder.handle_failure, self.task, str(e), {"action": action, "args": args}
+                        )
+                        if new_skill and isinstance(new_skill, str):
+                            observation += f"\nSkillBuilder: {new_skill}"
+                        elif new_skill and isinstance(new_skill, dict):
+                            from core.agents import tools as tools_module
+                            setattr(tools_module, new_skill['name'], new_skill['func'])
+                            self.tools[new_skill['name']] = new_skill['func']
+                            if 'description' in new_skill:
+                                tools_module.TOOL_DESCRIPTIONS[new_skill['name']] = new_skill['description']
+                    except Exception as sb_err:
+                        pass  # skill builder failure is non-fatal
 
             print(f"[AGENT {self.agent_id}] OBSERVE: {observation[:200]}")
             self.history.append({"step": step, "action": action, "args": args, "observation": observation})

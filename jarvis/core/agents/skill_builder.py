@@ -46,18 +46,21 @@ Output ONLY the Python function code, nothing else. No markdown, no explanation.
 """
 
 _SKILL_PROMPT = """\
-A tool call failed with this error:
-ERROR: {error}
+A tool called {action} failed with error: {error}
+The agent was trying to: {task}
 
-The agent was trying to accomplish:
-TASK: {task}
+Write a new Python function that solves this problem.
+The function must:
+1. Have a clear name starting with skill_
+2. Accept flexible arguments (*args, **kwargs)
+3. Return a string result
+4. Handle errors gracefully
+5. Use only these imports: os, subprocess, requests, json, pathlib
 
-The failed action was:
-ACTION: {action}
-CONTEXT: {context}
+Think creatively — if the original tool failed, find an alternative approach.
+Example: if fetch_url fails with 403, try using curl with a browser user-agent instead.
 
-Write a Python function called skill_{skill_name} that handles this situation.
-The function should take relevant arguments and return a string result.
+Output ONLY the Python function code, nothing else.
 """
 
 
@@ -196,8 +199,6 @@ class SkillBuilder:
                 error=error[:300],
                 task=task[:200],
                 action=action,
-                context=context[:300],
-                skill_name=skill_name,
             )
             payload = {
                 "model": "qwen",
