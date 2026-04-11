@@ -168,7 +168,7 @@ ipcMain.handle('chat:send', async (event, message) => {
   if (!jarvisWs || jarvisWs.readyState !== WebSocket.OPEN) {
     throw new Error('Jarvis not connected')
   }
-  const payload = JSON.stringify({ message: message })
+  const payload = JSON.stringify({ message: message, source: 'desktop' })
   jarvisWs.send(payload)
   return { ok: true }
 })

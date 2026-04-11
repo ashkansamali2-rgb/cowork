@@ -57,7 +57,10 @@ CURRENT OBSERVATION:
 What is your next action? Choose a tool or provide FINAL_ANSWER.
 """
 
-OUTPUT_TOOLS = {"create_keynote_presentation", "create_word_document"}
+OUTPUT_TOOLS = {
+    "create_keynote_presentation", "create_word_document", "create_document",
+    "create_pages_document", "write_file", "speak",
+}
 
 
 class AgentRuntime:
@@ -142,6 +145,7 @@ class AgentRuntime:
 
         # Tracking state for smart step budgeting
         called_tools: set[str] = set()
+        completed_tools: set[str] = set()   # output tools that already succeeded
         fetched_urls: set[str] = set()
         web_search_count: int = 0
         fetch_url_count: int = 0
@@ -155,7 +159,13 @@ class AgentRuntime:
             # Build force_finish warning if needed
             force_finish_warning = ""
             output_tool_called = bool(called_tools & OUTPUT_TOOLS)
-            if step > 20 and not output_tool_called:
+            if step > 20 and completed_tools:
+                # Output already succeeded — stop immediately
+                self.result = observation
+                self.history.append({"step": step, "action": "FINAL_ANSWER", "observation": self.result})
+                await self._publish_update(step, "FINAL_ANSWER", self.result)
+                break
+            elif step > 20 and not output_tool_called:
                 force_finish_warning = (
                     "CRITICAL: You must create the output NOW. "
                     "Stop researching. Call create_keynote_presentation with what you have.\n\n"
@@ -201,6 +211,13 @@ class AgentRuntime:
                 observation = f"Could not parse action from: {llm_response[:200]}"
                 self.history.append({"step": step, "action": "parse_error", "observation": observation})
                 continue
+
+            # Prevent re-running an output tool that already completed
+            if action in completed_tools:
+                self.result = f"Task already completed via {action}. {observation}"
+                self.history.append({"step": step, "action": "FINAL_ANSWER", "observation": self.result})
+                await self._publish_update(step, "FINAL_ANSWER", self.result)
+                break
 
             # ── Duplicate URL guard ─────────────────────────────────────────────
             if action == "fetch_url":
@@ -268,6 +285,25 @@ class AgentRuntime:
 
             print(f"[AGENT {self.agent_id}] OBSERVE: {observation[:200]}")
             self.history.append({"step": step, "action": action, "args": args, "observation": observation})
+
+            # ── Output tool success → end loop immediately ──────────────────
+            if tool_name in OUTPUT_TOOLS and not observation.startswith("Tool ") and "Error" not in observation[:100]:
+                completed_tools.add(tool_name)
+                self.result = observation
+                await self._publish_update(step, "FINAL_ANSWER", observation)
+                if websocket:
+                    try:
+                        await websocket.send_json({
+                            "type": "agent_update",
+                            "agent_id": self.agent_id,
+                            "step": step,
+                            "action": "FINAL_ANSWER",
+                            "observation": observation[:300],
+                            "task": self.task,
+                        })
+                    except Exception:
+                        pass
+                break
 
             # Send update directly via websocket if available, else publish to bus
             step_payload = {
