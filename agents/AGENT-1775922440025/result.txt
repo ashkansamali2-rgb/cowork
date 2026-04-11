@@ -1,0 +1,4 @@
+Task: open Safari and go to github.com
+
+Result:
+Safari has been opened and navigated to https://github.com successfully. The task is complete.

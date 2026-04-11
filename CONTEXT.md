@@ -1,8 +1,8 @@
 # COWORK — Project Context & Roadmap
-**Last updated:** April 9, 2026
+**Last updated:** April 11, 2026
 **Author:** Ashkan Samali
 **Machine:** MacBook Pro (Apple Silicon)
-**Status:** Phase 3 complete, Phase 4 in progress
+**Status:** Phase 7 complete, Phase 8 in progress
 
 ---
 
@@ -93,6 +93,8 @@ You (voice / text / gesture)
 | `~/cowork/logs/` | Daily rotating logs: bus-YYYY-MM-DD.log, jarvis.log, etc. |
 | `~/cowork/ui/command-station/` | Electron + React dashboard |
 | `~/cowork/ui/command-station/dist-electron/mac-arm64/Command Station.app` | Built Electron app |
+| `~/cowork/ui/cli/jarvis_cli.py` | CLI rewritten with prompt_toolkit + Rich (v0.6.0) |
+| `~/cowork/vision/gesture_daemon.py` | MediaPipe gesture detection daemon |
 | `~/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf` | Architect model file |
 | `~/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor/brain model file |
 
@@ -106,6 +108,25 @@ You (voice / text / gesture)
 | Qwen 3.5 9B | `Qwen3.5-9B-UD-Q6_K_XL.gguf` | Editor — writing code; Jarvis general brain |
 | Qwen3-TTS 0.6B | HuggingFace MLX | Voice output |
 | Whisper large-v3-turbo | HuggingFace MLX | Voice input |
+
+---
+
+## Performance Improvements
+
+- **Qwen context window:** Reduced to lower memory pressure and speed up inference
+- **Model pre-warming:** Models warm-loaded on daemon startup to reduce first-response latency
+- **Fast routes in router.py:** Hardcoded instant responses for greetings, app opens, common queries (time, date, battery, volume) — zero LLM overhead
+
+---
+
+## CLI (v0.6.0)
+
+The CLI (`ui/cli/jarvis_cli.py`) has been fully rewritten:
+- **prompt_toolkit** for interactive input with history, keybindings, and tab-completion
+- **Rich** for styled terminal output (panels, tables, coloured status)
+- Slash commands: `/project`, `/memory`, `/agents`, `/help`, `/clear`
+- Multi-line input mode
+- Persistent session history
 
 ---
 
@@ -138,7 +159,7 @@ You (voice / text / gesture)
 
 ---
 
-### PHASE 3 — Multi-Agent Spawner & File Targeting
+### PHASE 3 — Aider Integration via Cantivia Pipeline
 **Status: Complete**
 
 - `AGENT_SPAWN` event type wired up end to end
@@ -148,59 +169,65 @@ You (voice / text / gesture)
 - Results aggregated and reported back via `TASK_VOICE`
 - Projects support: named sessions with message isolation
 - CLI slash commands: `/project`, `/memory`, `/agents`, etc.
+- aider integrated as the code-application layer inside cantivia-cli.py
 
 ---
 
-### PHASE 4 — Quality of Life
+### PHASE 4 — Browser Vision (Playwright + Gemma Diagnosis)
+**Status: Complete**
+
+- `cantivia fix localhost:3000` → screenshots page → Gemma diagnoses visually → Qwen patches → re-screenshot to verify
+- Playwright integration for browser control and screenshot capture
+- Gemma 4 E4B multimodal vision used for UI diagnosis
+- ForensicNet vision backbone added under `vision/backbone/ForensicNet`
+- Screenshot events routed through the Cantivia bus
+
+---
+
+### PHASE 5 — Voice Reliability & Latency
 **Status: In progress**
 
-**Goal:** Remove friction from everyday use — faster responses, easier startup, better observability.
-
-**Completed this session:**
-- `router.py`: Added `APP_NAME_MAP` — normalises fuzzy app names before `open -a` (e.g. "chrome" → "Google Chrome")
-- `router.py`: Added fast hardcoded routes for time, date, battery, volume, screenshot, sleep — zero LLM overhead
-- `cantivia-bus.py`: Daily rotating log files in `~/cowork/logs/bus-YYYY-MM-DD.log`; structured `[TIMESTAMP] [CLIENT] EVENT: details` format; task start/complete with duration
-- `start_cowork.sh`: New one-command startup; coloured output (green/yellow/red); health-checks each service (port or pgrep); opens Command Station Electron app automatically
-- `clap_start.py`: Refactored to call `start_cowork.sh` instead of inline subprocess calls
-
-**Remaining / next up:**
-- Command Station: project switcher UI, agent status panel
-- Voice: wake word ("Hey Cowork"), sub-300ms STT with Whisper tiny MLX
-- Self-healing: auto-restart dead services via heartbeat engine
-
----
-
-### PHASE 5 — Fast Voice (Sub-300ms Latency)
-**Status: Planned**
-
-- Wake word: Porcupine — "Hey Cowork"
-- STT: Whisper tiny/base MLX for <100ms transcription
+- Reliability fixes applied: reconnect loops, error recovery, dead-session cleanup
+- Voice pipeline hardened against timeout and model load failures
+- Wake word groundwork: "Hey Cowork" planned via Porcupine
+- STT: Whisper tiny/base MLX for <100ms transcription (target)
 - TTS: Qwen3-TTS 0.6B MLX
 - Target: wake word → response playing in under 1 second
 
 ---
 
 ### PHASE 6 — Hand Gesture Control
-**Status: Planned**
+**Status: Planned** (`gesture_daemon.py` exists)
 
+- `vision/gesture_daemon.py` scaffolded and ready
 - MediaPipe Hands real-time gesture detection via MacBook camera
 - Gestures: open palm (stop), point (cursor), pinch (click), two fingers (voice mode), fist (kill agent)
 - Gesture events published to bus as `GESTURE_EVENT`
 
 ---
 
-### PHASE 7 — Browser Vision (Playwright + Diagnosis)
-**Status: Planned**
+### PHASE 7 — Multi-Agent System
+**Status: Complete**
 
-- `cantivia fix localhost:3000` → screenshots page → Gemma diagnoses visually → Qwen patches → re-screenshot to verify
+- Full multi-agent orchestration implemented
+- Agents spawned dynamically from bus events
+- Agent lifecycle: spawn → task assignment → heartbeat → result → cleanup
+- Loop detection: agents self-terminate on repeated identical outputs
+- Agent panel in Command Station HUD shows live agent status
+- Multitasking: multiple agents run concurrently on different tasks/repos
+- Agent results aggregated and spoken back via TTS
+- Reliability: agents track their own state, handle timeouts gracefully
 
 ---
 
 ### PHASE 8 — The HUD (Ambient UI)
-**Status: Planned**
+**Status: In progress**
 
-- Always-on thin neon overlay: active agents, voice mode, inference speed, bus event stream
+- Corner dot implemented: always-visible ambient indicator in screen corner
+- Shows active state (listening / processing / idle) via colour
+- Full HUD planned: always-on thin neon overlay with active agents, voice mode, inference speed, bus event stream
 - Stack: Electron + CSS animations + WebSocket to bus
+- HUD voice-only mode available
 
 ---
 
@@ -236,6 +263,9 @@ Logs land in `~/cowork/logs/`.
 | Bus logs scattered, no file persistence | Daily rotating log files in ~/cowork/logs/ |
 | Starting system requires multiple terminal commands | start_cowork.sh with health checks |
 | clap_start.py duplicated startup logic | Now delegates entirely to start_cowork.sh |
+| Voice pipeline drops connection under load | Reconnect loops + error recovery in voice layer |
+| Agent loop detection missing | Agents now self-terminate on repeated output |
+| HUD not visible | Corner dot implemented as minimal ambient indicator |
 
 ---
 

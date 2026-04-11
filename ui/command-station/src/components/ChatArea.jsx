@@ -23,14 +23,14 @@ function EmptyState() {
 
 // Agent progress is shown in the LiveAgentMonitor right panel — not in-chat
 
-export default function ChatArea({ messages, statusText }) {
+export default function ChatArea({ messages, statusText, isTyping }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages, statusText])
+  }, [messages, statusText, isTyping])
 
-  if (messages.length === 0) {
+  if (messages.length === 0 && !isTyping) {
     return (
       <div className="flex-1 overflow-y-auto flex items-center justify-center bg-[#FBF8F4]">
         <EmptyState />
@@ -45,7 +45,15 @@ export default function ChatArea({ messages, statusText }) {
           <MessageBubble key={msg.id || idx} message={msg} />
         ))}
 
-        {statusText && (
+        {isTyping && (
+          <div className="flex items-center gap-2 pl-9">
+            <span className="typing-dot" style={{ animationDelay: '0s' }} />
+            <span className="typing-dot" style={{ animationDelay: '0.18s' }} />
+            <span className="typing-dot" style={{ animationDelay: '0.36s' }} />
+          </div>
+        )}
+
+        {statusText && !isTyping && (
           <div className="pl-9">
             <span className="text-[11px] text-[#9CA3AF] italic">{statusText}</span>
           </div>

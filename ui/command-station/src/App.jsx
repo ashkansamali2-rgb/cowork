@@ -9,6 +9,17 @@ function generateId() {
   return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+// Strip ANSI escape codes from strings
+const stripAnsi = (str) => typeof str === 'string' ? str.replace(/\x1b\[[0-9;]*m/g, '') : str
+
+// Safely convert message content to a displayable string
+function safeContent(content) {
+  if (content === null || content === undefined) return ''
+  if (typeof content === 'string') return stripAnsi(content)
+  if (typeof content === 'object') return JSON.stringify(content)
+  return String(content)
+}
+
 function getChatTitle(messages) {
   const first = messages.find(m => m.role === 'user')
   if (!first) return 'New Chat'
@@ -34,6 +45,7 @@ export default function App() {
   const [spawnerOpen, setSpawnerOpen] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [statusText, setStatusText] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
 
   // Track the last sent user message for agent task labels
   const lastUserMsgRef = useRef('')
@@ -79,8 +91,20 @@ export default function App() {
     api.listProjects().then(loaded => setProjects(loaded || [])).catch(console.error)
 
     const handleStream = (data) => {
-      console.log('[DEBUG WS]', JSON.stringify(data))
-      console.log('[WS]', data.type, data)
+      console.log('[WS]', data)
+
+      // "ack" type: never add to chat, just show typing indicator
+      if (data.type === 'ack') {
+        setIsTyping(true)
+        return
+      }
+
+      // "status" type: update typing indicator only, do NOT add as chat bubble
+      if (data.type === 'status') {
+        setIsTyping(true)
+        if (data.text) setStatusText(data.text)
+        return
+      }
 
       // Agent announced → create entry immediately before first step
       if (data.type === 'agent_start') {
@@ -115,8 +139,9 @@ export default function App() {
         return
       }
 
-      // Agent final result → mark done, inject bubble
-      if (data.type === 'final' && data.msg) {
+      // "final" type: add as Jarvis response bubble, clear typing indicator
+      if (data.type === 'final') {
+        setIsTyping(false)
         setAgents(prev => {
           const updated = { ...prev }
           Object.keys(updated).forEach(id => {
@@ -128,14 +153,33 @@ export default function App() {
         setTimeout(() => setAgentDone(false), 3500)
         setIsStreaming(false)
         setStatusText('')
+        const msgContent = safeContent(data.msg || data.content || data.text)
+        if (msgContent) {
+          setMessages(prev => [
+            ...prev.filter(m => m.id !== TYPING_ID),
+            { id: `msg_${Date.now()}`, role: 'assistant', content: msgContent, timestamp: Date.now() },
+          ])
+        } else {
+          setMessages(prev => prev.filter(m => m.id !== TYPING_ID))
+        }
+        return
+      }
+
+      // "error" type: clear typing, show error bubble
+      if (data.type === 'error') {
+        setIsTyping(false)
+        setIsStreaming(false)
+        setStatusText('')
+        const errContent = safeContent(data.msg || data.content || data.text || 'An error occurred')
         setMessages(prev => [
           ...prev.filter(m => m.id !== TYPING_ID),
-          { id: `msg_${Date.now()}`, role: 'assistant', content: data.msg, timestamp: Date.now() },
+          { id: `msg_${Date.now()}`, role: 'assistant', content: errContent, error: true, timestamp: Date.now() },
         ])
         return
       }
 
       if (data.done) {
+        setIsTyping(false)
         setIsStreaming(false)
         setStatusText('')
         setMessages(prev => {
@@ -149,14 +193,17 @@ export default function App() {
           return updated
         })
       } else if (data.content) {
+        setIsTyping(false)
         setIsStreaming(true)
+        const chunk = safeContent(data.content)
+        if (!chunk) return
         setMessages(prev => {
           const withoutTyping = prev.filter(m => m.id !== TYPING_ID)
           const last = withoutTyping[withoutTyping.length - 1]
           if (last && last.role === 'assistant' && last.streaming) {
             return [
               ...withoutTyping.slice(0, -1),
-              { ...last, content: last.content + data.content },
+              { ...last, content: last.content + chunk },
             ]
           }
           return [
@@ -164,7 +211,7 @@ export default function App() {
             {
               id: `msg_${Date.now()}`,
               role: 'assistant',
-              content: data.content,
+              content: chunk,
               streaming: true,
               timestamp: Date.now(),
             },
@@ -224,7 +271,11 @@ export default function App() {
   // ── Auto-save ───────────────────────────────────────────────────────────────
   const saveChatRef = useRef(null)
   useEffect(() => {
+    // Only save when there are real user/assistant messages, not streaming, and we have an active chat ID
     if (messages.length === 0 || isStreaming) return
+    if (!activeChatIdRef.current) return
+    const realMessages = messages.filter(m => m.id !== TYPING_ID && (m.role === 'user' || m.role === 'assistant'))
+    if (realMessages.length === 0) return
     const api = window.jarvis
     if (!api) return
 
@@ -463,6 +514,7 @@ export default function App() {
     }
     setMessages(prev => [...prev, userMsg, typingBubble])
     setIsStreaming(true)
+    setIsTyping(true)
 
     try {
       await api.sendMessage(messageToSend)
@@ -478,6 +530,7 @@ export default function App() {
         },
       ])
       setIsStreaming(false)
+      setIsTyping(false)
       setStatusText('')
     }
   }, [isStreaming])
@@ -523,6 +576,7 @@ export default function App() {
           <ChatArea
             messages={messages}
             statusText={statusText}
+            isTyping={isTyping}
           />
           <InputBar
             onSend={handleSendMessage}

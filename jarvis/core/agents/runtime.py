@@ -289,6 +289,7 @@ class AgentRuntime:
             # ── Output tool success → end loop immediately ──────────────────
             if tool_name in OUTPUT_TOOLS and not observation.startswith("Tool ") and "Error" not in observation[:100]:
                 completed_tools.add(tool_name)
+                self._done = True
                 self.result = observation
                 await self._publish_update(step, "FINAL_ANSWER", observation)
                 if websocket:
@@ -378,7 +379,7 @@ class AgentRuntime:
         action_m = re.search(r'(?:ACTION|TOOL):\s*(\w+)', text)
         if action_m:
             action = action_m.group(1).strip()
-            # Try ARGS: {...}
+            # Try ARGS: {...}  (JSON object)
             args_m = re.search(r'ARGS:\s*(\{.*?\})', text, re.DOTALL)
             if args_m:
                 try:
@@ -386,6 +387,16 @@ class AgentRuntime:
                     return action, _unwrap_single(action, args)
                 except json.JSONDecodeError:
                     pass
+            # Try ARGS: <plain string>  (non-JSON)
+            args_plain_m = re.search(r'ARGS:\s*(.+)', text)
+            if args_plain_m:
+                args_str = args_plain_m.group(1).strip()
+                # Try json.loads first; if it fails, use the raw string
+                try:
+                    args = json.loads(args_str)
+                    return action, _unwrap_single(action, args)
+                except (json.JSONDecodeError, ValueError):
+                    return action, args_str
             # Try INPUT: value
             input_m = re.search(r'INPUT:\s*(.+)', text)
             if input_m:
@@ -433,14 +444,45 @@ class AgentRuntime:
         return None, {}
 
     def _think(self, prompt: str) -> str:
-        """Call local Qwen for ReAct Think steps (tool selection)."""
+        """Call local Qwen for ReAct Think steps (tool selection).
+        Retries once on failure; falls back to a simpler prompt on second failure.
+        """
         import requests
-        r = requests.post("http://localhost:8081/v1/chat/completions", json={
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.1,
-            "max_tokens": 500
-        }, timeout=120)
-        return r.json()["choices"][0]["message"]["content"].strip()
+
+        def _call(p: str) -> str:
+            r = requests.post("http://localhost:8081/v1/chat/completions", json={
+                "messages": [{"role": "user", "content": p}],
+                "temperature": 0.1,
+                "max_tokens": 500
+            }, timeout=120)
+            return r.json()["choices"][0]["message"]["content"].strip()
+
+        # First attempt
+        try:
+            return _call(prompt)
+        except Exception as first_err:
+            pass  # fall through to retry
+
+        # Retry with same prompt
+        try:
+            return _call(prompt)
+        except Exception:
+            pass  # fall through to fallback
+
+        # Fallback: simpler prompt
+        tool_list = ", ".join(self.tools.keys())
+        fallback_prompt = (
+            f"You are helping with the task: {self.task}. "
+            f"Available tools: {tool_list}. "
+            "What single action should be taken next? "
+            "Reply with TOOL: <name> ARGS: <args> or FINAL: <answer>"
+        )
+        try:
+            return _call(fallback_prompt)
+        except Exception as final_err:
+            raise RuntimeError(
+                f"_think failed after retry and fallback: {final_err}"
+            ) from final_err
 
     def _call_qwen(self, system_prompt: str, user_prompt: str) -> str:
         import requests

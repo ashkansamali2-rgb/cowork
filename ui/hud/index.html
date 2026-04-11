@@ -4,101 +4,69 @@
   <meta charset="UTF-8">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: transparent; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; }
-    #hud {
-      width: 600px; height: 72px;
-      display: flex; align-items: center;
-      border-radius: 0 0 16px 16px;
-      background: rgba(10, 8, 20, 0.88);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(124, 58, 237, 0.35);
-      border-top: none;
-      opacity: 0;
-      transform: translateY(-72px);
-      transition: opacity 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      padding: 0 20px; gap: 12px;
+    body {
+      background: transparent;
+      width: 56px; height: 56px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
     }
-    #hud.visible { opacity: 1; transform: translateY(0); }
-    #bar { width: 3px; height: 36px; background: #7C3AED; border-radius: 2px; flex-shrink: 0; }
-    #dots { display: none; gap: 5px; align-items: center; }
-    #dots.active { display: flex; }
-    .dot {
-      width: 7px; height: 7px; border-radius: 50%;
+    #dot {
+      width: 36px; height: 36px; border-radius: 50%;
       background: #7C3AED;
-      animation: pulse 1.4s ease-in-out infinite;
+      opacity: 0.35;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 0 0 rgba(124,58,237,0);
     }
-    .dot:nth-child(2) { animation-delay: 0.15s; }
-    .dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes breathe {
+      0%,100% { transform: scale(1); opacity: 0.35; }
+      50% { transform: scale(1.08); opacity: 0.45; }
+    }
     @keyframes pulse {
-      0%,100% { opacity: 0.25; transform: scale(0.75); }
-      50% { opacity: 1; transform: scale(1.15); }
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124,58,237,0.7); }
+      50% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(124,58,237,0); }
     }
-    #label {
-      color: #6b5b8e; font-size: 11px;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      display: none; margin-left: 2px;
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
-    #label.active { display: block; }
-    #text {
-      color: #ede9f8; font-size: 13px;
-      white-space: nowrap; overflow: hidden;
-      text-overflow: ellipsis; max-width: 500px;
-      display: none;
-    }
-    #text.active { display: block; }
+    .idle { animation: breathe 3s ease-in-out infinite; }
+    .listening { opacity: 1 !important; animation: pulse 0.6s ease-in-out infinite; }
+    .thinking { opacity: 0.8 !important; border: 2px solid #7C3AED; background: transparent !important; animation: spin 1s linear infinite; }
+    .done { background: #22c55e !important; opacity: 1 !important; }
+    .error { background: #ef4444 !important; opacity: 1 !important; }
   </style>
 </head>
 <body>
-  <div id="hud">
-    <div id="bar"></div>
-    <div id="dots">
-      <div class="dot"></div>
-      <div class="dot"></div>
-      <div class="dot"></div>
-    </div>
-    <div id="label">Thinking</div>
-    <div id="text"></div>
-  </div>
+  <div id="dot"></div>
   <script>
-    const hud = document.getElementById('hud');
-    const dots = document.getElementById('dots');
-    const label = document.getElementById('label');
-    const text = document.getElementById('text');
-    let hideTimer = null;
+    const dot = document.getElementById('dot');
 
-    function showThinking() {
-      clearTimeout(hideTimer);
-      dots.classList.add('active');
-      label.classList.add('active');
-      text.classList.remove('active');
-      hud.classList.add('visible');
-      hideTimer = setTimeout(hide, 30000);
+    function setState(s) {
+      dot.classList.remove('idle', 'listening', 'thinking', 'done', 'error');
+      dot.classList.add(s);
     }
 
-    function showResponse(msg) {
-      clearTimeout(hideTimer);
-      dots.classList.remove('active');
-      label.classList.remove('active');
-      text.textContent = msg.replace(/\x1b\[[0-9;]*m/g, '').slice(0, 120);
-      text.classList.add('active');
-      hud.classList.add('visible');
-      hideTimer = setTimeout(hide, 4000);
-    }
-
-    function hide() {
-      hud.classList.remove('visible');
-    }
+    setState('idle');
 
     function connect() {
       const ws = new WebSocket('ws://127.0.0.1:8001/ws');
-      ws.onopen = () => ws.send(JSON.stringify({register: 'hud'}));
+      ws.onopen = () => ws.send(JSON.stringify({ register: 'hud' }));
       ws.onmessage = (e) => {
         try {
-          const d = JSON.parse(e.data);
-          if (d.type === 'ack' || d.type === 'status') showThinking();
-          else if (d.type === 'final' && d.msg) showResponse(d.msg);
-        } catch(err) {}
+          const data = JSON.parse(e.data);
+          if (data.source !== undefined && data.source !== 'voice') return;
+          if (data.type === 'ack') {
+            setState('listening');
+          } else if (data.type === 'status') {
+            setState('thinking');
+          } else if (data.type === 'final') {
+            setState('done');
+            setTimeout(() => setState('idle'), 1500);
+          } else if (data.type === 'error') {
+            setState('error');
+            setTimeout(() => setState('idle'), 1000);
+          }
+        } catch (err) {}
       };
       ws.onclose = () => setTimeout(connect, 3000);
       ws.onerror = () => setTimeout(connect, 3000);
