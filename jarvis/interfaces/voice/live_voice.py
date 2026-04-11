@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 import json
+import queue
 import tempfile
 import threading
 import random
@@ -40,13 +41,23 @@ GREETINGS = [
 tts_lock = threading.Lock()
 is_speaking = threading.Event()
 
+
 def sanitize_for_speech(text):
     text = re.sub(r'```.*?```', ' code snippet removed. ', text, flags=re.DOTALL)
     text = text.replace('`', '').replace('*', '').replace('@', ' at ')
     text = re.sub(r'http\S+', 'a link', text)
     return text.strip()
 
+
+def truncate_to_sentences(text, n=2):
+    """Return first n sentences of text."""
+    parts = re.split(r'(?<=[.!?])\s+|\n', text.strip())
+    return ' '.join(parts[:n])
+
+
 def speak_text(text):
+    # Truncate to first 2 sentences for faster response
+    text = truncate_to_sentences(text, 2)
     safe_text = sanitize_for_speech(text)
     print(f"[Voice] Speaking: {safe_text[:80]}")
     is_speaking.set()
@@ -71,18 +82,22 @@ def speak_text(text):
             os.system(f"say -v Daniel '{clean}'")
             is_speaking.clear()
 
+
 # ── STT ──────────────────────────────────────────────────────────────────────
 WHISPER_MODEL = "mlx-community/whisper-large-v3-turbo"
 recognizer = sr.Recognizer()
 recognizer.energy_threshold = 150
 recognizer.dynamic_energy_threshold = False
-recognizer.pause_threshold = 1.5
-recognizer.non_speaking_duration = 0.5
+recognizer.pause_threshold = 0.6
+recognizer.non_speaking_duration = 0.3
 
 WS_URL = "ws://127.0.0.1:8001/ws"
 WAKE_WORD = "jarvis"
 WATCHDOG_TIMEOUT = 30
 CRASH_LOG = "/tmp/voice_crash.log"
+
+# Queue: decouples audio capture from transcription/processing
+incoming_audio = queue.Queue()
 
 
 def log_crash(exc: Exception, context: str = ""):
@@ -96,17 +111,19 @@ def log_crash(exc: Exception, context: str = ""):
         pass
     print(f"[System] {entry.strip()}")
 
+
 def transcribe_audio(audio) -> str | None:
     try:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
             f.write(audio.get_wav_data())
             tmp = f.name
-        result = mlx_whisper.transcribe(tmp, path_or_hf_repo=WHISPER_MODEL)
+        result = mlx_whisper.transcribe(tmp, path_or_hf_repo=WHISPER_MODEL, beam_size=1)
         os.remove(tmp)
         return result["text"].lower().strip()
     except Exception as e:
         print(f"[STT Error] {e}")
         return None
+
 
 async def listen_and_send():
     while True:
@@ -115,18 +132,18 @@ async def listen_and_send():
             async with websockets.connect(WS_URL, ping_interval=None) as ws:
                 print("[System] Link established. JARVIS is online.")
 
-                waiting_since = None  # set when a command is sent; cleared on "final"
+                waiting_since_ref = [None]  # shared mutable ref between threads
+                loop = asyncio.get_running_loop()
 
                 # Receive responses and speak them in background thread
                 async def receive_loop():
-                    nonlocal waiting_since
                     try:
                         async for message in ws:
                             data = json.loads(message)
                             if "msg" in data:
                                 print(f"\n[JARVIS] {data['msg'][:120]}")
                             if data.get("type") == "final":
-                                waiting_since = None  # reset watchdog
+                                waiting_since_ref[0] = None  # reset watchdog
                                 threading.Thread(
                                     target=speak_text,
                                     args=(data["msg"],),
@@ -137,7 +154,46 @@ async def listen_and_send():
 
                 asyncio.create_task(receive_loop())
 
-                loop = asyncio.get_running_loop()
+                # Audio processor thread: handles queue even while TTS is running
+                def audio_processor():
+                    while True:
+                        try:
+                            audio = incoming_audio.get(timeout=5)
+                        except queue.Empty:
+                            continue
+                        if audio is None:
+                            break
+                        # If new audio arrives while speaking: interrupt TTS first
+                        if is_speaking.is_set():
+                            os.system("pkill afplay")
+                            is_speaking.clear()
+                            time.sleep(0.1)
+                        text = transcribe_audio(audio)
+                        if not text:
+                            continue
+                        print(f"\n[You] {text}")
+                        if any(w in text for w in ["stop", "cancel", "abort"]):
+                            print("[Ears] Kill switch.")
+                            asyncio.run_coroutine_threadsafe(
+                                ws.send(json.dumps({"message": "SYSTEM_COMMAND_STOP"})), loop
+                            )
+                            waiting_since_ref[0] = None
+                            continue
+                        if WAKE_WORD in text:
+                            command = text.split(WAKE_WORD, 1)[1].strip()
+                            os.system("afplay /System/Library/Sounds/Tink.aiff &")
+                            if command:
+                                print(f"[Ears] → Brain: {command}")
+                                waiting_since_ref[0] = time.monotonic()
+                                asyncio.run_coroutine_threadsafe(
+                                    ws.send(json.dumps({"message": command})), loop
+                                )
+                            else:
+                                print("[Ears] Wake word heard, no command.")
+
+                proc_thread = threading.Thread(target=audio_processor, daemon=True)
+                proc_thread.start()
+
                 with concurrent.futures.ThreadPoolExecutor() as pool:
                     with sr.Microphone() as source:
                         print("[Mic] Calibrating...")
@@ -150,22 +206,13 @@ async def listen_and_send():
                         ).start()
 
                         while True:
-                            # Drain mic buffer while Jarvis is speaking
-                            if is_speaking.is_set():
-                                try:
-                                    while is_speaking.is_set():
-                                        source.stream.read(source.CHUNK)
-                                except Exception:
-                                    pass
-                                continue
-
-                            # Watchdog: if no "final" received within 30s, reconnect
-                            if waiting_since is not None and time.monotonic() - waiting_since > WATCHDOG_TIMEOUT:
+                            # Watchdog: reconnect if no final response within 30s
+                            if waiting_since_ref[0] is not None and time.monotonic() - waiting_since_ref[0] > WATCHDOG_TIMEOUT:
                                 raise RuntimeError("Watchdog: no final response within 30s — reconnecting")
 
                             def get_audio():
                                 try:
-                                    return recognizer.listen(source, timeout=None)
+                                    return recognizer.listen(source, timeout=None, phrase_time_limit=10)
                                 except Exception:
                                     return None
 
@@ -173,35 +220,8 @@ async def listen_and_send():
                             if not audio:
                                 continue
 
-                            # Drain again in case speaking started during listen
-                            if is_speaking.is_set():
-                                try:
-                                    while is_speaking.is_set():
-                                        source.stream.read(source.CHUNK)
-                                except Exception:
-                                    pass
-                                continue
-
-                            text = await asyncio.to_thread(transcribe_audio, audio)
-                            if not text:
-                                continue
-
-                            print(f"\n[You] {text}")
-
-                            if any(w in text for w in ["stop", "cancel", "abort"]):
-                                print("[Ears] Kill switch.")
-                                await ws.send(json.dumps({"message": "SYSTEM_COMMAND_STOP"}))
-                                waiting_since = None
-                                continue
-
-                            if WAKE_WORD in text:
-                                command = text.split(WAKE_WORD, 1)[1].strip()
-                                if command:
-                                    print(f"[Ears] → Brain: {command}")
-                                    waiting_since = time.monotonic()  # arm watchdog
-                                    await ws.send(json.dumps({"message": command}))
-                                else:
-                                    print("[Ears] Wake word heard, no command.")
+                            # Put in queue — processor thread handles transcription
+                            incoming_audio.put(audio)
 
         except KeyboardInterrupt:
             raise
@@ -209,6 +229,7 @@ async def listen_and_send():
             log_crash(e, context="listen_and_send")
             print("[System] Reconnecting in 3 seconds...")
             await asyncio.sleep(3)
+
 
 if __name__ == "__main__":
     try:

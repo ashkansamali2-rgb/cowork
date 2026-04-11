@@ -53,7 +53,7 @@ class AgentRuntime:
         agent_id: str,
         tools: dict,
         tool_descriptions: str,
-        max_steps: int = 20,
+        max_steps: int = 30,
         on_step: Optional[Callable] = None,
         planner=None,
         skill_builder=None,
@@ -92,6 +92,7 @@ class AgentRuntime:
 
         for step in range(1, self.max_steps + 1):
             # ── THINK ──────────────────────────────────────────────────────────
+            print(f"[AGENT {self.agent_id}] STEP {step}/{self.max_steps} — thinking...")
             history_text = self._format_history()
             think_prompt = _THINK_USER.format(
                 task=self.task,
@@ -123,6 +124,7 @@ class AgentRuntime:
                 continue
 
             # ── ACT ────────────────────────────────────────────────────────────
+            print(f"[AGENT {self.agent_id}] ACT: {action}({args})")
             await self._publish_update(step, action, f"Calling {action}({args})")
             if self.on_step:
                 try:
@@ -158,6 +160,7 @@ class AgentRuntime:
                     if fix:
                         observation += f"\nSkillBuilder: {fix}"
 
+            print(f"[AGENT {self.agent_id}] OBSERVE: {observation[:200]}")
             self.history.append({"step": step, "action": action, "args": args, "observation": observation})
 
             # Send update directly via websocket if available, else publish to bus
