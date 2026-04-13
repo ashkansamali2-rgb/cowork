@@ -965,6 +965,10 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "read_screen":                  "read_screen(question='What do you see?') — Take a screenshot and ask Gemma 4 multimodal what is on screen",
     "find_and_click":               "find_and_click(description) — Find a UI element on screen by description and click it",
     "fix_screen_error":             "fix_screen_error() — Read any visible error on screen and return a diagnosis",
+    "create_spreadsheet":           "create_spreadsheet(title, headers, rows, filename=None) — Create a styled xlsx spreadsheet and open it on Desktop",
+    "create_pdf":                   "create_pdf(title, content, filename=None) — Create a formatted PDF document and open it on Desktop",
+    "analyze_image":                "analyze_image(path, question='What do you see in this image?') — Send an image file to Gemma 4 multimodal for analysis",
+    "analyze_screenshot":           "analyze_screenshot(question='What do you see?') — Take a screenshot and analyze it with Gemma 4 multimodal",
 }
 
 def get_tool_descriptions() -> str:
@@ -980,6 +984,136 @@ try:
     from core.agents.skills.skill_creator import skill_creator
     TOOLS["skill_creator"] = skill_creator
     TOOL_DESCRIPTIONS["skill_creator"] = "Create a brand new tool/skill when you need a capability that doesn't exist. Args: task_description (str)"
+except ImportError:
+    pass
+
+# ── Document tools ────────────────────────────────────────────────────────────
+def create_spreadsheet(title: str, headers: list, rows: list, filename: str = None) -> str:
+    """Create an xlsx spreadsheet and open it."""
+    try:
+        import openpyxl
+        from openpyxl.styles import PatternFill, Font, Alignment
+        from datetime import date
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = title[:31]
+        header_fill = PatternFill("solid", fgColor="7C3AED")
+        header_font = Font(color="FFFFFF", bold=True)
+        for col_idx, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_idx, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+        alt_fill = PatternFill("solid", fgColor="F4F3F0")
+        for row_idx, row in enumerate(rows, 2):
+            fill = alt_fill if row_idx % 2 == 0 else None
+            for col_idx, val in enumerate(row, 1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=val)
+                if fill:
+                    cell.fill = fill
+        for col in ws.columns:
+            max_len = max((len(str(c.value or "")) for c in col), default=10)
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 50)
+        out = filename or os.path.expanduser(f"~/Desktop/{title.replace(' ','_')}_{date.today()}.xlsx")
+        wb.save(out)
+        subprocess.run(["open", out])
+        return f"Spreadsheet saved: {out}"
+    except ImportError:
+        return "Error: openpyxl not installed. Run: pip install openpyxl"
+    except Exception as e:
+        return f"Spreadsheet error: {e}"
+
+
+def create_pdf(title: str, content: str, filename: str = None) -> str:
+    """Create a PDF document and open it."""
+    try:
+        from fpdf import FPDF
+        from datetime import date
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 18)
+        pdf.cell(0, 12, title, ln=True, align="C")
+        pdf.ln(4)
+        pdf.set_draw_color(124, 58, 237)
+        pdf.set_line_width(0.5)
+        pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(6)
+        pdf.set_font("Helvetica", size=11)
+        for line in content.split("\n"):
+            stripped = line.strip()
+            if not stripped:
+                pdf.ln(4)
+                continue
+            if stripped.startswith("## "):
+                pdf.set_font("Helvetica", "B", 13)
+                pdf.cell(0, 8, stripped[3:], ln=True)
+                pdf.set_font("Helvetica", size=11)
+            elif stripped.startswith("# "):
+                pdf.set_font("Helvetica", "B", 15)
+                pdf.cell(0, 10, stripped[2:], ln=True)
+                pdf.set_font("Helvetica", size=11)
+            else:
+                pdf.multi_cell(0, 6, stripped)
+        pdf.set_font("Helvetica", "I", 9)
+        pdf.set_y(-15)
+        pdf.cell(0, 10, f"Page {pdf.page_no()}", align="C")
+        out = filename or os.path.expanduser(f"~/Desktop/{title.replace(' ','_')}_{date.today()}.pdf")
+        pdf.output(out)
+        subprocess.run(["open", out])
+        return f"PDF saved: {out}"
+    except ImportError:
+        return "Error: fpdf2 not installed. Run: pip install fpdf2"
+    except Exception as e:
+        return f"PDF error: {e}"
+
+
+def analyze_image(path: str, question: str = "What do you see in this image?") -> str:
+    """Send an image to Gemma 4 multimodal for analysis."""
+    import base64
+    import requests as _req
+    try:
+        with open(os.path.expanduser(path), "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        resp = _req.post("http://localhost:8080/v1/chat/completions", json={
+            "messages": [{"role": "user", "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                {"type": "text", "text": question}
+            ]}],
+            "max_tokens": 500,
+            "stream": False,
+        }, timeout=30)
+        return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"Image analysis error: {e}"
+
+
+def analyze_screenshot(question: str = "What do you see?") -> str:
+    """Take a screenshot and analyze it with Gemma."""
+    import time as _time
+    path = f"/tmp/screenshot_{int(_time.time())}.png"
+    subprocess.run(["screencapture", "-x", path])
+    return analyze_image(path, question)
+
+
+TOOLS["create_spreadsheet"] = create_spreadsheet
+TOOLS["create_pdf"] = create_pdf
+TOOLS["analyze_image"] = analyze_image
+TOOLS["analyze_screenshot"] = analyze_screenshot
+
+# ── Browser automation tools ──────────────────────────────────────────────────
+try:
+    from core.agents.browser_agent import (
+        browser_navigate, browser_get_page_text, browser_get_current_url,
+        browser_click, browser_fill_form, browser_screenshot, browser_scroll_down,
+    )
+    TOOLS["browser_navigate"] = browser_navigate
+    TOOLS["browser_get_page_text"] = browser_get_page_text
+    TOOLS["browser_get_current_url"] = browser_get_current_url
+    TOOLS["browser_click"] = browser_click
+    TOOLS["browser_fill_form"] = browser_fill_form
+    TOOLS["browser_screenshot"] = browser_screenshot
+    TOOLS["browser_scroll_down"] = browser_scroll_down
 except ImportError:
     pass
 

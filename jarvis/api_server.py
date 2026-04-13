@@ -94,6 +94,19 @@ async def startup():
     asyncio.create_task(connect_to_bus())
     if _PROACTIVE_OK:
         asyncio.create_task(_proactive.run_periodic())
+
+    async def _ping_connections():
+        while True:
+            await asyncio.sleep(30)
+            dead = []
+            for ws in list(manager.connections.keys()):
+                try:
+                    await ws.send_json({"type": "ping"})
+                except Exception:
+                    dead.append(ws)
+            for ws in dead:
+                manager.disconnect(ws)
+    asyncio.create_task(_ping_connections())
     # Index codebase into knowledge graph
     try:
         import threading
@@ -116,6 +129,13 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
+
+            # Reject oversized messages
+            import sys
+            msg_size = sys.getsizeof(str(data))
+            if msg_size > 1_000_000:
+                await websocket.send_json({"type": "error", "msg": "Message too large (max 1MB)"})
+                continue
 
             # ── HUD observer registration ─────────────────────────────────────
             if not registered and data.get("register") == "hud":
@@ -142,6 +162,20 @@ async def websocket_endpoint(websocket: WebSocket):
             user_msg = data.get("message") or data.get("msg", "")
             cwd = data.get("cwd") or None
             source = data.get("source", "unknown")
+
+            # ── Image attachment handling ─────────────────────────────────────
+            image_b64 = data.get("image")
+            image_path = None
+            if image_b64:
+                import base64, time as _t
+                image_path = f"/tmp/jarvis_image_{int(_t.time())}.png"
+                try:
+                    with open(image_path, "wb") as _f:
+                        _f.write(base64.b64decode(image_b64))
+                except Exception:
+                    image_path = None
+            if image_path:
+                user_msg = f"[Image attached at: {image_path}] {user_msg}"
 
             if not user_msg:
                 continue
@@ -185,7 +219,7 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
 
     async def run_task(msg, tid=task_id, sid=session_id, _cwd=cwd):
         try:
-            await sender.send_json({"type": "ack", "msg": f"Heard: {msg}"})
+            await sender.send_json({"type": "ack", "msg": f"Heard: {msg}", "request_id": tid})
             final_result = await agent_loop(msg, sender, session_id=sid, cwd=_cwd)
             await sender.send_json({"type": "final", "msg": final_result})
         except asyncio.CancelledError:

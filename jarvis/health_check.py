@@ -155,6 +155,37 @@ async def main():
         else:
             print(f"    {model_name:<8}{YELLOW}skipped (port down){RESET}")
 
+    # ── Memory & Metrics ──────────────────────────────────────────────────────────
+    import os
+    from pathlib import Path
+    print("\n  Memory & Metrics:")
+    try:
+        sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
+        from core.memory.long_term import LongTermMemory
+        mem = LongTermMemory()
+        memories = mem._load()
+        print(f"    Long-term memories: {len(memories)}")
+    except Exception as e:
+        print(f"    Memory: {YELLOW}unavailable{RESET}")
+
+    try:
+        from core.monitoring import PerformanceMonitor
+        mon = PerformanceMonitor()
+        avg = mon.get_avg_response()
+        rate = mon.get_success_rate()
+        print(f"    Avg response: {_ms_color(int(avg * 1000))}")
+        print(f"    Success rate: {GREEN if rate > 90 else YELLOW}{rate:.1f}%{RESET}")
+    except Exception:
+        print(f"    Monitoring: {YELLOW}unavailable{RESET}")
+
+    build_log = Path(os.path.expanduser("~/cowork/self_improve/build_log.md"))
+    if build_log.exists():
+        lines = build_log.read_text().strip().split("\n")
+        last_3 = [l for l in lines if l.strip()][-3:]
+        print("\n  Last build log entries:")
+        for line in last_3:
+            print(f"    {line[:80]}")
+
     # ── Summary ───────────────────────────────────────────
     print(f"\n{'─' * 44}")
     if all_ok:

@@ -103,6 +103,18 @@ async def run_forever():
     _log("Self-improve daemon started.")
     while True:
         try:
+            # Daily learning
+            import time as _t
+            _learning_stamp = Path("/tmp/last_learning.txt")
+            _last_learn = float(_learning_stamp.read_text()) if _learning_stamp.exists() else 0
+            if _t.time() - _last_learn > 86400:
+                try:
+                    from core.learning.web_learner import WebLearner
+                    await WebLearner().daily_learning()
+                    _learning_stamp.write_text(str(_t.time()))
+                except Exception as _e:
+                    print(f"[Daemon] Learning error: {_e}")
+
             problems = _load_problems()
             problem = pick_next_problem(problems)
 

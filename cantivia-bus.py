@@ -74,6 +74,9 @@ clients: dict[str, websockets.WebSocketServerProtocol] = {}
 # Track in-flight task start times for duration logging
 _task_timers: dict[str, float] = {}
 
+# Stats counter for daily stats logging
+messages_routed: int = 0
+
 
 async def broadcast(event: dict, exclude: str | None = None):
     """Send an event to all connected clients except the sender."""
@@ -104,6 +107,8 @@ async def send_to(client_id: str, event: dict):
 
 async def route_event(sender_id: str, event: dict):
     """Core routing logic — decides what to do with each event type."""
+    global messages_routed
+    messages_routed += 1
     etype = event.get("type")
     detail_preview = str(event.get("msg", event.get("task", "")))[:120]
     log.info(f"[{sender_id}] → {etype}: {str(event)[:120]}")
@@ -230,12 +235,45 @@ async def handler(websocket: websockets.WebSocketServerProtocol):
             bus_log(client_id, "CLIENT_DISCONNECT", f"remaining_clients={len(clients)}")
 
 
+async def _heartbeat_loop():
+    """Send a heartbeat ping to all connected clients every 60 seconds."""
+    while True:
+        await asyncio.sleep(60)
+        ts = datetime.now().isoformat()
+        msg = json.dumps({"type": "heartbeat", "ts": ts})
+        dead = []
+        for cid, ws in list(clients.items()):
+            try:
+                await ws.send(msg)
+            except websockets.ConnectionClosed:
+                dead.append(cid)
+        for cid in dead:
+            clients.pop(cid, None)
+            bus_log("bus", "CLIENT_PRUNED_HEARTBEAT", f"dead client removed: {cid}")
+
+
+async def _stats_loop():
+    """Log message routing stats to /tmp/bus_stats.log every hour."""
+    global messages_routed
+    while True:
+        await asyncio.sleep(3600)
+        ts = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        line = f"[{ts}] messages: {messages_routed}, clients: {len(clients)}\n"
+        try:
+            with open("/tmp/bus_stats.log", "a", encoding="utf-8") as fh:
+                fh.write(line)
+        except Exception as e:
+            log.warning(f"Stats log write failed: {e}")
+
+
 async def main():
     host, port = "127.0.0.1", 8002
     log.info(f"Cantivia Bus starting on ws://{host}:{port}")
     bus_log("bus", "BUS_START", f"ws://{host}:{port}")
     async with websockets.serve(handler, host, port):
         log.info("Bus online. Waiting for Jarvis and Cantivia to connect...")
+        asyncio.create_task(_heartbeat_loop())
+        asyncio.create_task(_stats_loop())
         await asyncio.Future()  # run forever
 
 

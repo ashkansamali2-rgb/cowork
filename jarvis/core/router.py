@@ -207,6 +207,62 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
     if fast_result is not None:
         return fast_result
 
+    # Auto-analyze images referenced by path in the message
+    if ".png" in user_message.lower() or ".jpg" in user_message.lower() or ".jpeg" in user_message.lower():
+        import re as _re
+        m = _re.search(r'(~/[^\s]+\.(?:png|jpg|jpeg)|/[^\s]+\.(?:png|jpg|jpeg))', user_message, _re.I)
+        if m:
+            img_path = os.path.expanduser(m.group(1))
+            if os.path.exists(img_path):
+                try:
+                    from core.agents.tools import analyze_image
+                    result = analyze_image(img_path, user_message.replace(m.group(1), "").strip() or "What do you see?")
+                    if websocket:
+                        await websocket.send_json({"type": "final", "msg": result})
+                    return result
+                except Exception:
+                    pass
+
+    # Priority 0-image: Handle images attached via WebSocket "[Image attached at: <path>]"
+    _img_attach_match = re.match(r'\[Image attached at: ([^\]]+)\]\s*(.*)', user_message, re.DOTALL)
+    if _img_attach_match:
+        _img_path = _img_attach_match.group(1).strip()
+        _img_question = _img_attach_match.group(2).strip() or "What do you see in this image?"
+        if websocket:
+            await websocket.send_json({"type": "status", "msg": "Analyzing image with Gemma 4..."})
+        try:
+            import base64 as _b64
+            with open(_img_path, "rb") as _f:
+                _img_b64 = _b64.b64encode(_f.read()).decode("utf-8")
+            _gemma_payload = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{_img_b64}"}},
+                            {"type": "text", "text": _img_question},
+                        ],
+                    }
+                ],
+                "max_tokens": 500,
+                "stream": False,
+            }
+            _gemma_resp = await asyncio.to_thread(
+                lambda: requests.post(
+                    "http://localhost:8080/v1/chat/completions",
+                    json=_gemma_payload,
+                    timeout=30,
+                ).json()
+            )
+            _gemma_analysis = _gemma_resp["choices"][0]["message"]["content"]
+            # Prepend the analysis and continue with the enriched message
+            user_message = f"[Image analysis by Gemma 4: {_gemma_analysis}]\n\nUser question: {_img_question}"
+            msg_lower = user_message.lower()
+        except Exception as _img_err:
+            # If Gemma call fails, continue with original message minus the prefix
+            user_message = _img_question if _img_question else user_message
+            msg_lower = user_message.lower()
+
     # Priority 0-vision: Screen reading via Gemma 4 multimodal
     if re.search(r"\b(what is on (my )?screen|read (the )?screen)\b", msg_lower):
         from core.vision.screen_reader import ScreenReader
