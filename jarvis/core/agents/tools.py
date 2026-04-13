@@ -706,6 +706,191 @@ def spawn_subagent(task: str) -> str:
     except Exception as e:
         return f"spawn_subagent failed: {e}"
 
+# ── read_screen(question) ─────────────────────────────────────────────────────
+async def read_screen(question: str = "What do you see?") -> str:
+    """Take a screenshot and ask Gemma 4 what is on screen."""
+    try:
+        import sys
+        sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+        from core.vision.screen_reader import ScreenReader
+        return await ScreenReader().understand(question)
+    except Exception as e:
+        return f"[read_screen error: {e}]"
+
+
+# ── find_and_click(description) ───────────────────────────────────────────────
+async def find_and_click(description: str) -> str:
+    """Find a UI element on screen and click it."""
+    try:
+        import sys
+        sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+        from core.vision.screen_reader import ScreenReader
+        coords = await ScreenReader().find_element(description)
+        if "NOT_FOUND" in coords or "x=" not in coords:
+            return f"Element not found: {description}"
+        import re
+        m = re.search(r"x=(\d+).*?y=(\d+)", coords)
+        if not m:
+            return f"Could not parse coordinates: {coords}"
+        x, y = int(m.group(1)), int(m.group(2))
+        import pyautogui
+        pyautogui.click(x, y)
+        return f"Clicked at ({x}, {y}) for: {description}"
+    except Exception as e:
+        return f"[find_and_click error: {e}]"
+
+
+# ── fix_screen_error() ────────────────────────────────────────────────────────
+async def fix_screen_error() -> str:
+    """Read any error on screen and attempt to diagnose it."""
+    try:
+        import sys
+        sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+        from core.vision.screen_reader import ScreenReader
+        error_text = await ScreenReader().read_error_on_screen()
+        if error_text == "NONE":
+            return "No error visible on screen."
+        return f"Error detected: {error_text}"
+    except Exception as e:
+        return f"[fix_screen_error: {e}]"
+
+
+# ── Browser tools (via osascript / Safari) ────────────────────────────────────
+
+def browser_navigate(url: str) -> str:
+    """Open a URL in Safari."""
+    import subprocess
+    subprocess.run(["osascript", "-e",
+        f'tell application "Safari" to open location "{url}"'], timeout=10)
+    return f"Navigated to {url}"
+
+
+def browser_get_text() -> str:
+    """Get visible text from current Safari page."""
+    import subprocess
+    r = subprocess.run(["osascript", "-e", """
+        tell application "Safari"
+            set pageText to do JavaScript "document.body.innerText.substring(0, 5000)" in document 1
+            return pageText
+        end tell
+    """], capture_output=True, text=True, timeout=10)
+    return r.stdout.strip() or "(no text)"
+
+
+def browser_click_link(link_text: str) -> str:
+    """Click a link in Safari by its text."""
+    import subprocess
+    safe = link_text.replace("'", "\\'")
+    subprocess.run(["osascript", "-e", f"""
+        tell application "Safari"
+            do JavaScript "var links=document.querySelectorAll('a');for(var l of links){{if(l.innerText.includes('{safe}')){{l.click();break;}}}}" in document 1
+        end tell
+    """], timeout=10)
+    return f"Clicked link: {link_text}"
+
+
+def browser_screenshot() -> str:
+    """Screenshot current Safari page."""
+    import subprocess, time
+    path = f"/tmp/browser_{int(time.time())}.png"
+    subprocess.run(["screencapture", "-x", path], timeout=5)
+    return f"Screenshot saved: {path}"
+
+
+# ── File operation tools ───────────────────────────────────────────────────────
+
+import glob as _glob
+
+
+def find_files(pattern: str, directory: str = ".") -> str:
+    """Find files matching a glob pattern."""
+    import os
+    base = os.path.expanduser(directory)
+    matches = _glob.glob(os.path.join(base, "**", pattern), recursive=True)
+    matches = [m for m in matches if ".git" not in m][:20]
+    return "\n".join(matches) if matches else "(no matches)"
+
+
+def grep_content(pattern: str, directory: str = ".") -> str:
+    """Search file contents for a pattern."""
+    import subprocess, os
+    base = os.path.expanduser(directory)
+    r = subprocess.run(["grep", "-r", "--include=*.py", "--include=*.js",
+                        "-l", pattern, base], capture_output=True, text=True, timeout=10)
+    lines = [l for l in r.stdout.splitlines() if ".git" not in l][:10]
+    return "\n".join(lines) if lines else "(not found)"
+
+
+def zip_folder(path: str, output: str = None) -> str:
+    """Zip a directory."""
+    import subprocess, os, time
+    path = os.path.expanduser(path)
+    if not output:
+        output = f"{path}_{int(time.time())}.zip"
+    r = subprocess.run(["zip", "-r", output, path], capture_output=True, text=True, timeout=30)
+    if r.returncode == 0:
+        return f"Zipped to: {output}"
+    return f"Zip failed: {r.stderr}"
+
+
+# ── System control tools ───────────────────────────────────────────────────────
+
+def get_running_apps() -> str:
+    """List currently running apps."""
+    import subprocess
+    r = subprocess.run(["osascript", "-e",
+        'tell application "System Events" to get name of every process whose background only is false'],
+        capture_output=True, text=True, timeout=10)
+    return r.stdout.strip()
+
+
+def get_frontmost_app() -> str:
+    """Get the currently active application name."""
+    import subprocess
+    r = subprocess.run(["osascript", "-e",
+        'tell application "System Events" to get name of first process whose frontmost is true'],
+        capture_output=True, text=True, timeout=5)
+    return r.stdout.strip()
+
+
+def close_app(app: str) -> str:
+    """Quit an application."""
+    import subprocess
+    subprocess.run(["osascript", "-e", f'tell application "{app}" to quit'], timeout=10)
+    return f"Closed: {app}"
+
+
+# ── Code execution tools ───────────────────────────────────────────────────────
+
+def run_python_code(code: str) -> str:
+    """Run Python code in subprocess, return output. 30s timeout."""
+    import subprocess, tempfile, os
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+        f.write(code)
+        tmp = f.name
+    try:
+        r = subprocess.run(["python3", tmp], capture_output=True, text=True, timeout=30)
+        out = (r.stdout + r.stderr).strip()
+        return out[:2000] if out else "(no output)"
+    except subprocess.TimeoutExpired:
+        return "[timeout after 30s]"
+    finally:
+        os.unlink(tmp)
+
+
+def run_shell_safe(cmd: str, cwd: str = None) -> str:
+    """Run shell command safely. 30s timeout."""
+    import subprocess, os
+    cwd = os.path.expanduser(cwd) if cwd else None
+    try:
+        r = subprocess.run(cmd, shell=True, capture_output=True, text=True,
+                          timeout=30, cwd=cwd)
+        out = (r.stdout + r.stderr).strip()
+        return out[:2000] if out else "(no output)"
+    except subprocess.TimeoutExpired:
+        return "[timeout after 30s]"
+
+
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
 TOOLS: dict[str, callable] = {
@@ -740,6 +925,9 @@ TOOLS: dict[str, callable] = {
     "move_mouse":                   move_mouse,
     "click_at":                     click_at,
     "screenshot_region":            screenshot_region,
+    "read_screen":                  read_screen,
+    "find_and_click":               find_and_click,
+    "fix_screen_error":             fix_screen_error,
 }
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
@@ -774,6 +962,9 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "move_mouse":                   "move_mouse(x, y) — Move mouse cursor to screen coordinates",
     "click_at":                     "click_at(x, y) — Click at screen coordinates",
     "screenshot_region":            "screenshot_region(x, y, w, h) — Take screenshot of a specific screen region, returns path",
+    "read_screen":                  "read_screen(question='What do you see?') — Take a screenshot and ask Gemma 4 multimodal what is on screen",
+    "find_and_click":               "find_and_click(description) — Find a UI element on screen by description and click it",
+    "fix_screen_error":             "fix_screen_error() — Read any visible error on screen and return a diagnosis",
 }
 
 def get_tool_descriptions() -> str:
@@ -789,5 +980,46 @@ try:
     from core.agents.skills.skill_creator import skill_creator
     TOOLS["skill_creator"] = skill_creator
     TOOL_DESCRIPTIONS["skill_creator"] = "Create a brand new tool/skill when you need a capability that doesn't exist. Args: task_description (str)"
+except ImportError:
+    pass
+
+# ── Project builder tools ──────────────────────────────────────────────────────
+try:
+    from core.agents.project_builder import (
+        build_project as _build_project_async,
+        launch_project as _launch_project_async,
+    )
+
+    async def build_project(
+        name: str,
+        project_type: str,
+        description: str = "",
+        location: str = "~/Desktop",
+        port: int = 3000,
+    ) -> str:
+        """Scaffold, implement, and optionally launch a project from a template."""
+        return await _build_project_async(
+            name=name,
+            project_type=project_type,
+            description=description,
+            location=location,
+            port=port,
+        )
+
+    async def launch_project(project_path: str, port: int = 3000) -> str:
+        """Launch an existing project in Terminal and open it in the browser."""
+        return await _launch_project_async(project_path=project_path, port=port)
+
+    TOOLS["build_project"] = build_project
+    TOOLS["launch_project"] = launch_project
+    TOOL_DESCRIPTIONS["build_project"] = (
+        "build_project(name, project_type, description='', location='~/Desktop', port=3000) — "
+        "Scaffold a new project from a template (fastapi, flask, python, express), "
+        "install dependencies, and optionally implement functionality via Qwen."
+    )
+    TOOL_DESCRIPTIONS["launch_project"] = (
+        "launch_project(project_path, port=3000) — "
+        "Launch an existing project in a Terminal window and open it in the browser."
+    )
 except ImportError:
     pass

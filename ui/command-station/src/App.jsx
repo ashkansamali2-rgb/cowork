@@ -4,6 +4,7 @@ import TopBar from './components/TopBar.jsx'
 import ChatArea from './components/ChatArea.jsx'
 import InputBar from './components/InputBar.jsx'
 import AgentSpawner from './components/AgentSpawner.jsx'
+import KnowledgeGraph from './components/KnowledgeGraph.jsx'
 
 function generateId() {
   return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -43,6 +44,7 @@ export default function App() {
   const [agentDone, setAgentDone] = useState(false)
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('chat')
   const [isStreaming, setIsStreaming] = useState(false)
   const [statusText, setStatusText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -566,23 +568,62 @@ export default function App() {
           onClearAllChats={handleClearAllChats}
         />
         <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
-          {activeProject && (
-            <div className="flex-shrink-0 px-4 py-1.5 border-b border-[#EAE6DF] bg-[#F5F1EB]">
-              <span className="text-xs text-[#7C3AED] font-medium">
-                Project: {activeProject.name}
-              </span>
+          {/* Tab bar */}
+          <div
+            className="flex flex-shrink-0 border-b border-[#EAE6DF]"
+            style={{ background: '#FBF8F4' }}
+          >
+            <button
+              onClick={() => setActiveTab('chat')}
+              className="px-5 py-2 text-xs font-medium transition-all"
+              style={{
+                borderBottom: activeTab === 'chat' ? '2px solid #7C3AED' : '2px solid transparent',
+                color: activeTab === 'chat' ? '#7C3AED' : '#9CA3AF',
+                background: 'transparent',
+              }}
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => setActiveTab('graph')}
+              className="px-5 py-2 text-xs font-medium transition-all"
+              style={{
+                borderBottom: activeTab === 'graph' ? '2px solid #7C3AED' : '2px solid transparent',
+                color: activeTab === 'graph' ? '#7C3AED' : '#9CA3AF',
+                background: 'transparent',
+              }}
+            >
+              Graph
+            </button>
+          </div>
+
+          {activeTab === 'chat' && (
+            <>
+              {activeProject && (
+                <div className="flex-shrink-0 px-4 py-1.5 border-b border-[#EAE6DF] bg-[#F5F1EB]">
+                  <span className="text-xs text-[#7C3AED] font-medium">
+                    Project: {activeProject.name}
+                  </span>
+                </div>
+              )}
+              <ChatArea
+                messages={messages}
+                statusText={statusText}
+                isTyping={isTyping}
+              />
+              <InputBar
+                onSend={handleSendMessage}
+                isStreaming={isStreaming}
+                connected={connections.jarvis}
+              />
+            </>
+          )}
+
+          {activeTab === 'graph' && (
+            <div className="flex-1 overflow-hidden">
+              <KnowledgeGraph />
             </div>
           )}
-          <ChatArea
-            messages={messages}
-            statusText={statusText}
-            isTyping={isTyping}
-          />
-          <InputBar
-            onSend={handleSendMessage}
-            isStreaming={isStreaming}
-            connected={connections.jarvis}
-          />
         </main>
         {spawnerOpen && (
           <AgentSpawner

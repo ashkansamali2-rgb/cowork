@@ -48,6 +48,7 @@ from rich.theme import Theme
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.styles import Style as PTStyle
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -323,6 +324,15 @@ _PT_STYLE = PTStyle.from_dict({
     "prompt": "bold #aa55ff",
 })
 
+_SLASH_COMPLETER = WordCompleter([
+    '/help', '/clear', '/ls', '/cat', '/open', '/mkdir', '/rm',
+    '/git', '/start', '/stop', '/status', '/logs', '/agent', '/agents',
+    '/kill', '/cantivia', '/research', '/time', '/battery', '/wifi',
+    '/volume', '/screenshot', '/cd', '/pwd', '/home', '/projects',
+    '/project', '/copy', '/save', '/skills', '/build', '/learn',
+    '/memory', '/forget', '/review',
+], ignore_case=True)
+
 
 # ─── WebSocket manager ────────────────────────────────────────────────────────
 
@@ -537,11 +547,16 @@ class CommandHandler:
                 ("/home",                 "Go to home directory"),
                 ("/projects",             "List cowork projects"),
                 ("/project [name]",       "Set current project context"),
+                ("Memory", None),
+                ("/memory",               "List all long-term memories"),
+                ("/forget [key]",         "Delete a memory by key"),
                 ("General", None),
                 ("/clear",                "Clear screen"),
                 ("/copy",                 "Copy last Jarvis response to clipboard"),
                 ("/save [filename]",      "Save chat history to ~/Desktop/[filename].txt"),
                 ("/skills",               "List available skills"),
+                ("/build [minutes]",      "Run autonomous MetaAgent build session (default 60 min)"),
+                ("/learn [topic]",        "Learn from the web and save to knowledge base"),
                 ("/exit",                 "Quit the CLI"),
             ]
             console.print("")
@@ -927,6 +942,64 @@ class CommandHandler:
                     console.print(Text(f"  {s.name}", style="final"))
             return True
 
+        # ── /build ─────────────────────────────────────────────────────────────
+        if cmd == "/build":
+            minutes = int(arg) if arg and arg.isdigit() else 60
+            import threading
+            def _run():
+                import asyncio, sys
+                sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+                from core.agents.meta_agent import MetaAgent
+                asyncio.run(MetaAgent().run_build_session(minutes))
+            threading.Thread(target=_run, daemon=True).start()
+            print_status(f"[MetaAgent] Build session started ({minutes} min). Check ~/cowork/self_improve/build_log.md")
+            return True
+
+        # ── /learn ─────────────────────────────────────────────────────────────
+        if cmd == "/learn":
+            topic = arg if arg else "local LLM inference optimization Apple Silicon"
+            import threading
+            def _run():
+                import asyncio, sys
+                sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+                from core.learning.web_learner import WebLearner
+                asyncio.run(WebLearner().learn_topic(topic))
+            threading.Thread(target=_run, daemon=True).start()
+            print_status(f"[WebLearner] Learning: {topic}. Results -> ~/cowork/jarvis/knowledge/")
+            return True
+
+        # ── /memory ────────────────────────────────────────────────────────────
+        if cmd == "/memory":
+            try:
+                sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+                from core.memory.long_term import LongTermMemory
+                memories = LongTermMemory().get_all()
+                if not memories:
+                    print_status("No memories stored.")
+                else:
+                    lines = [f"{k}: {v.get('value', '')}" for k, v in memories.items()]
+                    print_box("Long-term memories", lines)
+            except Exception as e:
+                print_error(f"Memory unavailable: {e}")
+            return True
+
+        # ── /forget ────────────────────────────────────────────────────────────
+        if cmd == "/forget":
+            if not arg:
+                print_error("Usage: /forget [key]")
+                return True
+            try:
+                sys.path.insert(0, str(Path.home() / "cowork" / "jarvis"))
+                from core.memory.long_term import LongTermMemory
+                removed = LongTermMemory().forget(arg)
+                if removed:
+                    print_status(f"Forgotten: {arg}")
+                else:
+                    print_error(f"Key not found: {arg}")
+            except Exception as e:
+                print_error(f"Memory unavailable: {e}")
+            return True
+
         return False  # not a recognized slash command — send to Jarvis
 
 
@@ -1014,9 +1087,7 @@ def _print_welcome():
     t.append("ready", style="ok")
     console.print(t)
     console.print(Text(
-        "  Type a message and press Enter.  "
-        "Type 'exit' or press Ctrl+C to quit.  "
-        "Type /help for commands.",
+        "  ctrl+q quit  ctrl+l clear  ctrl+c cancel task  up/dn history  tab complete",
         style="dim.text",
     ))
     console.print("")
@@ -1064,6 +1135,12 @@ async def main_loop():
 
     @kb.add("c-c")
     def _ctrl_c(event):
+        # Send stop signal to Jarvis; does NOT exit the CLI
+        ws_manager.send_jarvis(json.dumps({"message": "stop", "cwd": _get_cwd()}))
+        console.print(Text("[...] Task cancelled", style="status"))
+
+    @kb.add("c-q")
+    def _ctrl_q(event):
         raise KeyboardInterrupt
 
     @kb.add("c-l")
@@ -1074,6 +1151,7 @@ async def main_loop():
     session = PromptSession(
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
+        completer=_SLASH_COMPLETER,
         style=_PT_STYLE,
         key_bindings=kb,
         enable_history_search=True,

@@ -13,6 +13,14 @@ from core.tool_learner import handle_missing_tool
 from config import LLAMA_CPP_URL
 from core.agents.runtime import create_agent
 
+try:
+    from core.memory.long_term import LongTermMemory
+    _memory = LongTermMemory()
+    _MEMORY_OK = True
+except Exception:
+    _memory = None
+    _MEMORY_OK = False
+
 C_CYAN = "\033[96m"
 C_GREEN = "\033[92m"
 C_RED = "\033[91m"
@@ -145,6 +153,32 @@ def _fast_route(msg_lower: str):
             subprocess.run(["open", "-a", app_name])
             return f"Opening {app_name}."
 
+    # MetaAgent build session — autonomous self-improvement
+    if any(t in msg_lower for t in (
+        "improve yourself", "run build session", "build yourself better", "build session"
+    )):
+        import threading
+        def _start_meta():
+            import asyncio, sys
+            sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
+            from core.agents.meta_agent import MetaAgent
+            asyncio.run(MetaAgent().run_build_session(60))
+        threading.Thread(target=_start_meta, daemon=True).start()
+        return "Running autonomous build session for 60 minutes. Check ~/cowork/self_improve/build_log.md for progress."
+
+    # Web learning — "learn about <topic>"
+    learn_match = re.match(r"^learn about (.+)$", msg_lower)
+    if learn_match:
+        topic = learn_match.group(1).strip().rstrip(".?!")
+        import threading
+        def _start_learn():
+            import asyncio, sys
+            sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
+            from core.learning.web_learner import WebLearner
+            asyncio.run(WebLearner().learn_topic(topic))
+        threading.Thread(target=_start_learn, daemon=True).start()
+        return f"Learning about {topic}. Results will be saved to knowledge base."
+
     return None
 
 _session_memory: dict[str, list] = {}
@@ -173,7 +207,32 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
     if fast_result is not None:
         return fast_result
 
-    # Priority 0a: Open CLI
+    # Priority 0-vision: Screen reading via Gemma 4 multimodal
+    if re.search(r"\b(what is on (my )?screen|read (the )?screen)\b", msg_lower):
+        from core.vision.screen_reader import ScreenReader
+        result = await ScreenReader().understand()
+        if websocket:
+            await websocket.send_json({"type": "final", "msg": result})
+        return result
+
+    # Priority 0a-mem: Long-term memory commands
+    if _MEMORY_OK:
+        _rem_match = re.match(r"remember (?:that )?(.+)", msg_lower)
+        if _rem_match:
+            _mem_fact = _rem_match.group(1).strip()
+            _memory.remember(_mem_fact, _mem_fact, category="user")
+            return f"Got it, I'll remember that: {_mem_fact}"
+
+        _know_match = re.match(r"what do you know about (.+)", msg_lower)
+        if _know_match:
+            _know_query = _know_match.group(1).strip()
+            _know_results = _memory.recall(_know_query)
+            if _know_results:
+                lines = "\n".join(f"- {r['key']}: {r['value']}" for r in _know_results)
+                return f"Here's what I remember about '{_know_query}':\n{lines}"
+            return f"I don't have any memories about '{_know_query}'."
+
+    # Priority 0b: Open CLI
     if any(t in msg_lower for t in ["open cli", "start cli", "launch cli"]):
         if websocket: await websocket.send_json({"type": "status", "msg": "Opening CLI in Terminal..."})
         result = subprocess.run(
@@ -236,6 +295,47 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             return f"Done. {result}"
         except Exception as e:
             return f"Execution error: {e}"
+    # Hierarchy triggers — complex multi-step builds
+    _HIERARCHY_TRIGGERS = [
+        "build a full", "create a complete", "build and launch",
+        "build a project", "build an app", "create an app",
+        "build a website", "set up a project", "scaffold",
+        "build and run", "create and launch", "build me a",
+    ]
+    if any(t in msg_lower for t in _HIERARCHY_TRIGGERS):
+        try:
+            from core.agents.hierarchy import AgentHierarchy
+            hierarchy = AgentHierarchy()
+            asyncio.create_task(hierarchy.run(user_message, websocket))
+            result = "Spawning architect and engineer hierarchy for this task..."
+            if websocket:
+                await websocket.send(json.dumps({"type": "status", "msg": result}))
+            return result
+        except Exception as e:
+            pass  # fall through to normal routing
+
+    # ProjectBuilder trigger — "build project" / "new project" / "create project"
+    _PROJECT_TRIGGERS = ["build project", "new project", "create project", "start project"]
+    if any(t in msg_lower for t in _PROJECT_TRIGGERS):
+        try:
+            from core.agents.project_builder import build_project  # noqa: F401 (available for downstream use)
+            # Extract project name and type from the message heuristically
+            _pb_name_match = re.search(r"(?:called|named|project)\s+['\"]?(\w[\w\-]*)['\"]?", msg_lower)
+            _pb_type_match = re.search(r"\b(fastapi|flask|react|next|python|node)\b", msg_lower)
+            _pb_name = _pb_name_match.group(1) if _pb_name_match else "my_project"
+            _pb_type = _pb_type_match.group(1) if _pb_type_match else "python"
+            import threading
+            def _start_project(_n=_pb_name, _t=_pb_type):
+                import asyncio as _aio
+                _aio.run(build_project(_n, _t))
+            threading.Thread(target=_start_project, daemon=True).start()
+            result = f"On it, sir. Scaffolding '{_pb_name}' ({_pb_type}) now..."
+            if websocket:
+                await websocket.send_json({"type": "status", "msg": result})
+            return result
+        except Exception as e:
+            pass  # fall through to normal routing
+
     # Priority 2b: Autonomous AgentRuntime — catches research/document/automation tasks
     # This runs BEFORE the heavyweight LLM path. agent_manager is NOT used.
     agent_triggers = [
@@ -274,6 +374,19 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         asyncio.create_task(_run_agent())
         return f"Agent {agent_id} spawned. Working on it..."
 
+    # Knowledge graph indexing trigger
+    _KG_TRIGGERS = ["index codebase", "index knowledge", "update knowledge graph", "rebuild knowledge graph"]
+    if any(t in msg_lower for t in _KG_TRIGGERS):
+        import threading
+        def _run_kg():
+            try:
+                from core.memory.knowledge_graph import KnowledgeGraph
+                KnowledgeGraph().index_codebase()
+            except Exception as _e:
+                print(f"[JARVIS] Knowledge graph indexing error: {_e}")
+        threading.Thread(target=_run_kg, daemon=True).start()
+        return "Knowledge graph indexing started in the background, sir."
+
     # Priority 3: Cantivia coding tasks → route to bus
     if "cantivia" in msg_lower:
         from core.bus_client import publish
@@ -296,10 +409,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             f"When the user says 'this file', 'here', or 'in this project', "
             f"they mean files in {cwd}."
         )
-    SYSTEM_PROMPT = f"""You are JARVIS, a general-purpose AI assistant running on this Mac.
-
-Respond naturally and directly. No unnecessary caveats, no refusals for normal requests.
-Answer questions, write essays, explain code, help with writing, and have normal conversations freely.
+    SYSTEM_PROMPT = f"""You are Jarvis, a highly capable AI assistant. You are concise, confident, and precise. You anticipate needs, provide direct answers, and execute tasks without unnecessary commentary. You address the user as 'sir' occasionally but never excessively. You never say you cannot do something — you find a way.
 
 For Mac control actions only, use command tags:
 - Open apps: <cmd>run_shell|open -a "App Name"</cmd>
@@ -311,11 +421,14 @@ For Mac control actions only, use command tags:
 IMPORTANT: Never open browser tabs or Google for research queries. Research is handled by a background agent — do NOT use <cmd> to open search engines. Only use <cmd>run_shell|open "url"</cmd> when the user explicitly says "open [url]" with a specific URL.
 
 Only route to cantivia when the user explicitly asks to edit, create, or modify files in a codebase.
-For everything else — conversation, explanations, writing, questions — just respond directly.
+For everything else — conversation, explanations, writing, questions — respond directly and efficiently.
 
-After every shell command action, report what actually happened. If the command produces output, include it in the response. Never respond with just 'Done.' — always include the actual output or a specific success message.
+After every shell command action, report what actually happened. If the command produces output, include it in the response. Never respond with just 'Done.' — always include the actual output or a specific success message.{_cwd_hint}"""
 
-Be concise and useful. Skip filler phrases.{_cwd_hint}"""
+    if _MEMORY_OK:
+        _relevant = _memory.get_relevant(user_message, top_n=3)
+        if _relevant:
+            SYSTEM_PROMPT = "Relevant memories:\n" + "\n".join(_relevant) + "\n\n" + SYSTEM_PROMPT
 
     conversation_memory = load_memory(session_id)
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -407,15 +520,23 @@ Be concise and useful. Skip filler phrases.{_cwd_hint}"""
 
             error_msgs = [r for r in results if "error" in r.lower() or "bypassed" in r.lower()]
             if error_msgs:
+                if _MEMORY_OK:
+                    asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
                 return spoken_text + " " + " ".join(error_msgs)
 
             success_msgs = [r for r in results if r and "error" not in r.lower() and "bypassed" not in r.lower()]
             if success_msgs:
                 extra = " ".join(success_msgs)
+                if _MEMORY_OK:
+                    asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
                 return (spoken_text + " " + extra).strip() if spoken_text else extra
 
+            if _MEMORY_OK:
+                asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
             return spoken_text if spoken_text else "Command executed, but produced no output."
 
+        if _MEMORY_OK:
+            asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
         return response_text
     except Exception as e:
         return f"Brain locked up. Error: {e}"

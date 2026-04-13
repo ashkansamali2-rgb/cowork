@@ -1,0 +1,6 @@
+[
+  {"id": 1, "description": "Voice fails intermittently", "file": "jarvis/interfaces/voice/live_voice.py", "priority": "high", "attempts": 0, "status": "open"},
+  {"id": 2, "description": "Agent sometimes hits step limit without completing task", "file": "jarvis/core/agents/runtime.py", "priority": "high", "attempts": 0, "status": "open"},
+  {"id": 3, "description": "Cantivia aider opens interactively", "file": "cantivia-cli.py", "priority": "high", "attempts": 0, "status": "open"},
+  {"id": 4, "description": "LLM response sometimes slow over 10s", "file": "jarvis/core/router.py", "priority": "medium", "attempts": 0, "status": "open"}
+]

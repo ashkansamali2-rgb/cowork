@@ -87,40 +87,82 @@ def diagnose_page(url: str, task: str) -> str:
         return f"Diagnosis error: {e}"
 
 
-async def run_aider(task: str, repo_path: str, detected_file: str | None, ws) -> str:
+async def run_aider_streaming(task: str, repo_path: str, ws=None) -> str:
+    """Run aider non-interactively, stream output line-by-line back via ws."""
+    import subprocess, re, os
+
+    # Detect filename in task
+    file_match = re.search(
+        r'\b([\w/.-]+\.(?:py|js|ts|jsx|tsx|json|yaml|yml|sh|md|txt|html|css))\b', task
+    )
+    detected_file = file_match.group(1) if file_match else None
+
+    # Find aider binary
+    venv_aider = os.path.expanduser("~/cowork/venv/bin/aider")
+    if not os.path.exists(venv_aider):
+        venv_aider = "aider"
+
     cmd = [
-        VENV_AIDER,
-        "--model", "openai/gemma",
-        "--openai-api-base", ARCHITECT_URL,
-        "--openai-api-key", "dummy",
+        venv_aider,
+        "--message", task,
         "--yes-always",
-        "--no-suggest-shell-commands",
         "--no-auto-commits",
+        "--no-suggest-shell-commands",
         "--no-show-model-warnings",
         "--edit-format", "whole",
-        "--message", task,
     ]
-    if detected_file and os.path.exists(detected_file):
-        cmd.append(detected_file)
+
+    # Add detected file if it exists
+    if detected_file:
+        full_path = os.path.join(repo_path, detected_file)
+        if os.path.exists(full_path):
+            cmd.append(detected_file)
+
+    output_lines = []
     try:
         proc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True, cwd=repo_path
+            cmd,
+            cwd=repo_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
         )
-        output_lines = []
+
         for line in proc.stdout:
             line = line.rstrip()
-            if line:
-                output_lines.append(line)
-                await ws.send(json.dumps({"type": "STATUS", "msg": line, "source": "cantivia"}))
+            if not line:
+                continue
+
+            # Format diff output
+            if line.startswith("+++") or line.startswith("---"):
+                formatted = f"[FILE] {line}"
+            elif line.startswith("+"):
+                formatted = f"[ADD] {line[1:]}"
+            elif line.startswith("-"):
+                formatted = f"[DEL] {line[1:]}"
+            else:
+                formatted = f"[Cantivia] {line}"
+
+            output_lines.append(formatted)
+
+            if ws:
+                try:
+                    import json
+                    await ws.send(json.dumps({"type": "status", "msg": formatted, "source": "cantivia"}))
+                except Exception:
+                    pass
+
         proc.wait()
         rc = proc.returncode
-        output = "\n".join(output_lines)
-        suffix = f"\n[exit {rc}]"
-        full = output + suffix
-        return full[-1000:] if len(full) > 1000 else full
+
+    except FileNotFoundError:
+        return "[Cantivia] aider not found. Is it installed in ~/cowork/venv/?"
     except Exception as e:
-        return f"Agent error: {e}"
+        return f"[Cantivia] Error: {e}"
+
+    summary = "\n".join(output_lines[-20:])
+    return summary if summary else f"[Cantivia] Completed (exit code {rc})"
 
 
 async def handle_browser_task(message: str, ws) -> str:

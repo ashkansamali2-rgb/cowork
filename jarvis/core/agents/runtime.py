@@ -15,6 +15,12 @@ from typing import Any, Optional, Callable
 
 AGENTS_DIR = Path.home() / "cowork" / "agents"
 
+try:
+    from .claude_fallback import ask_claude_web
+    _CLAUDE_FALLBACK_OK = True
+except ImportError:
+    _CLAUDE_FALLBACK_OK = False
+
 _THINK_SYSTEM = """\
 You are an autonomous agent. You solve tasks step by step using tools.
 
@@ -64,6 +70,8 @@ OUTPUT_TOOLS = {
 
 
 class AgentRuntime:
+    _global_failure_counts: dict = {}  # task_hash -> int
+
     def __init__(
         self,
         task: str,
@@ -282,6 +290,29 @@ class AgentRuntime:
                                 tools_module.TOOL_DESCRIPTIONS[new_skill['name']] = new_skill['description']
                     except Exception as sb_err:
                         pass  # skill builder failure is non-fatal
+
+                # Track failures per task and invoke Claude web fallback after 3rd failure
+                task_hash = str(hash(self.task))
+                AgentRuntime._global_failure_counts[task_hash] = (
+                    AgentRuntime._global_failure_counts.get(task_hash, 0) + 1
+                )
+                fail_count = AgentRuntime._global_failure_counts[task_hash]
+                if fail_count >= 3 and _CLAUDE_FALLBACK_OK:
+                    print(f"[Fallback] Asking Claude for help with: {self.task}")
+                    try:
+                        fallback_context = "\n".join(
+                            f"Step {h['step']}: {h['action']} -> {h.get('observation','')[:200]}"
+                            for h in self.history[-5:]
+                        )
+                        claude_answer = await ask_claude_web(
+                            problem=f"{self.task} (failed tool: {action}, error: {e})",
+                            context=fallback_context,
+                        )
+                        observation += f"\n[Claude Fallback Answer]: {claude_answer}"
+                        # Reset counter so we don't re-trigger on every subsequent step
+                        AgentRuntime._global_failure_counts[task_hash] = 0
+                    except Exception as fb_err:
+                        observation += f"\n[Claude Fallback failed: {fb_err}]"
 
             print(f"[AGENT {self.agent_id}] OBSERVE: {observation[:200]}")
             self.history.append({"step": step, "action": action, "args": args, "observation": observation})

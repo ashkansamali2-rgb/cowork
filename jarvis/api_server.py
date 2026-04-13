@@ -6,6 +6,16 @@ import uvicorn
 import asyncio
 from core.router import agent_loop
 from core.bus_client import connect_to_bus
+try:
+    from core.proactive import ProactiveJarvis
+    _proactive = ProactiveJarvis()
+    _PROACTIVE_OK = True
+except Exception:
+    _proactive = None
+    _PROACTIVE_OK = False
+
+from core.memory.knowledge_graph import KnowledgeGraph as KG
+_kg = KG()
 
 session_memory: dict[str, list] = {}
 
@@ -82,6 +92,14 @@ async def startup():
         except Exception:
             pass
     asyncio.create_task(connect_to_bus())
+    if _PROACTIVE_OK:
+        asyncio.create_task(_proactive.run_periodic())
+    # Index codebase into knowledge graph
+    try:
+        import threading
+        threading.Thread(target=_kg.index_codebase, daemon=True).start()
+    except Exception as e:
+        print(f"[KG] index error: {e}")
 
 
 active_tasks: dict[str, asyncio.Task] = {}  # task_id -> Task
@@ -176,6 +194,25 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
             active_tasks.pop(tid, None)
 
     active_tasks[task_id] = asyncio.create_task(run_task(user_msg))
+
+
+@app.get("/graph")
+async def get_graph():
+    """Return current knowledge graph data."""
+    try:
+        return _kg.get_graph_data()
+    except Exception as e:
+        return {"nodes": [], "edges": [], "stats": {}, "error": str(e)}
+
+
+@app.post("/graph/touch/{node_id}")
+async def touch_graph_node(node_id: str):
+    """Mark a node as recently active."""
+    try:
+        _kg.touch_node(node_id)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 if __name__ == '__main__':
