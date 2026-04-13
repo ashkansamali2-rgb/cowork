@@ -1157,3 +1157,197 @@ try:
     )
 except ImportError:
     pass
+
+
+# ── Dev / terminal tools ───────────────────────────────────────────────────────
+
+def open_terminal_and_run(command: str, title: str = "Jarvis") -> str:
+    """Open a new Terminal window and run a command in it."""
+    safe_cmd = command.replace("\\", "\\\\").replace('"', '\\"')
+    script = f'tell application "Terminal" to do script "{safe_cmd}"'
+    subprocess.run(["osascript", "-e", script])
+    return f"Running in Terminal: {command[:80]}"
+
+
+def check_port(port: int) -> str:
+    """Check if a port is in use on localhost."""
+    try:
+        port = int(port)
+        result = subprocess.run(["lsof", "-i", f":{port}"], capture_output=True, text=True)
+        if result.stdout.strip():
+            lines = result.stdout.strip().split("\n")
+            return f"Port {port} in use: {lines[1] if len(lines) > 1 else lines[0]}"
+        return f"Port {port} is free"
+    except Exception as e:
+        return f"check_port failed: {e}"
+
+
+def kill_port(port: int) -> str:
+    """Kill all processes listening on a port."""
+    try:
+        port = int(port)
+        result = subprocess.run(["lsof", "-ti", f":{port}"], capture_output=True, text=True)
+        if result.stdout.strip():
+            killed = []
+            for pid in result.stdout.strip().split("\n"):
+                subprocess.run(["kill", "-9", pid.strip()], capture_output=True)
+                killed.append(pid.strip())
+            return f"Killed {len(killed)} process(es) on port {port}: {', '.join(killed)}"
+        return f"Nothing on port {port}"
+    except Exception as e:
+        return f"kill_port failed: {e}"
+
+
+def install_python_package(package: str) -> str:
+    """Install a Python package via pip."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "install", package],
+            capture_output=True, text=True, timeout=120
+        )
+        out = (result.stdout + result.stderr).strip()
+        return out[-400:] if out else "Done"
+    except subprocess.TimeoutExpired:
+        return f"Timed out installing {package}"
+    except Exception as e:
+        return f"install_python_package failed: {e}"
+
+
+def install_node_package(package: str, project_path: str = ".") -> str:
+    """Install a Node.js package via npm in the given directory."""
+    try:
+        cwd = os.path.expanduser(project_path)
+        result = subprocess.run(
+            ["npm", "install", package],
+            capture_output=True, text=True, timeout=120, cwd=cwd
+        )
+        out = (result.stdout + result.stderr).strip()
+        return out[-400:] if out else "Done"
+    except subprocess.TimeoutExpired:
+        return f"Timed out installing {package}"
+    except Exception as e:
+        return f"install_node_package failed: {e}"
+
+
+def git_commit_all(message: str, repo_path: str = ".") -> str:
+    """Stage all changes and commit in the given repo directory."""
+    try:
+        repo = os.path.expanduser(repo_path)
+        subprocess.run(["git", "add", "-A"], cwd=repo, capture_output=True)
+        result = subprocess.run(
+            ["git", "commit", "-m", message],
+            cwd=repo, capture_output=True, text=True
+        )
+        return (result.stdout + result.stderr).strip() or "Committed"
+    except Exception as e:
+        return f"git_commit_all failed: {e}"
+
+
+def execute_python_code(code: str, timeout: int = 30) -> str:
+    """Execute Python code in /tmp, return stdout/stderr."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, dir="/tmp") as f:
+        f.write(code)
+        tmp = f.name
+    try:
+        result = subprocess.run(
+            ["python3", tmp], capture_output=True, text=True, timeout=int(timeout)
+        )
+        output = result.stdout[-1500:] if result.stdout else result.stderr[-500:]
+        return output or "No output"
+    except subprocess.TimeoutExpired:
+        return f"Timed out after {timeout}s"
+    finally:
+        try:
+            os.unlink(tmp)
+        except Exception:
+            pass
+
+
+def execute_and_fix(code: str, attempts: int = 3) -> str:
+    """Execute Python code; if it errors, ask Qwen to fix it and retry."""
+    import requests as _req
+    current_code = code
+    last_result = ""
+    for i in range(int(attempts)):
+        last_result = execute_python_code(current_code)
+        if "Error" not in last_result and "Traceback" not in last_result:
+            return last_result
+        try:
+            r = _req.post("http://localhost:8081/v1/chat/completions", json={
+                "messages": [{"role": "user", "content":
+                    f"Fix this Python code error.\nError: {last_result}\nCode:\n{current_code}\n"
+                    "Return ONLY the fixed code with no explanation."}],
+                "temperature": 0.1, "max_tokens": 1000, "stream": False,
+            }, timeout=60)
+            fixed = r.json()["choices"][0]["message"]["content"].strip()
+            fixed = fixed.replace("```python", "").replace("```", "").strip()
+            current_code = fixed
+        except Exception:
+            break
+    return last_result
+
+
+def fix_localhost(port: int = 3000) -> str:
+    """Open localhost in browser and take a screenshot for analysis."""
+    import time as _t
+    port = int(port)
+    subprocess.run(["open", f"http://localhost:{port}"])
+    _t.sleep(2)
+    screenshot_path = f"/tmp/localhost_{port}.png"
+    subprocess.run(["screencapture", "-x", screenshot_path])
+    return f"Screenshot saved: {screenshot_path} — use analyze_image to read the error"
+
+
+def browser_get_current_url() -> str:
+    """Get the URL of the current Safari tab."""
+    result = subprocess.run(["osascript", "-e", """
+        tell application "Safari"
+            return URL of document 1
+        end tell
+    """], capture_output=True, text=True, timeout=5)
+    return result.stdout.strip() or "(no URL)"
+
+
+# Register dev/browser/terminal tools
+TOOLS["open_terminal_and_run"] = open_terminal_and_run
+TOOLS["check_port"] = check_port
+TOOLS["kill_port"] = kill_port
+TOOLS["install_python_package"] = install_python_package
+TOOLS["install_node_package"] = install_node_package
+TOOLS["git_commit_all"] = git_commit_all
+TOOLS["execute_python_code"] = execute_python_code
+TOOLS["execute_and_fix"] = execute_and_fix
+TOOLS["fix_localhost"] = fix_localhost
+TOOLS["browser_get_current_url"] = browser_get_current_url
+TOOLS["browser_navigate"] = browser_navigate
+TOOLS["browser_get_text"] = browser_get_text
+TOOLS["browser_click_link"] = browser_click_link
+TOOLS["run_python_code"] = run_python_code
+TOOLS["find_files"] = find_files
+TOOLS["grep_content"] = grep_content
+TOOLS["get_running_apps"] = get_running_apps
+TOOLS["get_frontmost_app"] = get_frontmost_app
+TOOLS["close_app"] = close_app
+TOOLS["run_shell_safe"] = run_shell_safe
+
+TOOL_DESCRIPTIONS["open_terminal_and_run"] = "open_terminal_and_run(command) — Open a new Terminal window and run a shell command"
+TOOL_DESCRIPTIONS["check_port"] = "check_port(port) — Check if a port is in use on localhost"
+TOOL_DESCRIPTIONS["kill_port"] = "kill_port(port) — Kill all processes listening on a given port"
+TOOL_DESCRIPTIONS["install_python_package"] = "install_python_package(package) — Install a Python package via pip"
+TOOL_DESCRIPTIONS["install_node_package"] = "install_node_package(package, project_path='.') — Install a Node.js package via npm"
+TOOL_DESCRIPTIONS["git_commit_all"] = "git_commit_all(message, repo_path='.') — Stage all changes and commit in a repo"
+TOOL_DESCRIPTIONS["execute_python_code"] = "execute_python_code(code, timeout=30) — Execute Python code in a temp file, return output"
+TOOL_DESCRIPTIONS["execute_and_fix"] = "execute_and_fix(code, attempts=3) — Execute Python code; auto-fix errors with Qwen and retry"
+TOOL_DESCRIPTIONS["fix_localhost"] = "fix_localhost(port=3000) — Open localhost, screenshot it, return path for analyze_image"
+TOOL_DESCRIPTIONS["browser_get_current_url"] = "browser_get_current_url() — Get the URL of the current Safari tab"
+TOOL_DESCRIPTIONS["browser_navigate"] = "browser_navigate(url) — Open a URL in Safari"
+TOOL_DESCRIPTIONS["browser_get_text"] = "browser_get_text() — Get visible text from current Safari page (up to 5000 chars)"
+TOOL_DESCRIPTIONS["browser_click_link"] = "browser_click_link(link_text) — Click a link in Safari by its visible text"
+TOOL_DESCRIPTIONS["run_python_code"] = "run_python_code(code) — Run Python code in subprocess, return output (30s timeout)"
+TOOL_DESCRIPTIONS["find_files"] = "find_files(pattern, directory='.') — Find files matching a glob pattern"
+TOOL_DESCRIPTIONS["grep_content"] = "grep_content(pattern, directory='.') — Search Python/JS file contents for a regex pattern"
+TOOL_DESCRIPTIONS["get_running_apps"] = "get_running_apps() — List currently visible running applications"
+TOOL_DESCRIPTIONS["get_frontmost_app"] = "get_frontmost_app() — Get the name of the currently active application"
+TOOL_DESCRIPTIONS["close_app"] = "close_app(app) — Quit a macOS application by name"
+TOOL_DESCRIPTIONS["run_shell_safe"] = "run_shell_safe(cmd, cwd=None) — Run shell command safely with optional working directory"

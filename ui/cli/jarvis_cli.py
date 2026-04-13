@@ -68,6 +68,13 @@ CWD_FILE     = COWORK_DIR / "current_cwd"
 _ANSI_RE     = re.compile(r'\x1b\[[0-9;]*m')
 
 # Coding intent detection
+_CODING_RE = re.compile(
+    r'\b(write|create|edit|fix|add|implement|refactor|build|debug|modify)\b'
+    r'.{0,50}\b(\.py|\.js|\.ts|\.jsx|\.css|\.html|script|function|class|'
+    r'component|module|endpoint|route|model|schema)\b',
+    re.IGNORECASE
+)
+
 _CODING_VERBS = re.compile(
     r'\b(write|create|edit|fix|add|implement|refactor|build|debug|update|generate|make)\b',
     re.IGNORECASE,
@@ -1228,15 +1235,8 @@ async def main_loop():
             cmd_handler.record_line(f"> {text}")
 
             # ── Auto-detect coding intent → route to cantivia ─────────────────
-            if _is_coding_intent(text):
-                print_status("[Cantivia] Routing to coding agent...")
-                payload = {
-                    "type": "TASK_CODING",
-                    "msg": text,
-                    "cwd": _get_cwd(),
-                }
-                ws_manager.send_bus(json.dumps(payload))
-                # Also send to Jarvis so it knows
+            if _CODING_RE.search(text) and not text.startswith("/"):
+                print_status("[Cantivia] Routing to coding pipeline...")
                 ws_manager.send_jarvis(json.dumps({
                     "message": f"cantivia {text}",
                     "cwd": _get_cwd(),

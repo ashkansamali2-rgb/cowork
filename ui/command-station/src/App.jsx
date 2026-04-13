@@ -45,6 +45,7 @@ export default function App() {
   const [taskProgress, setTaskProgress] = useState([])
   const [spawnerOpen, setSpawnerOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('chat')
+  const [showGraph, setShowGraph] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [statusText, setStatusText] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -547,82 +548,104 @@ export default function App() {
         agentDone={agentDone}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          chats={chats}
-          activeChatId={activeChatId}
-          agentStatuses={agentStatuses}
-          connections={connections}
-          onNewChat={handleNewChat}
-          onSelectChat={handleSelectChat}
-          onDeleteChat={handleDeleteChat}
-          projects={projects}
-          activeProject={activeProject?.name}
-          onNewProjectChat={handleNewProjectChat}
-          onCreateProject={handleCreateProject}
-          onDeleteProject={handleDeleteProject}
-          projectChats={projectChats}
-          projectFiles={projectFiles}
-          onAddProjectFile={handleAddProjectFile}
-          onRemoveProjectFile={handleRemoveProjectFile}
-          onExpandProject={handleSelectProjectChatAndLoadChats}
-          onClearAllChats={handleClearAllChats}
-        />
-        <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
-          {/* Tab bar */}
-          <div
-            className="flex flex-shrink-0 border-b border-[#EAE6DF]"
-            style={{ background: '#FBF8F4' }}
-          >
-            <button
-              onClick={() => setActiveTab('chat')}
-              className="px-5 py-2 text-xs font-medium transition-all"
+        <div className="flex flex-col border-r border-[#EAE6DF] bg-[#FBF8F4]">
+          <Sidebar
+            chats={chats}
+            activeChatId={activeChatId}
+            agentStatuses={agentStatuses}
+            connections={connections}
+            onNewChat={handleNewChat}
+            onSelectChat={handleSelectChat}
+            onDeleteChat={handleDeleteChat}
+            projects={projects}
+            activeProject={activeProject?.name}
+            onNewProjectChat={handleNewProjectChat}
+            onCreateProject={handleCreateProject}
+            onDeleteProject={handleDeleteProject}
+            projectChats={projectChats}
+            projectFiles={projectFiles}
+            onAddProjectFile={handleAddProjectFile}
+            onRemoveProjectFile={handleRemoveProjectFile}
+            onExpandProject={handleSelectProjectChatAndLoadChats}
+            onClearAllChats={handleClearAllChats}
+          />
+          <div style={{ padding: "4px 12px" }}>
+            <div
+              onClick={() => setShowGraph(!showGraph)}
               style={{
-                borderBottom: activeTab === 'chat' ? '2px solid #7C3AED' : '2px solid transparent',
-                color: activeTab === 'chat' ? '#7C3AED' : '#9CA3AF',
-                background: 'transparent',
+                cursor: "pointer", color: showGraph ? "#7C3AED" : "#6b7280",
+                fontSize: 12, fontWeight: 500, padding: "6px 8px",
+                borderRadius: 4, background: showGraph ? "#EDE9FE" : "transparent"
               }}
             >
-              Chat
-            </button>
-            <button
-              onClick={() => setActiveTab('graph')}
-              className="px-5 py-2 text-xs font-medium transition-all"
-              style={{
-                borderBottom: activeTab === 'graph' ? '2px solid #7C3AED' : '2px solid transparent',
-                color: activeTab === 'graph' ? '#7C3AED' : '#9CA3AF',
-                background: 'transparent',
-              }}
-            >
-              Graph
-            </button>
+              Graph {showGraph ? "(active)" : ""}
+            </div>
           </div>
-
-          {activeTab === 'chat' && (
-            <>
-              {activeProject && (
-                <div className="flex-shrink-0 px-4 py-1.5 border-b border-[#EAE6DF] bg-[#F5F1EB]">
-                  <span className="text-xs text-[#7C3AED] font-medium">
-                    Project: {activeProject.name}
-                  </span>
-                </div>
-              )}
-              <ChatArea
-                messages={messages}
-                statusText={statusText}
-                isTyping={isTyping}
-              />
-              <InputBar
-                onSend={handleSendMessage}
-                isStreaming={isStreaming}
-                connected={connections.jarvis}
-              />
-            </>
-          )}
-
-          {activeTab === 'graph' && (
+        </div>
+        <main className="flex flex-col flex-1 overflow-hidden bg-[#FBF8F4]">
+          {showGraph ? (
             <div className="flex-1 overflow-hidden">
               <KnowledgeGraph />
             </div>
+          ) : (
+            <>
+              {/* Tab bar */}
+              <div
+                className="flex flex-shrink-0 border-b border-[#EAE6DF]"
+                style={{ background: '#FBF8F4' }}
+              >
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className="px-5 py-2 text-xs font-medium transition-all"
+                  style={{
+                    borderBottom: activeTab === 'chat' ? '2px solid #7C3AED' : '2px solid transparent',
+                    color: activeTab === 'chat' ? '#7C3AED' : '#9CA3AF',
+                    background: 'transparent',
+                  }}
+                >
+                  Chat
+                </button>
+                <button
+                  onClick={() => setActiveTab('graph')}
+                  className="px-5 py-2 text-xs font-medium transition-all"
+                  style={{
+                    borderBottom: activeTab === 'graph' ? '2px solid #7C3AED' : '2px solid transparent',
+                    color: activeTab === 'graph' ? '#7C3AED' : '#9CA3AF',
+                    background: 'transparent',
+                  }}
+                >
+                  Graph
+                </button>
+              </div>
+
+              {activeTab === 'chat' && (
+                <>
+                  {activeProject && (
+                    <div className="flex-shrink-0 px-4 py-1.5 border-b border-[#EAE6DF] bg-[#F5F1EB]">
+                      <span className="text-xs text-[#7C3AED] font-medium">
+                        Project: {activeProject.name}
+                      </span>
+                    </div>
+                  )}
+                  <ChatArea
+                    messages={messages}
+                    statusText={statusText}
+                    isTyping={isTyping}
+                  />
+                  <InputBar
+                    onSend={handleSendMessage}
+                    isStreaming={isStreaming}
+                    connected={connections.jarvis}
+                  />
+                </>
+              )}
+
+              {activeTab === 'graph' && (
+                <div className="flex-1 overflow-hidden">
+                  <KnowledgeGraph />
+                </div>
+              )}
+            </>
           )}
         </main>
         {spawnerOpen && (

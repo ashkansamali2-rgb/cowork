@@ -430,7 +430,48 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         asyncio.create_task(_run_agent())
         return f"Agent {agent_id} spawned. Working on it..."
 
-    # Knowledge graph indexing trigger
+    # Hierarchy triggers — complex multi-component builds
+    _HIERARCHY_TRIGGERS = [
+        "build a full", "create a complete", "build and launch",
+        "build a project", "build an app", "create an app",
+        "build a website", "scaffold", "build and run", "create and launch"
+    ]
+    if any(t in msg_lower for t in _HIERARCHY_TRIGGERS):
+        from core.agents.hierarchy import AgentHierarchy
+        asyncio.create_task(AgentHierarchy().run(user_message, websocket))
+        return "Spawning architect and engineer hierarchy..."
+
+    # Full build pipeline — build AND launch
+    _BUILD_PIPELINE_TRIGGERS = [
+        "build me a", "make me a", "create me a"
+    ]
+    if any(t in msg_lower for t in _BUILD_PIPELINE_TRIGGERS) and \
+       any(x in msg_lower for x in ["app", "website", "api", "server", "tool", "script"]):
+        from core.self_improve.build_pipeline import run_pipeline
+        asyncio.create_task(run_pipeline(user_message, websocket))
+        return "Build pipeline started. Planning, building, and launching..."
+
+    # Autonomous improvement
+    if any(t in msg_lower for t in ["improve yourself", "build yourself", "run build session"]):
+        from core.agents.meta_agent import MetaAgent
+        minutes = 60
+        for word in msg_lower.split():
+            if word.isdigit():
+                minutes = int(word)
+                break
+        asyncio.create_task(MetaAgent().analyze_and_improve(minutes))
+        return f"Autonomous build session started for {minutes} minutes."
+
+    # Fix localhost
+    if "fix localhost" in msg_lower:
+        port = 3000
+        for word in msg_lower.split():
+            if word.isdigit() and 1000 < int(word) < 65535:
+                port = int(word)
+        from core.agents.dev_tools import fix_localhost_error
+        asyncio.create_task(fix_localhost_error(port))
+        return f"Reading error on localhost:{port} and fixing it..."
+
     _KG_TRIGGERS = ["index codebase", "index knowledge", "update knowledge graph", "rebuild knowledge graph"]
     if any(t in msg_lower for t in _KG_TRIGGERS):
         import threading
