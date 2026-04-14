@@ -8,8 +8,11 @@ from pathlib import Path
 
 import requests
 
-GEMMA_URL = "http://localhost:8080/v1/chat/completions"
-QWEN_URL  = "http://localhost:8081/v1/chat/completions"
+E4B_URL   = "http://localhost:8080/v1/chat/completions"   # E4B: architect/planning (fast)
+BRAIN_URL = "http://localhost:8081/v1/chat/completions"   # 31B: engineers/coding (capable)
+# Legacy aliases kept for compatibility
+GEMMA_URL = E4B_URL
+QWEN_URL  = BRAIN_URL
 
 
 def _call_gemma(prompt: str, max_tokens: int = 500) -> str:

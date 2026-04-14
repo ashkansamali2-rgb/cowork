@@ -35,3 +35,7 @@ GEMINI_API_KEY = 'YOUR_GEMINI_KEY_HERE'
 OPENCLAW_URL = 'http://YOUR_REMOTE_IP:8000/generate' # Replace with actual OpenClaw IP
 
 LLAMA_CPP_URL = 'http://localhost:8081/v1/chat/completions'
+
+# Model routing — two tiers
+FAST_URL  = 'http://localhost:8080/v1/chat/completions'   # E4B: voice, greetings, quick yes/no
+BRAIN_URL = 'http://localhost:8081/v1/chat/completions'   # 31B: CLI, agents, coding, reasoning
