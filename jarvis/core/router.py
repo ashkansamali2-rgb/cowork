@@ -430,17 +430,6 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         asyncio.create_task(_run_agent())
         return f"Agent {agent_id} spawned. Working on it..."
 
-    # Hierarchy triggers — complex multi-component builds
-    _HIERARCHY_TRIGGERS = [
-        "build a full", "create a complete", "build and launch",
-        "build a project", "build an app", "create an app",
-        "build a website", "scaffold", "build and run", "create and launch"
-    ]
-    if any(t in msg_lower for t in _HIERARCHY_TRIGGERS):
-        from core.agents.hierarchy import AgentHierarchy
-        asyncio.create_task(AgentHierarchy().run(user_message, websocket))
-        return "Spawning architect and engineer hierarchy..."
-
     # Full build pipeline — build AND launch
     _BUILD_PIPELINE_TRIGGERS = [
         "build me a", "make me a", "create me a"
