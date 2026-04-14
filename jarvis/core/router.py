@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.expanduser('~/jarvis'))
 from core.tools import AVAILABLE_TOOLS
 from core.tool_learner import handle_missing_tool
-from config import LLAMA_CPP_URL, FAST_URL, BRAIN_URL
+from config import LLAMA_CPP_URL, BRAIN_URL
 from core.agents.runtime import create_agent
 
 try:
@@ -194,12 +194,8 @@ def clean_response(text):
 
 _LONG_FORM_KEYWORDS = ("write", "essay", "long", "detailed", "explain", "list all")
 
-_FAST_TRIGGERS = ["hello", "hi ", "hey ", "what time", "stop", "cancel", "thanks", "ok ", "cheers"]
-
-def make_request(messages, max_tokens=800, url=None):
-    if url is None:
-        url = LLAMA_CPP_URL  # defaults to 31B (BRAIN_URL)
-    r = requests.post(url, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
+def make_request(messages, max_tokens=800):
+    r = requests.post(BRAIN_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
     return r.json()['choices'][0]['message']['content']
 
 async def agent_loop(user_message: str, websocket=None, session_id: str = "", cwd: str = None):
@@ -253,7 +249,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             }
             _gemma_resp = await asyncio.to_thread(
                 lambda: requests.post(
-                    "http://localhost:8080/v1/chat/completions",
+                    "http://localhost:8081/v1/chat/completions",
                     json=_gemma_payload,
                     timeout=30,
                 ).json()
@@ -525,18 +521,14 @@ After every shell command action, report what actually happened. If the command 
     messages.extend(conversation_memory)
     messages.append({"role": "user", "content": msg_lower})
 
-    # Select model: E4B (fast) for short greetings/acks, 31B (brain) for everything else
-    _use_fast = any(t in msg_lower for t in _FAST_TRIGGERS) and len(user_message) < 60
-    _model_url = FAST_URL if _use_fast else BRAIN_URL
-    _model_label = "E4B" if _use_fast else "31B"
-    if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Asking Gemma {_model_label}...{C_RESET}"})
+    if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Asking Gemma 31B...{C_RESET}"})
 
     # Use larger token budget for long-form requests
     _tokens = 2000 if any(kw in msg_lower for kw in _LONG_FORM_KEYWORDS) else 800
 
     try:
         async def _llm_call():
-            return await asyncio.to_thread(make_request, messages, _tokens, _model_url)
+            return await asyncio.to_thread(make_request, messages, _tokens)
 
         try:
             raw_text = await asyncio.wait_for(_llm_call(), timeout=25)

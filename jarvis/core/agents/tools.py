@@ -1075,7 +1075,7 @@ def analyze_image(path: str, question: str = "What do you see in this image?") -
     try:
         with open(os.path.expanduser(path), "rb") as f:
             b64 = base64.b64encode(f.read()).decode()
-        resp = _req.post("http://localhost:8080/v1/chat/completions", json={
+        resp = _req.post("http://localhost:8081/v1/chat/completions", json={
             "messages": [{"role": "user", "content": [
                 {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
                 {"type": "text", "text": question}

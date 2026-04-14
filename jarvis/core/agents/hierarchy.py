@@ -8,10 +8,9 @@ from pathlib import Path
 
 import requests
 
-E4B_URL   = "http://localhost:8080/v1/chat/completions"   # E4B: architect/planning (fast)
-BRAIN_URL = "http://localhost:8081/v1/chat/completions"   # 31B: engineers/coding (capable)
-# Legacy aliases kept for compatibility
-GEMMA_URL = E4B_URL
+BRAIN_URL = "http://localhost:8081/v1/chat/completions"   # Gemma 4 31B — single model
+# Aliases for internal use
+GEMMA_URL = BRAIN_URL
 QWEN_URL  = BRAIN_URL
 
 

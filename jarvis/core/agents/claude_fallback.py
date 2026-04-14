@@ -83,7 +83,7 @@ async def _extract_text_from_screenshot(screenshot_path: str, question: str) -> 
         }
 
         resp = requests.post(
-            "http://localhost:8080/v1/chat/completions",
+            "http://localhost:8081/v1/chat/completions",
             json=payload,
             timeout=60
         )

@@ -14,7 +14,7 @@ import logging
 log = logging.getLogger("jarvis.tool_learner")
 
 TOOLS_PATH = os.path.expanduser("~/cowork/jarvis/core/tools.py")
-GEMMA_URL  = "http://localhost:8080/v1/chat/completions"
+GEMMA_URL  = "http://localhost:8081/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are a Python tool writer for a macOS AI assistant called Jarvis.
 When given a tool name and description of what it should do, write a single Python function.

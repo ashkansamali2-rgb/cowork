@@ -1,7 +1,7 @@
 """
 planner.py — Task planner for the autonomous agent runtime.
 
-Takes a natural language task, sends to Gemma (port 8080),
+Takes a natural language task, sends to Gemma (port 8081),
 gets back a structured JSON plan with sequential steps.
 """
 import json
@@ -47,7 +47,7 @@ Create a step-by-step plan to accomplish this task.
 class TaskPlanner:
     def __init__(self, tool_descriptions: str = ""):
         self.tool_descriptions = tool_descriptions
-        self._gemma_url = "http://localhost:8080/v1/chat/completions"
+        self._gemma_url = "http://localhost:8081/v1/chat/completions"
         self._qwen_url  = "http://localhost:8081/v1/chat/completions"
 
     def plan(self, task: str) -> dict:

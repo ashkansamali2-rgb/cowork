@@ -1,16 +1,9 @@
 {
-  "fast": {
-    "name": "Gemma 4 E4B",
-    "file": "gemma-4-E4B-it-UD-Q6_K_XL.gguf",
-    "port": 8080,
-    "ctx_size": 8192,
-    "role": "voice routing, greetings, quick responses, image analysis"
-  },
   "brain": {
     "name": "Gemma 4 31B",
     "file": "gemma-4-31B-it-IQ4_NL.gguf",
     "port": 8081,
     "ctx_size": 65536,
-    "role": "daily driver: CLI, agents, coding, reasoning"
+    "role": "single model: voice, CLI, agents, coding, reasoning, everything"
   }
 }

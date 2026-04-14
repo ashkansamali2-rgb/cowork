@@ -34,7 +34,7 @@ def run_syntax_checks() -> bool:
 def check_services() -> list[str]:
     import socket
     results = []
-    for port, name in [(8001, "Jarvis"), (8002, "Bus"), (8080, "Gemma"), (8081, "Qwen")]:
+    for port, name in [(8001, "Jarvis"), (8002, "Bus"), (8081, "Gemma31B")]:
         try:
             s = socket.create_connection(("127.0.0.1", port), timeout=2)
             s.close()

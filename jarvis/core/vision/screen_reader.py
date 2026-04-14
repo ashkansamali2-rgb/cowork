@@ -8,7 +8,7 @@ from pathlib import Path
 
 import requests
 
-GEMMA_URL = "http://localhost:8080/v1/chat/completions"
+GEMMA_URL = "http://localhost:8081/v1/chat/completions"
 
 
 class ScreenReader:

@@ -15,14 +15,12 @@ BOLD   = "\033[1m"
 PORTS = {
     "jarvis":          8001,
     "bus":             8002,
-    "gemma":           8080,
-    "qwen":            8081,
+    "gemma-31b":       8081,
     "command-station": 5173,
 }
 
 MODEL_URLS = {
-    "gemma": "http://localhost:8080/v1/chat/completions",
-    "qwen":  "http://localhost:8081/v1/chat/completions",
+    "gemma-31b": "http://localhost:8081/v1/chat/completions",
 }
 
 
