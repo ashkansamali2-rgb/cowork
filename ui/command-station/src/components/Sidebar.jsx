@@ -1,8 +1,6 @@
 import React, { useState, useRef } from 'react'
 
 const AGENT_DEFS = [
-  { key: 'gemma',    label: 'Gemma',    desc: 'Vision + reasoning' },
-  { key: 'qwen',     label: 'Qwen',     desc: 'Code generation' },
   { key: 'cantivia', label: 'Cantivia', desc: 'Repo automation' },
 ]
 

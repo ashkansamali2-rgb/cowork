@@ -36,7 +36,7 @@ export default function App() {
   const [messages, setMessages] = useState([])
   const [connections, setConnections] = useState({ jarvis: false, bus: false })
   const [agentStatuses, setAgentStatuses] = useState({
-    gemma: 'idle', qwen: 'idle', cantivia: 'idle',
+    cantivia: 'idle',
   })
   // Structured agent registry: { [agentId]: { task, status, steps, startTime } }
   const [agents, setAgents] = useState({})

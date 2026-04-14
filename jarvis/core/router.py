@@ -198,6 +198,13 @@ def make_request(messages, max_tokens=800):
     r = requests.post(BRAIN_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
     return r.json()['choices'][0]['message']['content']
 
+def run(message: str, context: dict = None) -> dict:
+    """Synchronous wrapper for agent_loop. Returns {'result': str, 'branch': str}."""
+    branch = (context or {}).get("branch", "general")
+    result = asyncio.run(agent_loop(message))
+    return {"result": result, "branch": branch}
+
+
 async def agent_loop(user_message: str, websocket=None, session_id: str = "", cwd: str = None):
     msg_lower = user_message.lower()
     msg_lower = msg_lower.replace("anti-gravity", "antigravity")
@@ -229,7 +236,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         _img_path = _img_attach_match.group(1).strip()
         _img_question = _img_attach_match.group(2).strip() or "What do you see in this image?"
         if websocket:
-            await websocket.send_json({"type": "status", "msg": "Analyzing image with Gemma 4..."})
+            await websocket.send_json({"type": "status", "msg": "Analyzing image..."})
         try:
             import base64 as _b64
             with open(_img_path, "rb") as _f:
@@ -484,7 +491,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             "context": "",
             "cwd": cwd or os.path.expanduser("~/cowork")
         })
-        return "Cantivia is on it. Gemma is planning, Qwen is coding."
+        return "Cantivia is on it."
     # ==========================================
     # THE HEAVYWEIGHT PATH
     # ==========================================
@@ -521,7 +528,7 @@ After every shell command action, report what actually happened. If the command 
     messages.extend(conversation_memory)
     messages.append({"role": "user", "content": msg_lower})
 
-    if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Asking Gemma 31B...{C_RESET}"})
+    if websocket: await websocket.send_json({"type": "status", "msg": f"{C_CYAN}Thinking...{C_RESET}"})
 
     # Use larger token budget for long-form requests
     _tokens = 2000 if any(kw in msg_lower for kw in _LONG_FORM_KEYWORDS) else 800
