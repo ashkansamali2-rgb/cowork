@@ -40,8 +40,8 @@ GREETINGS = [
     "Facility secure. Neural network is spooled up. How can I help?"
 ]
 
-# asyncio.Lock for GPU (whisper) — acquired with 10s timeout
-gpu_lock = asyncio.Lock()
+# is_speaking: simple boolean flag (threading.Event) — no lock
+# Avoids deadlock between mic listener and TTS GPU usage
 tts_lock = threading.Lock()
 is_speaking = threading.Event()
 
@@ -149,7 +149,8 @@ def transcribe_audio(audio) -> str | None:
 
 # ── Coroutine 1: audio_producer ───────────────────────────────────────────────
 async def audio_producer(audio_q: asyncio.Queue):
-    """Continuously reads mic, puts raw frames into audio_q. Always runs."""
+    """Continuously reads mic, puts raw frames into audio_q. Always runs.
+    No GPU lock — mic listens freely. Transcription is skipped when is_speaking."""
     loop = asyncio.get_running_loop()
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         with sr.Microphone() as source:
@@ -164,33 +165,20 @@ async def audio_producer(audio_q: asyncio.Queue):
 
             while True:
                 try:
-                    # Acquire gpu_lock with 10s timeout so mic never stalls indefinitely
-                    lock_acquired = False
-                    try:
-                        await asyncio.wait_for(gpu_lock.acquire(), timeout=10)
-                        lock_acquired = True
-                    except asyncio.TimeoutError:
-                        warn_msg = "[Warning] gpu_lock timeout in audio_producer — continuing without lock"
-                        print(warn_msg)
-                        try:
-                            with open(CRASH_LOG, "a") as _f:
-                                _f.write(f"[{datetime.now().isoformat()}] {warn_msg}\n")
-                        except Exception:
-                            pass
-
                     def get_audio():
                         try:
                             return recognizer.listen(source, timeout=None, phrase_time_limit=10)
                         except Exception:
                             return None
 
-                    try:
-                        audio = await loop.run_in_executor(pool, get_audio)
-                    finally:
-                        if lock_acquired:
-                            gpu_lock.release()
+                    audio = await loop.run_in_executor(pool, get_audio)
 
                     if not audio:
+                        continue
+
+                    # While speaking, drain the mic buffer but don't queue for transcription
+                    # This prevents the deadlock without any lock
+                    if is_speaking.is_set():
                         continue
 
                     # Drop oldest frame if queue is full
