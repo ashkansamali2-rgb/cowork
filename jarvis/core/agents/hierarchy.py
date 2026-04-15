@@ -69,7 +69,7 @@ class AgentHierarchy:
         await _send(websocket, {"type": "final", "msg": final})
         return final
 
-    async def _architect(self, task: str, websocket) -> list:
+    async def _architect(self, task: str, websocket=None) -> list:
         prompt = (
             f"Break this task into 2-4 independent parallel subtasks.\n"
             f"Task: {task}\n"

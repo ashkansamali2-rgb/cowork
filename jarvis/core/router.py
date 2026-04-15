@@ -10,7 +10,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.expanduser('~/jarvis'))
 from core.tools import AVAILABLE_TOOLS
 from core.tool_learner import handle_missing_tool
-from config import LLAMA_CPP_URL, BRAIN_URL
+from config import LLAMA_CPP_URL, LLAMA_CPP_FAST_URL, BRAIN_URL
 from core.agents.runtime import create_agent
 
 try:
@@ -195,17 +195,23 @@ def clean_response(text):
 _LONG_FORM_KEYWORDS = ("write", "essay", "long", "detailed", "explain", "list all")
 
 def make_request(messages, max_tokens=800):
-    r = requests.post(BRAIN_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
+    r = requests.post(LLAMA_CPP_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=120)
+    return r.json()['choices'][0]['message']['content']
+
+def make_fast_request(messages, max_tokens=800):
+    r = requests.post(LLAMA_CPP_FAST_URL, json={"messages": messages, "temperature": 0.1, "max_tokens": max_tokens, "stream": False}, timeout=60)
     return r.json()['choices'][0]['message']['content']
 
 def run(message: str, context: dict = None) -> dict:
-    """Synchronous wrapper for agent_loop. Returns {'result': str, 'branch': str}."""
+    \"\"\"Synchronous wrapper for agent_loop. Returns {'result': str, 'branch': str}.\"\"\"
     branch = (context or {}).get("branch", "general")
-    result = asyncio.run(agent_loop(message))
+    source = (context or {}).get("source", "")
+    result = asyncio.run(agent_loop(message, context=context))
     return {"result": result, "branch": branch}
 
 
-async def agent_loop(user_message: str, websocket=None, session_id: str = "", cwd: str = None):
+async def agent_loop(user_message: str, websocket=None, session_id: str = "", cwd: str = None, context: dict = None):
+    source = (context or {}).get("source", "")
     msg_lower = user_message.lower()
     msg_lower = msg_lower.replace("anti-gravity", "antigravity")
 
@@ -533,8 +539,13 @@ After every shell command action, report what actually happened. If the command 
     # Use larger token budget for long-form requests
     _tokens = 2000 if any(kw in msg_lower for kw in _LONG_FORM_KEYWORDS) else 800
 
+    # Try to determine if fast response is suitable (source="voice" or request length suggests simple answer)
+    use_fast = source == "voice" or _tokens <= 100
+
     try:
         async def _llm_call():
+            if use_fast:
+                return await asyncio.to_thread(make_fast_request, messages, _tokens)
             return await asyncio.to_thread(make_request, messages, _tokens)
 
         try:

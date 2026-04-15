@@ -26,7 +26,7 @@ def _log(msg: str):
     print(f"[SelfImprove] {msg}")
 
 
-def _load_problems() -> list:
+def load_problems() -> list:
     if not PROBLEMS_FILE.exists():
         return []
     return json.loads(PROBLEMS_FILE.read_text())
@@ -115,7 +115,7 @@ async def run_forever():
                 except Exception as _e:
                     print(f"[Daemon] Learning error: {_e}")
 
-            problems = _load_problems()
+            problems = load_problems()
             problem = pick_next_problem(problems)
 
             if problem:
