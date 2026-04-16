@@ -47,8 +47,8 @@ last_response = ""
 memory_count = 0
 
 
-def out(text, **kwargs):
-    print_formatted_text(ANSI(text), **kwargs)
+def out(text):
+    print_formatted_text(ANSI(text))
 
 
 def gradient_logo():
