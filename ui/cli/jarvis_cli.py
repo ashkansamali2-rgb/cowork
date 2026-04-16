@@ -415,8 +415,8 @@ async def main():
         routed = maybe_route_cantivia(text)
         asyncio.ensure_future(send_message(routed))
 
-    @kb.add("s-enter")
-    def on_shift_enter(event):
+    @kb.add("escape", "enter")
+    def on_alt_enter(event):
         input_area.buffer.insert_text("\n")
 
     @kb.add("c-c")
