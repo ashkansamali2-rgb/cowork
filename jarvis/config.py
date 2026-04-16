@@ -1,11 +1,7 @@
 # ============================================================
 #  JARVIS CONFIG — edit this file with your settings
 # ============================================================
-
-# Ollama
-OLLAMA_URL        = "http://localhost:11434"
-BRAIN_MODEL = "jarvis-brain:latest"
-ORCHESTRATOR_MODEL = 'jarvis-brain:latest'
+# Active models: E4B (port 8080) fast/voice, 31B (port 8081) coding/agents
 
 # API Keys (fill these in)
 ANTHROPIC_API_KEY = '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'

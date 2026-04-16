@@ -135,7 +135,7 @@ async def run_forever():
         except Exception as e:
             _log(f"Daemon error: {traceback.format_exc()}")
 
-        await asyncio.sleep(300)
+        await asyncio.sleep(600)
 
 
 if __name__ == "__main__":

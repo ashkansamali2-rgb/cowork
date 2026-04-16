@@ -14,12 +14,19 @@ from config import LLAMA_CPP_URL, LLAMA_CPP_FAST_URL, BRAIN_URL
 from core.agents.runtime import create_agent
 
 try:
-    from core.memory.long_term import LongTermMemory
-    _memory = LongTermMemory()
+    from core.memory.user_model import UserModel
+    from core.memory.memory_engine import MemoryEngine
+    from core.memory.onboarding import OnboardingTracker
+    _user_model = UserModel()
+    _memory_engine = MemoryEngine(_user_model)
+    _onboarding = OnboardingTracker(_user_model)
     _MEMORY_OK = True
-except Exception:
-    _memory = None
+except Exception as e:
+    _user_model = None
+    _memory_engine = None
+    _onboarding = None
     _MEMORY_OK = False
+    print(f"[Router] Memory init failed: {e}")
 
 C_CYAN = "\033[96m"
 C_GREEN = "\033[92m"
@@ -216,6 +223,15 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
     msg_lower = msg_lower.replace("anti-gravity", "antigravity")
 
     # Priority 0: Fast hardcoded routes — no LLM needed
+    if _MEMORY_OK:
+        if _user_model.is_empty() and not _onboarding.is_active():
+            return _onboarding.start()
+        
+        if _onboarding.is_active():
+            reply = _onboarding.handle_answer(user_message)
+            if websocket: await websocket.send_json({"type": "final", "msg": reply})
+            return reply
+
     fast_result = _fast_route(msg_lower)
     if fast_result is not None:
         return fast_result
@@ -286,20 +302,26 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
 
     # Priority 0a-mem: Long-term memory commands
     if _MEMORY_OK:
+        _know_match = re.search(r"what do you know about me", msg_lower)
+        if _know_match:
+            pf = _user_model.get_profile_summary()
+            if websocket: await websocket.send_json({"type": "final", "msg": pf})
+            return pf
+
+        _forget_match = re.search(r"forget that", msg_lower)
+        if _forget_match and "remember that" not in msg_lower:
+            ans = _memory_engine.forget_last()
+            if websocket: await websocket.send_json({"type": "final", "msg": ans})
+            return ans
+
         _rem_match = re.match(r"remember (?:that )?(.+)", msg_lower)
         if _rem_match:
             _mem_fact = _rem_match.group(1).strip()
-            _memory.remember(_mem_fact, _mem_fact, category="user")
-            return f"Got it, I'll remember that: {_mem_fact}"
-
-        _know_match = re.match(r"what do you know about (.+)", msg_lower)
-        if _know_match:
-            _know_query = _know_match.group(1).strip()
-            _know_results = _memory.recall(_know_query)
-            if _know_results:
-                lines = "\n".join(f"- {r['key']}: {r['value']}" for r in _know_results)
-                return f"Here's what I remember about '{_know_query}':\n{lines}"
-            return f"I don't have any memories about '{_know_query}'."
+            fact_key = f"fact_{int(_time.time())}"
+            _user_model.update("raw_facts", fact_key, _mem_fact)
+            ans = f"Got it, I'll remember that: {_mem_fact}"
+            if websocket: await websocket.send_json({"type": "final", "msg": ans})
+            return ans
 
     # Priority 0b: Open CLI
     if any(t in msg_lower for t in ["open cli", "start cli", "launch cli"]):
@@ -525,9 +547,8 @@ For everything else — conversation, explanations, writing, questions — respo
 After every shell command action, report what actually happened. If the command produces output, include it in the response. Never respond with just 'Done.' — always include the actual output or a specific success message.{_cwd_hint}"""
 
     if _MEMORY_OK:
-        _relevant = _memory.get_relevant(user_message, top_n=3)
-        if _relevant:
-            SYSTEM_PROMPT = "Relevant memories:\n" + "\n".join(_relevant) + "\n\n" + SYSTEM_PROMPT
+        pf = _user_model.get_profile_summary()
+        SYSTEM_PROMPT = f"{pf}\n\n{SYSTEM_PROMPT}"
 
     conversation_memory = load_memory(session_id)
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -621,26 +642,25 @@ After every shell command action, report what actually happened. If the command 
                     print(f"Format error on task {i+1}: {e}")
 
             spoken_text = re.sub(r'<cmd>.*?</cmd>', '', response_text, flags=re.DOTALL).strip()
+            final_res = spoken_text
 
             error_msgs = [r for r in results if "error" in r.lower() or "bypassed" in r.lower()]
             if error_msgs:
-                if _MEMORY_OK:
-                    asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
-                return spoken_text + " " + " ".join(error_msgs)
-
-            success_msgs = [r for r in results if r and "error" not in r.lower() and "bypassed" not in r.lower()]
-            if success_msgs:
-                extra = " ".join(success_msgs)
-                if _MEMORY_OK:
-                    asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
-                return (spoken_text + " " + extra).strip() if spoken_text else extra
+                final_res = spoken_text + " " + " ".join(error_msgs)
+            else:
+                success_msgs = [r for r in results if r and "error" not in r.lower() and "bypassed" not in r.lower()]
+                if success_msgs:
+                    extra = " ".join(success_msgs)
+                    final_res = (spoken_text + " " + extra).strip() if spoken_text else extra
+                elif not spoken_text:
+                    final_res = "Command executed, but produced no output."
 
             if _MEMORY_OK:
-                asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
-            return spoken_text if spoken_text else "Command executed, but produced no output."
+                asyncio.create_task(asyncio.to_thread(_memory_engine.extract_and_store, user_message, final_res))
+            return final_res
 
         if _MEMORY_OK:
-            asyncio.create_task(asyncio.to_thread(_memory.summarize_and_store, list(conversation_memory)))
+            asyncio.create_task(asyncio.to_thread(_memory_engine.extract_and_store, user_message, response_text))
         return response_text
     except Exception as e:
         return f"Brain locked up. Error: {e}"
