@@ -219,8 +219,22 @@
       "error": true,
       "timestamp": 1776370026179,
       "streaming": false
+    },
+    {
+      "id": "msg_1776372163243",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1776372163243,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776372163259",
+      "role": "assistant",
+      "content": "Sir, I noticed I don't know much about you. Could we do a quick onboarding interview? Just 50 questions to help me serve you perfectly. First things first—what should I call you?",
+      "timestamp": 1776372163259,
+      "streaming": false
     }
   ],
-  "updatedAt": 1776370800927,
+  "updatedAt": 1776372164269,
   "projectName": null
 }
