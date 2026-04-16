@@ -18,27 +18,19 @@ try:
     import pyfiglet
 except ImportError:
     import subprocess
-    from rich.console import Console
-    _c = Console(force_terminal=True, force_jupyter=False, highlight=False)
-    _c.print("Installing pyfiglet...")
+    print("Installing pyfiglet...")
     subprocess.run(["pip3", "install", "pyfiglet", "--break-system-packages"])
     import pyfiglet
 
 import websockets
-from prompt_toolkit import PromptSession
-from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit.formatted_text import ANSI, HTML
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.styles import Style as PTStyle
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.key_binding import KeyBindings
 
-from rich.console import Console
-from rich.syntax import Syntax
-from rich.markdown import Markdown
-from rich.panel import Panel
-
 JARVIS_WS = "ws://127.0.0.1:8001/ws"
-console = Console(force_terminal=True, force_jupyter=False, highlight=False)
 
 CODING_RE = re.compile(
     r'\b(write|create|edit|fix|add|implement|refactor|build|debug|modify)\b'
@@ -59,7 +51,7 @@ def interpolate_color(color1, color2, factor):
     r = int(c1[0] + (c2[0] - c1[0]) * factor)
     g = int(c1[1] + (c2[1] - c1[1]) * factor)
     b = int(c1[2] + (c2[2] - c1[2]) * factor)
-    return f"#{r:02x}{g:02x}{b:02x}"
+    return f"\033[38;2;{r};{g};{b}m"
 
 def get_gradient_color(progress):
     if progress < 0.5:
@@ -98,11 +90,11 @@ class CLIManager:
         return 0
 
     def print_welcome(self):
-        console.clear()
+        print_formatted_text(ANSI("\033[2J\033[H"), end="")
         try:
-            f = pyfiglet.Figlet(font='banner3')
+            f = pyfiglet.Figlet(font='slant')
         except Exception:
-            f = pyfiglet.Figlet(font='block')
+            f = pyfiglet.Figlet(font='standard')
             
         lines = f.renderText('JARVIS').splitlines()
         max_len = max((len(line) for line in lines), default=1)
@@ -112,19 +104,23 @@ class CLIManager:
             for i, char in enumerate(line):
                 if char != " ":
                     color = get_gradient_color(i / max_len if max_len > 0 else 0)
-                    colored_line += f"[{color}]{char}[/]"
+                    colored_line += f"{color}{char}\033[0m"
                 else:
                     colored_line += " "
-            console.print(colored_line)
+            print_formatted_text(ANSI(colored_line))
             
-        console.print("\nTips for getting started:", style="dim white")
-        console.print("1. Talk to Jarvis naturally or use voice commands.", style="dim white")
-        console.print('2. Prefix coding tasks with "cantivia" or just describe the code change.', style="dim white")
-        console.print("3. /help for all commands.\n", style="dim white")
+        print_formatted_text(ANSI("\n\033[2;37mTips for getting started:"))
+        print_formatted_text(ANSI("1. Talk to Jarvis naturally or use voice commands."))
+        print_formatted_text(ANSI("2. Prefix coding tasks with \"cantivia\" or just describe the code change."))
+        print_formatted_text(ANSI("3. /help for all commands.\033[0m\n"))
 
     def print_agent_step(self, step: int, action: str, obs: str):
-        content = f"[bold white]↳ {action}[/]\n[dim white]{obs.strip()[:100]}[/]"
-        console.print(Panel(content, title=f"AgentStep {step}", title_align="left", border_style="dim white", expand=False))
+        content_obs = obs.strip()[:60]
+        # Calculate padding to keep box somewhat aligned
+        pad = max(0, 60 - len(content_obs) - len(action) - 6)
+        print_formatted_text(ANSI(f"\033[2;37m┌─ AgentStep {step} {'─' * max(5, 55 - len(str(step)))}┐\033[0m"))
+        print_formatted_text(ANSI(f"\033[2;37m│\033[0m \033[1;33m↳ {action}\033[0m {content_obs} \033[2;37m{' ' * pad}│\033[0m"))
+        print_formatted_text(ANSI(f"\033[2;37m└──────────────────────────────────────────────────────────────┘\033[0m"))
 
     def handle_slash(self, text: str) -> bool:
         cmd = text.split()[0].lower()
@@ -132,22 +128,22 @@ class CLIManager:
         cwd = Path.cwd()
 
         if cmd in ("/exit", "/quit"):
-            console.print("[dim white]Goodbye.[/]")
+            print_formatted_text(ANSI("\033[2;37mGoodbye.\033[0m"))
             self.shutdown_event.set()
             os._exit(0)
         elif cmd == "/clear":
             self.print_welcome()
         elif cmd == "/help":
-            console.print("[dim white]Commands: /help, /memory, /memory edit, /memory forget [key], /forget, /status, /copy, /save [name], /git [args], /clear, /model, /voice, /agents, /stop, /exit[/]")
+            print_formatted_text(ANSI("\033[2;37mCommands: /help, /memory, /memory edit, /memory forget [key], /forget, /status, /copy, /save [name], /git [args], /clear, /model, /voice, /agents, /stop, /exit\033[0m"))
         elif cmd == "/memory":
             if not args:
                 try:
                     sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
                     from core.memory.user_model import UserModel
                     summary = UserModel().get_profile_summary()
-                    console.print(f"[dim white]{summary}[/]")
+                    print_formatted_text(ANSI(f"\033[2;37m{summary}\033[0m"))
                 except Exception as e:
-                    console.print(f"[bold red]✗ Could not load memory: {e}[/]")
+                    print_formatted_text(ANSI(f"\033[1;31m✗ Could not load memory: {e}\033[0m"))
             elif args == "edit":
                 os.system(f"nano {self.user_model_path}")
             elif args.startswith("forget"):
@@ -156,59 +152,59 @@ class CLIManager:
                     sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
                     from core.memory.user_model import UserModel
                     if UserModel().forget(key):
-                        console.print(f"[bold #10B981]✦ Forgot {key}.[/]")
+                        print_formatted_text(ANSI(f"\033[1;32m✦ Forgot {key}.\033[0m"))
                     else:
-                        console.print(f"[dim white]Key {key} not found.[/]")
+                        print_formatted_text(ANSI(f"\033[2;37mKey {key} not found.\033[0m"))
                 except Exception as e:
-                    console.print(f"[bold red]✗ Error forgetting: {e}[/]")
+                    print_formatted_text(ANSI(f"\033[1;31m✗ Error forgetting: {e}\033[0m"))
             else:
-                console.print("[dim white]Unknown memory arg. Try: /memory, /memory edit, /memory forget [key][/]")
+                print_formatted_text(ANSI("\033[2;37mUnknown memory arg. Try: /memory, /memory edit, /memory forget [key]\033[0m"))
         elif cmd == "/forget":
             try:
                 if self.episodes_path.exists():
                     episodes = json.loads(self.episodes_path.read_text())
                     self.episodes_path.write_text(json.dumps(episodes[:-5], indent=2))
-                    console.print("[bold #10B981]✦ Cleared last 5 episodic turns.[/]")
+                    print_formatted_text(ANSI("\033[1;32m✦ Cleared last 5 episodic turns.\033[0m"))
                 else:
-                    console.print("[dim white]No episodic memory found.[/]")
+                    print_formatted_text(ANSI("\033[2;37mNo episodic memory found.\033[0m"))
             except Exception as e:
-                console.print(f"[bold red]✗ Error clearing episodes: {e}[/]")
+                print_formatted_text(ANSI(f"\033[1;31m✗ Error clearing episodes: {e}\033[0m"))
         elif cmd == "/git":
             if args == "add -A" or args == "add":
                 os.system("git add -A")
-                console.print("[bold #10B981]✦ git add -A[/]")
+                print_formatted_text(ANSI("\033[1;32m✦ git add -A\033[0m"))
             elif args.startswith("commit "): 
                 os.system(f'git commit -m "{args[7:]}"')
-                console.print(f"[bold #10B981]✦ Committed.[/]")
+                print_formatted_text(ANSI("\033[1;32m✦ Committed.\033[0m"))
             elif args == "push": 
                 os.system("git push")
             else:
                 os.system(f"git add -A && git commit -m '{args or 'Auto commit'}'")
-                console.print("[bold #10B981]✦ Auto-committed files.[/]")
+                print_formatted_text(ANSI("\033[1;32m✦ Auto-committed files.\033[0m"))
         elif cmd == "/status":
             os.system("python3 ~/cowork/jarvis/health_check.py")
         elif cmd == "/model":
-            console.print("[dim white]Active models: E4B (port 8080) fast/voice, 31B (port 8081) coding/agents[/]")
+            print_formatted_text(ANSI("\033[2;37mActive models: E4B (port 8080) fast/voice, 31B (port 8081) coding/agents\033[0m"))
         elif cmd == "/voice":
-            console.print("[dim white]Voice interface toggled. (mocked)[/]")
+            print_formatted_text(ANSI("\033[2;37mVoice interface toggled. (mocked)\033[0m"))
         elif cmd == "/agents":
-            console.print("[dim white]Running Agents: Please see command-station visual UI.[/]")
+            print_formatted_text(ANSI("\033[2;37mRunning Agents: Please see command-station visual UI.\033[0m"))
         elif cmd == "/stop":
             self.send_queue.put_nowait({"message": "stop", "cwd": str(cwd), "source": "cli"})
-            console.print("[dim white]Sent STOP signal.[/]")
+            print_formatted_text(ANSI("\033[2;37mSent STOP signal.\033[0m"))
         elif cmd == "/copy":
             if HAS_CLIP:
                 pyperclip.copy(self.last_response)
-                console.print("[dim white]Copied to clipboard[/]")
+                print_formatted_text(ANSI("\033[2;37mCopied to clipboard\033[0m"))
             else:
-                console.print("[bold red]✗ pyperclip not installed.[/]")
+                print_formatted_text(ANSI("\033[1;31m✗ pyperclip not installed.\033[0m"))
         elif cmd == "/save":
             if args:
                 p = Path.home() / "Desktop" / f"{args}.txt"
                 p.write_text(self.last_response)
-                console.print(f"[dim white]Saved to {p}[/]")
+                print_formatted_text(ANSI(f"\033[2;37mSaved to {p}\033[0m"))
         else:
-            console.print(f"[bold red]✗ Unknown slash command: {cmd}[/]")
+            print_formatted_text(ANSI(f"\033[1;31m✗ Unknown slash command: {cmd}\033[0m"))
         return True
 
     async def spinner(self):
@@ -216,12 +212,12 @@ class CLIManager:
         idx = 0
         try:
             while True:
-                console.print(f"\r[bold #7C3AED]◆[/] [dim white]{chars[idx % len(chars)]} thinking...[/]          ", end="")
+                print_formatted_text(ANSI(f"\r\033[1;35m◆\033[0m \033[2;37m{chars[idx % len(chars)]} thinking...\033[0m          "), end="")
                 sys.stdout.flush()
                 idx += 1
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
-            console.print("\r                           \r", end="")
+            print_formatted_text(ANSI("\r                           \r"), end="")
             sys.stdout.flush()
 
     async def ws_loop(self):
@@ -231,7 +227,7 @@ class CLIManager:
                 async with websockets.connect(JARVIS_WS) as ws:
                     self.ws_connected = True
                     if not was_connected and self.reconnect_message_shown:
-                        console.print("[bold #10B981]◆ Connected.[/]")
+                        print_formatted_text(ANSI("\033[1;32m◆ Connected.\033[0m"))
                     was_connected = True
                     self.reconnect_message_shown = False
                     
@@ -256,21 +252,21 @@ class CLIManager:
                                     if self.spinner_task:
                                         self.spinner_task.cancel()
                                         self.spinner_task = None
-                                    console.print(f"[dim white]◆ {m}[/]")
+                                    print_formatted_text(ANSI(f"\033[2;37m◆ {m}\033[0m"))
                                 elif t == "final":
                                     if self.spinner_task:
                                         self.spinner_task.cancel()
                                         self.spinner_task = None
                                     self.last_response = m
-                                    console.print("[bold #7C3AED]◆ [/]", end="")
-                                    console.print(Markdown(m))
-                                    console.print()
+                                    print_formatted_text(ANSI("\033[1;35m◆ \033[0m"), end="")
+                                    print_formatted_text(m)
+                                    print_formatted_text("")
                                 elif t == "agent_start":
-                                    console.print(f"[dim yellow]↳ Agent Starting: {data.get('task', '')[:60]}[/]")
+                                    print_formatted_text(ANSI(f"\033[1;33m↳ Agent Starting: {data.get('task', '')[:60]}\033[0m"))
                                 elif t == "agent_update":
                                     self.print_agent_step(data.get("step", 0), data.get("action", ""), data.get("observation", ""))
                                 elif t == "error":
-                                    console.print(f"[bold red]✗ {m}[/]")
+                                    print_formatted_text(ANSI(f"\033[1;31m✗ {m}\033[0m"))
                             except Exception as e:
                                 pass
 
@@ -283,7 +279,7 @@ class CLIManager:
                 was_connected = False
                 if not self.shutdown_event.is_set():
                     if not self.reconnect_message_shown:
-                        console.print("\n[bold red]⚠ Not connected. Is Jarvis running? Try: /start[/]")
+                        print_formatted_text(ANSI("\n\033[1;31m⚠ Not connected. Is Jarvis running? Try: start\033[0m"))
                         self.reconnect_message_shown = True
                     await asyncio.sleep(3)
 
@@ -297,26 +293,27 @@ class CLIManager:
 
 async def main():
     cli = CLIManager()
-    cli.print_welcome()
-    ws_thread = threading.Thread(target=lambda: asyncio.run(cli.ws_loop()), daemon=True)
-    ws_thread.start()
-
-    kb = KeyBindings()
     
-    @kb.add('c-c')
-    def _(event):
-        cli.send_queue.put_nowait({"message": "stop", "cwd": str(Path.cwd()), "source": "cli"})
-        event.app.exit(result="")
-
-    @kb.add('c-d')
-    def _(event):
-        console.print("[dim white]Goodbye.[/]")
-        os._exit(0)
-
-    prompt_style = PTStyle.from_dict({"bottom-toolbar": "bg:#f5f0e8"})
-    session = PromptSession(completer=completer, key_bindings=kb, style=prompt_style)
-
     with patch_stdout():
+        cli.print_welcome()
+        ws_thread = threading.Thread(target=lambda: asyncio.run(cli.ws_loop()), daemon=True)
+        ws_thread.start()
+
+        kb = KeyBindings()
+        
+        @kb.add('c-c')
+        def _(event):
+            cli.send_queue.put_nowait({"message": "stop", "cwd": str(Path.cwd()), "source": "cli"})
+            event.app.exit(result="")
+
+        @kb.add('c-d')
+        def _(event):
+            print_formatted_text(ANSI("\033[2;37mGoodbye.\033[0m"))
+            os._exit(0)
+
+        prompt_style = PTStyle.from_dict({"bottom-toolbar": "bg:#f5f0e8"})
+        session = PromptSession(completer=completer, key_bindings=kb, style=prompt_style)
+
         while True:
             try:
                 text = await session.prompt_async(HTML('\n<style color="#9F67F5">> </style>'), bottom_toolbar=cli.get_toolbar)
@@ -328,12 +325,12 @@ async def main():
                     continue
 
                 if not cli.ws_connected:
-                    console.print("[bold red]⚠ Not connected. Is Jarvis running? Try: /start[/]")
+                    print_formatted_text(ANSI("\033[1;31m⚠ Not connected. Is Jarvis running? Try: start\033[0m"))
                     cli.reconnect_message_shown = True
                     continue
 
                 if CODING_RE.search(text):
-                    console.print("[dim #7C3AED]→ Routing to Cantivia[/]")
+                    print_formatted_text(ANSI("\033[1;35m→ Routing to Cantivia\033[0m"))
                     cli.send_queue.put_nowait({"message": f"cantivia {text}", "cwd": str(Path.cwd()), "source": "cli"})
                 else:
                     cli.send_queue.put_nowait({"message": text, "cwd": str(Path.cwd()), "source": "cli"})
@@ -345,7 +342,7 @@ async def main():
             except KeyboardInterrupt:
                 pass
             except Exception as e:
-                console.print(f"[bold red]✗ CLI Error: {e}[/]")
+                print_formatted_text(ANSI(f"\033[1;31m✗ CLI Error: {e}\033[0m"))
 
 if __name__ == "__main__":
     asyncio.run(main())
