@@ -17,8 +17,10 @@ except ImportError:
 try:
     import pyfiglet
 except ImportError:
-    print("Please install pyfiglet: pip install pyfiglet")
-    sys.exit(1)
+    import subprocess
+    print("Installing pyfiglet...")
+    subprocess.run(["pip3", "install", "pyfiglet", "--break-system-packages"])
+    import pyfiglet
 
 import websockets
 from prompt_toolkit import PromptSession
