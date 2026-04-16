@@ -210,7 +210,7 @@ def make_fast_request(messages, max_tokens=800):
     return r.json()['choices'][0]['message']['content']
 
 def run(message: str, context: dict = None) -> dict:
-    \"\"\"Synchronous wrapper for agent_loop. Returns {'result': str, 'branch': str}.\"\"\"
+    """Synchronous wrapper for agent_loop. Returns {'result': str, 'branch': str}."""
     branch = (context or {}).get("branch", "general")
     source = (context or {}).get("source", "")
     result = asyncio.run(agent_loop(message, context=context))

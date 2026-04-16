@@ -9,8 +9,8 @@ red()    { printf "\033[91m%s\033[0m\n" "$*"; }
 COWORK="/Users/ashkansamali/cowork"
 JARVIS="$COWORK/jarvis"
 VENV="$JARVIS/.venv/bin"
-GEMMA="$HOME/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf"
-QWEN="$HOME/Downloads/Qwen3.5-9B-UD-Q6_K_XL.gguf"
+GEMMA="/Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf"
+QWEN="/Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf"
 ELECTRON_APP="$COWORK/ui/command-station/dist-electron/mac-arm64/Command Station.app"
 
 mkdir -p "$COWORK/logs"

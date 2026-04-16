@@ -230,6 +230,11 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
     active_tasks[task_id] = asyncio.create_task(run_task(user_msg))
 
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+
 @app.get("/graph")
 async def get_graph():
     """Return current knowledge graph data."""

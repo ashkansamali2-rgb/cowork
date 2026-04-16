@@ -296,8 +296,7 @@ async def main():
     
     with patch_stdout():
         cli.print_welcome()
-        ws_thread = threading.Thread(target=lambda: asyncio.run(cli.ws_loop()), daemon=True)
-        ws_thread.start()
+        asyncio.create_task(cli.ws_loop())
 
         kb = KeyBindings()
         

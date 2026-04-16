@@ -204,8 +204,23 @@
       "content": "PowerPoint presentation created and opened: /Users/ashkansamali/Desktop/Presentation.pptx",
       "timestamp": 1775928950497,
       "streaming": false
+    },
+    {
+      "id": "msg_1776370026165",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1776370026165,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776370026179",
+      "role": "assistant",
+      "content": "Error: Error invoking remote method 'chat:send': Error: Jarvis not connected",
+      "error": true,
+      "timestamp": 1776370026179,
+      "streaming": false
     }
   ],
-  "updatedAt": 1776369594090,
+  "updatedAt": 1776370800927,
   "projectName": null
 }
