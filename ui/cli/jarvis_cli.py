@@ -18,7 +18,9 @@ try:
     import pyfiglet
 except ImportError:
     import subprocess
-    print("Installing pyfiglet...")
+    from rich.console import Console
+    _c = Console(force_terminal=True, highlight=False)
+    _c.print("Installing pyfiglet...")
     subprocess.run(["pip3", "install", "pyfiglet", "--break-system-packages"])
     import pyfiglet
 
@@ -35,7 +37,7 @@ from rich.syntax import Syntax
 from rich.markdown import Markdown
 
 JARVIS_WS = "ws://127.0.0.1:8001/ws"
-console = Console(highlight=False)
+console = Console(force_terminal=True, highlight=False)
 
 CODING_RE = re.compile(
     r'\b(write|create|edit|fix|add|implement|refactor|build|debug|modify)\b'
@@ -58,6 +60,7 @@ class CLIManager:
         self.last_response = ""
         self.receiving_stream = False
         self.spinner_task = None
+        self.reconnect_message_shown = False
         
         self.user_model_path = Path(os.path.expanduser("~/cowork/jarvis/memory/user_model.json"))
         self.episodes_path = Path(os.path.expanduser("~/cowork/jarvis/memory/episodes.json"))
@@ -80,8 +83,11 @@ class CLIManager:
         return 0
 
     def print_welcome(self):
-        sys.stdout.write("\033[2J\033[H")
-        f = pyfiglet.Figlet(font='block')
+        console.clear()
+        try:
+            f = pyfiglet.Figlet(font='banner3')
+        except Exception:
+            f = pyfiglet.Figlet(font='block')
         console.print(f"[bold #7C3AED]{f.renderText('JARVIS')}[/]")
         count = self.get_memory_facts_count()
         console.print(f"[#F5F0E8]Connected to jarvis://localhost:8001 | Model: Gemma 4 31B | Memory: {count} facts[/]")
@@ -177,23 +183,29 @@ class CLIManager:
 
     async def spinner(self):
         chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-        sys.stdout.write(f"\n[dim #7C3AED]─── Jarvis ───[/]\n")
+        console.print("\n[dim #7C3AED]─── Jarvis ───[/]")
         idx = 0
         try:
             while True:
-                sys.stdout.write(f"\r\033[K\033[38;2;124;58;237m{chars[idx % len(chars)]}\033[0m thinking...")
+                console.print(f"\r[#7C3AED]{chars[idx % len(chars)]}[/] thinking...          ", end="")
                 sys.stdout.flush()
                 idx += 1
                 await asyncio.sleep(0.1)
         except asyncio.CancelledError:
-            sys.stdout.write("\r\033[K")
+            console.print("\r                           \r", end="")
             sys.stdout.flush()
 
     async def ws_loop(self):
+        was_connected = False
         while not self.shutdown_event.is_set():
             try:
                 async with websockets.connect(JARVIS_WS) as ws:
                     self.ws_connected = True
+                    if not was_connected and self.reconnect_message_shown:
+                        console.print("[bold green]  ✓[/] Reconnected.")
+                    was_connected = True
+                    self.reconnect_message_shown = False
+                    
                     async def sender():
                         while not self.shutdown_event.is_set():
                             try:
@@ -224,7 +236,7 @@ class CLIManager:
                                     self.last_response = m
                                     # Output markdown correctly
                                     console.print(Markdown(m))
-                                    print()
+                                    console.print()
                                 elif t == "agent_start":
                                     console.print(f"[dim yellow]  ↳ Agent Starting: {data.get('task', '')[:60]}[/]")
                                 elif t == "agent_update":
@@ -240,8 +252,11 @@ class CLIManager:
                     for t in pending: t.cancel()
             except Exception:
                 self.ws_connected = False
+                was_connected = False
                 if not self.shutdown_event.is_set():
-                    sys.stdout.write("\r\033[K\033[31m⚠ Not connected. Is Jarvis running? Try: start\033[0m\n")
+                    if not self.reconnect_message_shown:
+                        console.print("\n[bold red]⚠ Not connected. Is Jarvis running? Try: /start[/]")
+                        self.reconnect_message_shown = True
                     await asyncio.sleep(3)
 
 
@@ -269,15 +284,17 @@ async def main():
     with patch_stdout():
         while True:
             try:
-                if not cli.ws_connected:
-                    await asyncio.sleep(1)
-                    
                 text = await session.prompt_async(HTML('\n<style color="#7C3AED"><b> jarvis > </b></style>'))
                 text = text.strip()
                 if not text: continue
                 
                 if text.startswith("/"):
                     cli.handle_slash(text)
+                    continue
+
+                if not cli.ws_connected:
+                    console.print("[bold red]⚠ Not connected. Is Jarvis running? Try: /start[/]")
+                    cli.reconnect_message_shown = True
                     continue
 
                 if CODING_RE.search(text):
