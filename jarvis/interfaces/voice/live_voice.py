@@ -91,7 +91,7 @@ async def mic_loop(audio_q: asyncio.Queue):
     with sr.Microphone() as source:
         print("[Mic] Calibrating...")
         recognizer.adjust_for_ambient_noise(source, duration=1)
-        print("◆ Voice active. Say 'Jarvis' to wake.")
+        print('◆ Voice active. Listening for "jarvis"...')
         
         while True:
             def get_audio():

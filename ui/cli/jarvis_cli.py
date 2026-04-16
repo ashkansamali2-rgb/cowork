@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Jarvis CLI - Gemini-style terminal interface
+Jarvis CLI - Gemini-style terminal interface with framed input
 """
 import asyncio
 import json
@@ -21,11 +21,14 @@ except ImportError:
     subprocess.run([sys.executable, "-m", "pip", "install", "websockets", "--break-system-packages", "-q"])
     import websockets
 
-from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit import Application, print_formatted_text
 from prompt_toolkit.formatted_text import ANSI
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.patch_stdout import patch_stdout
+from prompt_toolkit.layout import Layout, HSplit, VSplit, Window, FormattedTextControl, ScrollablePane
+from prompt_toolkit.layout.dimension import Dimension
+from prompt_toolkit.widgets import TextArea, Frame
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
+from prompt_toolkit.document import Document
 
 JARVIS_WS = "ws://localhost:8001"
 
@@ -45,14 +48,13 @@ ws_conn = None
 connected = False
 last_response = ""
 memory_count = 0
-
-
-def out(text):
-    print_formatted_text(ANSI(text))
+output_lines = []
+history_list = []
+history_pos = -1
 
 
 def gradient_logo():
-    raw = pyfiglet.figlet_format("JARVIS", font="big")
+    raw = pyfiglet.figlet_format("JARVIS", font="banner3-D")
     lines = raw.split("\n")
     result = []
     for line in lines:
@@ -78,22 +80,15 @@ def gradient_logo():
     return "\n".join(result)
 
 
-def print_header():
-    os.system("clear")
-    out(gradient_logo())
-    out("")
-    out(f"{DIM}Tips for getting started:{RESET}")
-    out(f"{DIM}1. Talk to Jarvis naturally or use voice commands.{RESET}")
-    out(f'{DIM}2. Prefix coding tasks with "cantivia" or just describe the code change.{RESET}')
-    out(f"{DIM}3. /help for all commands.{RESET}")
-    out("")
+def append_output(text):
+    """Add a line to the output buffer."""
+    global output_lines
+    output_lines.append(text)
 
 
-def print_status():
-    status = f"{GREEN}connected{RESET}" if connected else f"{RED}disconnected{RESET}"
-    cwd = os.getcwd().replace(os.path.expanduser("~"), "~")
-    out(f"{DIM}{cwd} · {status} · Gemma 4 31B · Memory: {memory_count} facts{RESET}")
-    out("")
+def get_output_text():
+    """Return all output as ANSI formatted text for the output window."""
+    return ANSI("\n".join(output_lines))
 
 
 async def connect():
@@ -114,20 +109,19 @@ async def reconnect_loop():
         if not connected:
             ok = await connect()
             if ok:
-                out(f"{PURPLE}◆ Connected to Jarvis.{RESET}")
+                append_output(f"{PURPLE}◆ Connected to Jarvis.{RESET}")
 
 
 async def send_message(text):
     global ws_conn, connected, last_response
     if not connected or ws_conn is None:
-        out(f"{RED}⚠ Not connected. Is Jarvis running? Try: start{RESET}")
+        append_output(f"{RED}⚠ Not connected. Is Jarvis running? Try: /start{RESET}")
         return
 
     payload = json.dumps({"type": "chat", "message": text, "source": "cli"})
     await ws_conn.send(payload)
 
     buffer = ""
-    out(f"\n{PURPLE_LT}◆ {RESET}", end="")
 
     try:
         async for raw in ws_conn:
@@ -140,36 +134,31 @@ async def send_message(text):
                 width = 44
                 label = f" AgentStep {step} "
                 bar = "─" * (width - len(label) - 2)
-                out(f"\n{DIM}┌─{label}{bar}┐{RESET}")
-                out(f"{DIM}│ ↳ {YELLOW}{tool}{DIM}  {msg.get('description',''):<{width-6}}│{RESET}")
-                out(f"{DIM}└{'─' * (width)}┘{RESET}\n")
+                append_output(f"{DIM}┌─{label}{bar}┐{RESET}")
+                append_output(f"{DIM}│ ↳ {YELLOW}{tool}{DIM}  {msg.get('description',''):<{width-6}}│{RESET}")
+                append_output(f"{DIM}└{'─' * (width)}┘{RESET}")
                 continue
 
             if mtype in ("chunk", "stream"):
                 chunk = msg.get("content", msg.get("text", ""))
                 buffer += chunk
-                sys.stdout.write(f"{WHITE}{chunk}{RESET}")
-                sys.stdout.flush()
                 continue
 
             if mtype in ("response", "final", "done"):
                 content = msg.get("content", msg.get("message", msg.get("text", "")))
                 if content and not buffer:
-                    sys.stdout.write(f"{WHITE}{content}{RESET}")
-                    sys.stdout.flush()
                     buffer = content
                 last_response = buffer
-                print()
-                print()
+                append_output(f"\n{PURPLE_LT}✦ {RESET}{WHITE}{buffer}{RESET}\n")
                 break
 
             if mtype == "error":
-                out(f"\n{RED}✗ {msg.get('message','Unknown error')}{RESET}\n")
+                append_output(f"{RED}✗ {msg.get('message','Unknown error')}{RESET}")
                 break
 
     except websockets.exceptions.ConnectionClosed:
         connected = False
-        out(f"\n{RED}⚠ Connection lost.{RESET}\n")
+        append_output(f"{RED}⚠ Connection lost.{RESET}")
 
 
 def handle_slash(cmd):
@@ -178,7 +167,7 @@ def handle_slash(cmd):
     command = parts[0].lower()
 
     if command == "/help":
-        out(f"\n{PURPLE_LT}Commands:{RESET}")
+        append_output(f"\n{PURPLE_LT}Commands:{RESET}")
         cmds = [
             ("/help",          "Show this help"),
             ("/memory",        "Show user profile"),
@@ -195,25 +184,24 @@ def handle_slash(cmd):
             ("/exit",          "Quit"),
         ]
         for c, d in cmds:
-            out(f"  {PURPLE}{c:<22}{RESET}{DIM}{d}{RESET}")
-        out("")
+            append_output(f"  {PURPLE}{c:<22}{RESET}{DIM}{d}{RESET}")
+        append_output("")
         return True
 
     if command == "/clear":
-        print_header()
-        print_status()
+        output_lines.clear()
         return True
 
     if command == "/exit" or command == "/quit":
-        out(f"\n{DIM}Goodbye.{RESET}\n")
-        sys.exit(0)
+        append_output(f"\n{DIM}Goodbye.{RESET}")
+        raise SystemExit(0)
 
     if command == "/copy":
         if last_response:
             subprocess.run(["pbcopy"], input=last_response.encode())
-            out(f"{GREEN}✓ Copied to clipboard.{RESET}")
+            append_output(f"{GREEN}✓ Copied to clipboard.{RESET}")
         else:
-            out(f"{DIM}Nothing to copy yet.{RESET}")
+            append_output(f"{DIM}Nothing to copy yet.{RESET}")
         return True
 
     if command == "/save":
@@ -221,9 +209,9 @@ def handle_slash(cmd):
         if last_response:
             with open(fname, "w") as f:
                 f.write(last_response)
-            out(f"{GREEN}✓ Saved to {fname}{RESET}")
+            append_output(f"{GREEN}✓ Saved to {fname}{RESET}")
         else:
-            out(f"{DIM}Nothing to save yet.{RESET}")
+            append_output(f"{DIM}Nothing to save yet.{RESET}")
         return True
 
     if command == "/memory":
@@ -245,29 +233,29 @@ def handle_slash(cmd):
                 if deleted:
                     with open(model_path, "w") as f:
                         json.dump(data, f, indent=2)
-                    out(f"{GREEN}✓ Forgot: {key}{RESET}")
+                    append_output(f"{GREEN}✓ Forgot: {key}{RESET}")
                 else:
-                    out(f"{DIM}Key not found: {key}{RESET}")
+                    append_output(f"{DIM}Key not found: {key}{RESET}")
             except Exception as e:
-                out(f"{RED}✗ {e}{RESET}")
+                append_output(f"{RED}✗ {e}{RESET}")
         else:
             try:
                 with open(model_path) as f:
                     data = json.load(f)
-                out(f"\n{PURPLE_LT}[USER PROFILE]{RESET}")
+                append_output(f"\n{PURPLE_LT}[USER PROFILE]{RESET}")
                 for section, val in data.items():
                     if isinstance(val, dict):
-                        out(f"\n{PURPLE}{section.upper()}{RESET}")
+                        append_output(f"\n{PURPLE}{section.upper()}{RESET}")
                         for k, v in val.items():
                             if v:
-                                out(f"  {DIM}{k}:{RESET} {WHITE}{v}{RESET}")
+                                append_output(f"  {DIM}{k}:{RESET} {WHITE}{v}{RESET}")
                     elif val:
-                        out(f"  {DIM}{section}:{RESET} {WHITE}{val}{RESET}")
-                out("")
+                        append_output(f"  {DIM}{section}:{RESET} {WHITE}{val}{RESET}")
+                append_output("")
             except FileNotFoundError:
-                out(f"{DIM}No user profile yet. Chat with Jarvis to build one.{RESET}")
+                append_output(f"{DIM}No user profile yet. Chat with Jarvis to build one.{RESET}")
             except Exception as e:
-                out(f"{RED}✗ {e}{RESET}")
+                append_output(f"{RED}✗ {e}{RESET}")
         return True
 
     if command == "/forget":
@@ -278,20 +266,20 @@ def handle_slash(cmd):
             eps = eps[:-5] if len(eps) > 5 else []
             with open(episodes_path, "w") as f:
                 json.dump(eps, f, indent=2)
-            out(f"{GREEN}✓ Last 5 episodes cleared.{RESET}")
+            append_output(f"{GREEN}✓ Last 5 episodes cleared.{RESET}")
         except Exception as e:
-            out(f"{RED}✗ {e}{RESET}")
+            append_output(f"{RED}✗ {e}{RESET}")
         return True
 
     if command == "/status":
-        out(f"\n{DIM}Checking ports...{RESET}")
+        append_output(f"\n{DIM}Checking ports...{RESET}")
         for port, label in [(8080, "E4B (fast)"), (8081, "31B (coding)"), (8001, "Jarvis API"), (8002, "Cantivia Bus")]:
             r = subprocess.run(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
                                  f"http://localhost:{port}/health"], capture_output=True, text=True)
             ok = r.stdout.strip() not in ("", "000")
             symbol = f"{GREEN}✓{RESET}" if ok else f"{RED}✗{RESET}"
-            out(f"  {symbol} {label} :{port}")
-        out("")
+            append_output(f"  {symbol} {label} :{port}")
+        append_output("")
         return True
 
     if command == "/git":
@@ -300,25 +288,25 @@ def handle_slash(cmd):
             f'cd ~/cowork && git add -A && git commit -m "{msg}"',
             shell=True, capture_output=True, text=True
         )
-        out(f"{GREEN if r.returncode == 0 else RED}{r.stdout or r.stderr}{RESET}")
+        append_output(f"{GREEN if r.returncode == 0 else RED}{r.stdout.strip() or r.stderr.strip()}{RESET}")
         return True
 
     if command == "/model":
-        out(f"\n  {DIM}Fast (voice):{RESET}  {WHITE}Gemma 4 E4B · port 8080{RESET}")
-        out(f"  {DIM}Main:{RESET}         {WHITE}Gemma 4 31B · port 8081{RESET}")
-        out(f"  {DIM}STT:{RESET}          {WHITE}Whisper large-v3-turbo Q4{RESET}")
-        out(f"  {DIM}TTS:{RESET}          {WHITE}Qwen3-TTS 0.6B{RESET}\n")
+        append_output(f"\n  {DIM}Fast (voice):{RESET}  {WHITE}Gemma 4 E4B · port 8080{RESET}")
+        append_output(f"  {DIM}Main:{RESET}         {WHITE}Gemma 4 31B · port 8081{RESET}")
+        append_output(f"  {DIM}STT:{RESET}          {WHITE}Whisper large-v3-turbo Q4{RESET}")
+        append_output(f"  {DIM}TTS:{RESET}          {WHITE}Qwen3-TTS 0.6B{RESET}\n")
         return True
 
     if command == "/start":
         subprocess.Popen(["bash", "-c", "source ~/.zshrc && start"], shell=False)
-        out(f"{DIM}Starting Jarvis system...{RESET}")
+        append_output(f"{DIM}Starting Jarvis system...{RESET}")
         return True
 
     if command == "/stop":
         if ws_conn:
             asyncio.ensure_future(ws_conn.send(json.dumps({"type": "stop"})))
-        out(f"{DIM}Stop signal sent.{RESET}")
+        append_output(f"{DIM}Stop signal sent.{RESET}")
         return True
 
     return False
@@ -337,64 +325,159 @@ def maybe_route_cantivia(text):
     has_code_word = any(lower.startswith(w) or f" {w} " in lower for w in CODE_KEYWORDS)
     has_file_hint = any(h in lower for h in FILE_HINTS)
     if has_code_word and has_file_hint:
-        out(f"{DIM}→ Routing to Cantivia{RESET}")
+        append_output(f"{DIM}→ Routing to Cantivia{RESET}")
         return f"cantivia {text}"
     return text
 
 
 async def main():
-    global connected, memory_count
+    global connected, memory_count, output_lines, history_list, history_pos
 
-    print_header()
+    # Build header
+    logo = gradient_logo()
+    for line in logo.split("\n"):
+        append_output(line)
+    append_output("")
+    append_output(f"{DIM}Tips for getting started:{RESET}")
+    append_output(f"{DIM}1. Talk to Jarvis naturally or use voice commands.{RESET}")
+    append_output(f'{DIM}2. Prefix coding tasks with "cantivia" or just describe the code change.{RESET}')
+    append_output(f"{DIM}3. /help for all commands.{RESET}")
+    append_output("")
 
+    # Connect
     ok = await connect()
     if ok:
-        out(f"{PURPLE}◆ Connected to Jarvis.{RESET}\n")
+        append_output(f"{PURPLE}◆ Connected to Jarvis.{RESET}\n")
     else:
-        out(f"{RED}⚠ Not connected. Is Jarvis running? Try: start{RESET}\n")
+        append_output(f"{RED}⚠ Not connected. Is Jarvis running? Try: /start{RESET}\n")
 
+    # Load memory count
     try:
         mp = os.path.expanduser("~/cowork/jarvis/memory/user_model.json")
         with open(mp) as f:
             data = json.load(f)
-        count = sum(
+        memory_count = sum(
             len(v) if isinstance(v, dict) else (1 if v else 0)
             for v in data.values()
         )
-        memory_count = count
     except Exception:
         memory_count = 0
 
-    print_status()
-
+    # Start reconnect loop
     asyncio.ensure_future(reconnect_loop())
 
-    session = PromptSession(
-        history=InMemoryHistory(),
-        style=Style.from_dict({"prompt": "#7c3aed bold"}),
+    # Output display area
+    output_field = FormattedTextControl(get_output_text, focusable=False)
+    output_window = Window(content=output_field, wrap_lines=True)
+
+    # Input area with border
+    input_area = TextArea(
+        height=3,
+        prompt=ANSI(f"{PURPLE}> {RESET}"),
+        multiline=True,
+        wrap_lines=True,
+        style="class:input-field",
+        dont_extend_height=True,
     )
 
-    with patch_stdout():
-        while True:
+    # Status bar
+    def get_toolbar():
+        cwd = os.getcwd().replace(os.path.expanduser("~"), "~")
+        status = "connected" if connected else "disconnected"
+        return ANSI(f"{DIM} {cwd}  ·  {status}  ·  Gemma 4 31B  ·  Memory: {memory_count} facts{RESET}")
+
+    toolbar_control = FormattedTextControl(get_toolbar)
+    toolbar_window = Window(content=toolbar_control, height=1, style="class:toolbar")
+
+    # Key bindings
+    kb = KeyBindings()
+
+    @kb.add("enter")
+    def on_enter(event):
+        text = input_area.text.strip()
+        if not text:
+            return
+        # Add to history
+        history_list.append(text)
+        global history_pos
+        history_pos = -1
+        # Clear input
+        input_area.text = ""
+        # Echo what user said
+        append_output(f"{PURPLE}> {RESET}{text}")
+        # Handle
+        if text.startswith("/"):
             try:
-                user_input = await session.prompt_async(
-                    ANSI(f"{PURPLE}>{RESET} ")
-                )
-            except (EOFError, KeyboardInterrupt):
-                out(f"\n{DIM}Goodbye.{RESET}\n")
-                break
+                handle_slash(text)
+            except SystemExit:
+                event.app.exit()
+            return
+        routed = maybe_route_cantivia(text)
+        asyncio.ensure_future(send_message(routed))
 
-            text = user_input.strip()
-            if not text:
-                continue
+    @kb.add("s-enter")
+    def on_shift_enter(event):
+        input_area.buffer.insert_text("\n")
 
-            if text.startswith("/"):
-                handled = handle_slash(text)
-                if handled:
-                    continue
+    @kb.add("c-c")
+    def on_ctrl_c(event):
+        if ws_conn:
+            asyncio.ensure_future(ws_conn.send(json.dumps({"type": "stop"})))
+        input_area.text = ""
+        append_output(f"{DIM}Cancelled.{RESET}")
 
-            routed = maybe_route_cantivia(text)
-            await send_message(routed)
+    @kb.add("c-d")
+    def on_ctrl_d(event):
+        append_output(f"\n{DIM}Goodbye.{RESET}")
+        event.app.exit()
+
+    @kb.add("up")
+    def on_up(event):
+        global history_pos
+        if not history_list:
+            return
+        if history_pos == -1:
+            history_pos = len(history_list) - 1
+        elif history_pos > 0:
+            history_pos -= 1
+        input_area.text = history_list[history_pos]
+        input_area.buffer.cursor_position = len(input_area.text)
+
+    @kb.add("down")
+    def on_down(event):
+        global history_pos
+        if history_pos == -1:
+            return
+        if history_pos < len(history_list) - 1:
+            history_pos += 1
+            input_area.text = history_list[history_pos]
+            input_area.buffer.cursor_position = len(input_area.text)
+        else:
+            history_pos = -1
+            input_area.text = ""
+
+    # Layout
+    root = HSplit([
+        ScrollablePane(output_window),
+        Frame(input_area, title="", style="class:input-frame"),
+        toolbar_window,
+    ])
+
+    style = Style.from_dict({
+        "input-field": "#f5f0e8",
+        "input-frame": "#7c3aed",
+        "toolbar": "bg:#1a1a1a #666666",
+    })
+
+    app = Application(
+        layout=Layout(root, focused_element=input_area),
+        key_bindings=kb,
+        style=style,
+        full_screen=True,
+        mouse_support=True,
+    )
+
+    await app.run_async()
 
 
 if __name__ == "__main__":

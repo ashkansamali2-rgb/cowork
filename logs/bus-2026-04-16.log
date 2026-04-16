@@ -55,3 +55,14 @@
 [2026-04-16T21:19:58] Client registered: cantivia (total: 2)
 [2026-04-16T21:19:58] [cantivia] CLIENT_CONNECT: total_clients=2
 [2026-04-16T21:19:59] connection open
+[2026-04-16T21:51:47] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-16T21:51:47] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-16T21:51:47] server listening on 127.0.0.1:8002
+[2026-04-16T21:51:47] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-16T21:51:47] connection open
+[2026-04-16T21:51:47] Client registered: jarvis (total: 1)
+[2026-04-16T21:51:47] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-16T21:51:48] connection open
+[2026-04-16T21:51:48] Client registered: cantivia (total: 2)
+[2026-04-16T21:51:48] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-16T21:51:49] connection open
