@@ -5,6 +5,7 @@ clear
 
 # Colors
 PURPLE='\033[1;35m'
+DPURPLE='\033[0;35m'
 WHITE='\033[0;97m'
 DIM='\033[2;37m'
 RESET='\033[0m'
@@ -12,14 +13,14 @@ RESET='\033[0m'
 # Terminal width
 COLS=$(tput cols 2>/dev/null || echo 80)
 
-# ── LOGO ─────────────────────────────────────────────────────────────────
+# ── LOGO (correct JARVIS — the J has the bottom hook) ─────────────────────
 LOGO=(
-  '██╗ █████╗ ██████╗ ██╗   ██╗██╗███████╗'
-  '██║██╔══██╗██╔══██╗██║   ██║██║██╔════╝'
-  '██║███████║██████╔╝██║   ██║██║███████╗'
-  '██║██╔══██║██╔══██╗╚██╗ ██╔╝██║╚════██║'
-  '██║██║  ██║██║  ██║ ╚████╔╝ ██║███████║'
-  '╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝'
+  '     ██╗ █████╗ ██████╗ ██╗   ██╗██╗███████╗'
+  '     ██║██╔══██╗██╔══██╗██║   ██║██║██╔════╝'
+  '     ██║███████║██████╔╝██║   ██║██║███████╗'
+  '██   ██║██╔══██║██╔══██╗╚██╗ ██╔╝██║╚════██║'
+  '╚█████╔╝██║  ██║██║  ██║ ╚████╔╝ ██║███████║'
+  ' ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝'
 )
 
 printf "${PURPLE}"
@@ -42,7 +43,7 @@ SP=$(printf '%*s' $BOX_PAD '')
 printf "${SP}${PURPLE}╔$(printf '═%.0s' $(seq 1 $W))╗${RESET}\n"
 printf "${SP}${PURPLE}║${RESET}$(printf '%-*s' $W '')${PURPLE}║${RESET}\n"
 printf "${SP}${PURPLE}║${RESET}  ${WHITE}SYSTEM:${RESET}     $(printf '%-*s' $((W - 16)) 'Jarvis Local v1.0')${PURPLE}║${RESET}\n"
-printf "${SP}${PURPLE}║${RESET}  ${WHITE}ENGINE:${RESET}     $(printf '%-*s' $((W - 16)) 'Gemma 4 E4B // Gemma 4 31B')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}ENGINE:${RESET}     $(printf '%-*s' $((W - 16)) 'LLaMA 31B IQ4 (Local)')${PURPLE}║${RESET}\n"
 printf "${SP}${PURPLE}║${RESET}  ${WHITE}LOCALITY:${RESET}   $(printf '%-*s' $((W - 16)) "Dublin, IE // ${DATE}")${PURPLE}║${RESET}\n"
 printf "${SP}${PURPLE}║${RESET}  ${WHITE}WORKSPACE:${RESET}  $(printf '%-*s' $((W - 16)) "${CWD}")${PURPLE}║${RESET}\n"
 printf "${SP}${PURPLE}║${RESET}  ${WHITE}MODE:${RESET}       $(printf '%-*s' $((W - 16)) 'Architect // Local Intelligence')${PURPLE}║${RESET}\n"
@@ -59,6 +60,13 @@ printf "%*s${WHITE}${MSG}${RESET}\n" $PAD ''
 
 # ── DIVIDER ───────────────────────────────────────────────────────────────
 printf "${PURPLE}$(printf '─%.0s' $(seq 1 $COLS))${RESET}\n\n"
+
+# ── QUICK REFERENCE ──────────────────────────────────────────────────────
+printf "${DIM}  Commands:  /help  /add <file>  /drop <file>  /ask <question>  /architect${RESET}\n"
+printf "${DIM}             /map  /tokens  /undo  /diff  /git <cmd>  /run <cmd>  /quit${RESET}\n"
+printf "${DIM}  Memory:    /remember <fact>  — saves to Jarvis long-term memory${RESET}\n"
+printf "${DIM}             /recall <topic>   — retrieves from memory${RESET}\n"
+printf "${DIM}             /clear-history    — resets conversation context${RESET}\n\n"
 
 # ── ACTIVATE VENV ─────────────────────────────────────────────────────────
 if [ -f ~/cowork/jarvis/.venv/bin/activate ]; then

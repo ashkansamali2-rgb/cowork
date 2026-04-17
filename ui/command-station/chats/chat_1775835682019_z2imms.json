@@ -317,8 +317,22 @@
       "content": "Interesting. How would you describe your general work style?",
       "timestamp": 1776373689449,
       "streaming": false
+    },
+    {
+      "id": "msg_1776443570130",
+      "role": "user",
+      "content": "i like to vibe code and use AI",
+      "timestamp": 1776443570130,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776443570139",
+      "role": "assistant",
+      "content": "Makes sense. Could you elaborate a bit on what your day-to-day role involves?",
+      "timestamp": 1776443570139,
+      "streaming": false
     }
   ],
-  "updatedAt": 1776443309139,
+  "updatedAt": 1776443571148,
   "projectName": null
 }
