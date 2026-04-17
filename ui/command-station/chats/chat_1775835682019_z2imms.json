@@ -233,8 +233,92 @@
       "content": "Sir, I noticed I don't know much about you. Could we do a quick onboarding interview? Just 50 questions to help me serve you perfectly. First things first—what should I call you?",
       "timestamp": 1776372163259,
       "streaming": false
+    },
+    {
+      "id": "msg_1776373634143",
+      "role": "user",
+      "content": "ok lets go",
+      "timestamp": 1776373634144,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373634191",
+      "role": "assistant",
+      "content": "Makes sense. What is your primary occupation or role?",
+      "timestamp": 1776373634191,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373634191",
+      "role": "assistant",
+      "content": "Makes sense. What is your primary occupation or role?",
+      "timestamp": 1776373634191,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667460",
+      "role": "user",
+      "content": "i am a student. I am 15 years old and go to ST. Vincents Castleknock College in dUBLIN iRELAND",
+      "timestamp": 1776373667460,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667487",
+      "role": "assistant",
+      "content": "Understood. Where are you based or what timezone are you in?",
+      "timestamp": 1776373667487,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667493",
+      "role": "assistant",
+      "content": "Understood. Where are you based or what timezone are you in?",
+      "timestamp": 1776373667493,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673416",
+      "role": "user",
+      "content": "GMT",
+      "timestamp": 1776373673416,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673432",
+      "role": "assistant",
+      "content": "Noted. Are you part of a specific company or organization?",
+      "timestamp": 1776373673432,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673438",
+      "role": "assistant",
+      "content": "Noted. Are you part of a specific company or organization?",
+      "timestamp": 1776373673438,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689433",
+      "role": "user",
+      "content": "I am building an AI startup with 2 of my friends",
+      "timestamp": 1776373689433,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689449",
+      "role": "assistant",
+      "content": "Interesting. How would you describe your general work style?",
+      "timestamp": 1776373689449,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689449",
+      "role": "assistant",
+      "content": "Interesting. How would you describe your general work style?",
+      "timestamp": 1776373689449,
+      "streaming": false
     }
   ],
-  "updatedAt": 1776373371259,
+  "updatedAt": 1776373789974,
   "projectName": null
 }

@@ -228,9 +228,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             return _onboarding.start()
         
         if _onboarding.is_active():
-            reply = _onboarding.handle_answer(user_message)
-            if websocket: await websocket.send_json({"type": "final", "msg": reply})
-            return reply
+            return _onboarding.handle_answer(user_message)
 
     fast_result = _fast_route(msg_lower)
     if fast_result is not None:
