@@ -2,10 +2,22 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('jarvis', {
   sendMessage: (msg) => ipcRenderer.invoke('chat:send', msg),
-  onStream: (cb) => ipcRenderer.on('chat:stream', (_, data) => cb(data)),
-  onStatusMessage: (cb) => ipcRenderer.on('chat:status', (_, data) => cb(data)),
-  onBusEvent: (cb) => ipcRenderer.on('bus:event', (_, data) => cb(data)),
-  onConnectionStatus: (cb) => ipcRenderer.on('connection:status', (_, data) => cb(data)),
+  onStream: (cb) => {
+    ipcRenderer.removeAllListeners('chat:stream')
+    ipcRenderer.on('chat:stream', (_, data) => cb(data))
+  },
+  onStatusMessage: (cb) => {
+    ipcRenderer.removeAllListeners('chat:status')
+    ipcRenderer.on('chat:status', (_, data) => cb(data))
+  },
+  onBusEvent: (cb) => {
+    ipcRenderer.removeAllListeners('bus:event')
+    ipcRenderer.on('bus:event', (_, data) => cb(data))
+  },
+  onConnectionStatus: (cb) => {
+    ipcRenderer.removeAllListeners('connection:status')
+    ipcRenderer.on('connection:status', (_, data) => cb(data))
+  },
   loadChats: () => ipcRenderer.invoke('chat:load'),
   saveChat: (chat) => ipcRenderer.invoke('chat:save', chat),
   deleteChat: (chatPath) => ipcRenderer.invoke('chat:delete', chatPath),
