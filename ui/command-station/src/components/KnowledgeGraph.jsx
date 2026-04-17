@@ -50,7 +50,13 @@ export default function KnowledgeGraph() {
     fetch("http://localhost:8001/graph")
       .then(res => res.json())
       .then(d => {
-        setData(d);
+        // Backend returns "edges" but D3 expects "links"
+        const normalized = {
+          nodes: d.nodes || [],
+          links: d.links || d.edges || [],
+          stats: d.stats || {}
+        };
+        setData(normalized);
         setLoading(false);
         setError(false);
       })

@@ -81,20 +81,38 @@ class KnowledgeGraph:
         }
 
     def index_codebase(self):
-        """Scan ~/cowork and populate initial graph nodes."""
+        """Scan ~/cowork and populate initial graph nodes (batch mode)."""
         cowork = Path("/Users/ashkansamali/cowork")
-        skip   = {".venv", "node_modules", "__pycache__", ".git"}
+        skip   = {".venv", "node_modules", "__pycache__", ".git", "venv"}
+
+        graph = self._load()
+        now = time.time()
 
         for py_file in cowork.rglob("*.py"):
             if any(s in py_file.parts for s in skip):
                 continue
             rel = str(py_file.relative_to(cowork))
-            self.add_node(rel, py_file.name, "file",
-                         {"path": str(py_file), "size": py_file.stat().st_size})
+            if rel not in graph["nodes"]:
+                graph["nodes"][rel] = {
+                    "id": rel,
+                    "label": py_file.name,
+                    "type": "file",
+                    "properties": {"path": str(py_file), "size": py_file.stat().st_size},
+                    "created": now,
+                    "last_active": now,
+                    "connection_count": 0,
+                }
+            else:
+                graph["nodes"][rel]["last_active"] = now
 
         # Known agents
         for agent in ["AgentRuntime", "AgentHierarchy", "MetaAgent", "SelfImproveDaemon"]:
-            self.add_node(agent.lower(), agent, "agent", {})
+            aid = agent.lower()
+            if aid not in graph["nodes"]:
+                graph["nodes"][aid] = {
+                    "id": aid, "label": agent, "type": "agent",
+                    "properties": {}, "created": now, "last_active": now, "connection_count": 0,
+                }
 
         # Known tools
         tools = [
@@ -103,4 +121,11 @@ class KnowledgeGraph:
             "speak", "write_file", "read_file", "browser_navigate",
         ]
         for tool in tools:
-            self.add_node(tool, tool, "tool", {})
+            if tool not in graph["nodes"]:
+                graph["nodes"][tool] = {
+                    "id": tool, "label": tool, "type": "tool",
+                    "properties": {}, "created": now, "last_active": now, "connection_count": 0,
+                }
+
+        self._save(graph)
+        print(f"[KG] Indexed {len(graph['nodes'])} nodes.")

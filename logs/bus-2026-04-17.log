@@ -9,3 +9,56 @@
 [2026-04-17T08:00:48] Client registered: cantivia (total: 2)
 [2026-04-17T08:00:48] [cantivia] CLIENT_CONNECT: total_clients=2
 [2026-04-17T08:00:50] connection open
+[2026-04-17T16:58:19] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-17T16:58:19] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-17T16:58:19] server listening on 127.0.0.1:8002
+[2026-04-17T16:58:19] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-17T16:58:19] connection open
+[2026-04-17T16:58:19] Client registered: jarvis (total: 1)
+[2026-04-17T16:58:19] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-17T16:58:20] connection open
+[2026-04-17T16:58:20] Client registered: cantivia (total: 2)
+[2026-04-17T16:58:20] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-17T16:58:22] connection open
+[2026-04-17T17:03:07] connection open
+[2026-04-17T17:03:24] connection open
+[2026-04-17T17:03:30] Client disconnected: jarvis
+[2026-04-17T17:03:30] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-17T17:03:31] connection open
+[2026-04-17T17:03:31] Client registered: jarvis (total: 2)
+[2026-04-17T17:03:31] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-17T17:04:00] connection open
+[2026-04-17T17:04:27] Client disconnected: jarvis
+[2026-04-17T17:04:27] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-17T17:04:29] connection open
+[2026-04-17T17:04:29] Client registered: jarvis (total: 2)
+[2026-04-17T17:04:29] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-17T17:05:35] connection open
+[2026-04-17T17:05:43] connection open
+[2026-04-17T17:07:01] connection open
+[2026-04-17T17:07:08] Client disconnected: jarvis
+[2026-04-17T17:07:08] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-17T17:09:03] connection open
+[2026-04-17T17:09:03] Client registered: jarvis (total: 2)
+[2026-04-17T17:09:03] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-17T17:09:58] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-17T17:09:58] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-17T17:09:58] server listening on 127.0.0.1:8002
+[2026-04-17T17:09:58] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-17T17:09:58] connection open
+[2026-04-17T17:09:58] Client registered: jarvis (total: 1)
+[2026-04-17T17:09:58] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-17T17:09:59] connection open
+[2026-04-17T17:09:59] Client registered: cantivia (total: 2)
+[2026-04-17T17:09:59] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-17T17:10:00] connection open
+[2026-04-17T17:15:01] Client disconnected: jarvis
+[2026-04-17T17:15:01] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-17T17:15:03] connection open
+[2026-04-17T17:15:03] Client registered: jarvis (total: 2)
+[2026-04-17T17:15:03] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-17T17:22:56] Client disconnected: jarvis
+[2026-04-17T17:22:56] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-17T17:22:57] connection open
+[2026-04-17T17:22:57] Client registered: jarvis (total: 2)
+[2026-04-17T17:22:57] [jarvis] CLIENT_CONNECT: total_clients=2

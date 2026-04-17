@@ -9,40 +9,56 @@ WHITE='\033[0;97m'
 DIM='\033[2;37m'
 RESET='\033[0m'
 
+# Terminal width
+COLS=$(tput cols 2>/dev/null || echo 80)
+
 # ── LOGO ─────────────────────────────────────────────────────────────────
+LOGO=(
+  '██╗ █████╗ ██████╗ ██╗   ██╗██╗███████╗'
+  '██║██╔══██╗██╔══██╗██║   ██║██║██╔════╝'
+  '██║███████║██████╔╝██║   ██║██║███████╗'
+  '██║██╔══██║██╔══██╗╚██╗ ██╔╝██║╚════██║'
+  '██║██║  ██║██║  ██║ ╚████╔╝ ██║███████║'
+  '╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝'
+)
+
 printf "${PURPLE}"
-printf '██╗ █████╗ ██████╗ ██╗   ██╗██╗███████╗\n'
-printf '██║██╔══██╗██╔══██╗██║   ██║██║██╔════╝\n'
-printf '██║███████║██████╔╝██║   ██║██║███████╗\n'
-printf '██║██╔══██║██╔══██╗╚██╗ ██╔╝██║╚════██║\n'
-printf '██║██║  ██║██║  ██║ ╚████╔╝ ██║███████║\n'
-printf '╚═╝╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚══════╝\n'
+for line in "${LOGO[@]}"; do
+  line_len=${#line}
+  pad=$(( (COLS - line_len) / 2 ))
+  [ $pad -lt 0 ] && pad=0
+  printf "%*s%s\n" $pad "" "$line"
+done
 printf "${RESET}\n"
 
-# ── INFO BOX ──────────────────────────────────────────────────────────────
+# ── INFO BOX (fixed inner width = 60) ─────────────────────────────────────
+W=60
 DATE="$(date '+%Y-%m-%d')"
 CWD="$(pwd)"
-WIDTH=52
+BOX_PAD=$(( (COLS - W - 2) / 2 ))
+[ $BOX_PAD -lt 0 ] && BOX_PAD=0
+SP=$(printf '%*s' $BOX_PAD '')
 
-printf "${PURPLE}╔$(printf '═%.0s' $(seq 1 $WIDTH))╗${RESET}\n"
-printf "${PURPLE}║${RESET}  %-${WIDTH}s${PURPLE}║${RESET}\n" ""
-printf "${PURPLE}║${RESET}  ${WHITE}SYSTEM:${RESET}     Jarvis Local v1.0$(printf ' %.0s' $(seq 1 $((WIDTH - 30))))${PURPLE}║${RESET}\n"
-printf "${PURPLE}║${RESET}  ${WHITE}ENGINE:${RESET}     Gemma 4 E4B // Gemma 4 31B$(printf ' %.0s' $(seq 1 $((WIDTH - 36))))${PURPLE}║${RESET}\n"
-printf "${PURPLE}║${RESET}  ${WHITE}LOCALITY:${RESET}   Dublin, IE // ${DATE}$(printf ' %.0s' $(seq 1 $((WIDTH - 30 - ${#DATE}))))${PURPLE}║${RESET}\n"
-printf "${PURPLE}║${RESET}  ${WHITE}WORKSPACE:${RESET}  ${CWD}$(printf ' %.0s' $(seq 1 $((WIDTH - 12 - ${#CWD}))))${PURPLE}║${RESET}\n"
-printf "${PURPLE}║${RESET}  %-${WIDTH}s${PURPLE}║${RESET}\n" ""
-printf "${PURPLE}╚$(printf '═%.0s' $(seq 1 $WIDTH))╝${RESET}\n"
+printf "${SP}${PURPLE}╔$(printf '═%.0s' $(seq 1 $W))╗${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}$(printf '%-*s' $W '')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}SYSTEM:${RESET}     $(printf '%-*s' $((W - 16)) 'Jarvis Local v1.0')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}ENGINE:${RESET}     $(printf '%-*s' $((W - 16)) 'Gemma 4 E4B // Gemma 4 31B')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}LOCALITY:${RESET}   $(printf '%-*s' $((W - 16)) "Dublin, IE // ${DATE}")${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}WORKSPACE:${RESET}  $(printf '%-*s' $((W - 16)) "${CWD}")${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}  ${WHITE}MODE:${RESET}       $(printf '%-*s' $((W - 16)) 'Architect // Local Intelligence')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}║${RESET}$(printf '%-*s' $W '')${PURPLE}║${RESET}\n"
+printf "${SP}${PURPLE}╚$(printf '═%.0s' $(seq 1 $W))╝${RESET}\n"
 
 # ── DIVIDER ───────────────────────────────────────────────────────────────
-printf "${PURPLE}$(printf '─%.0s' $(seq 1 54))${RESET}\n"
+printf "${PURPLE}$(printf '─%.0s' $(seq 1 $COLS))${RESET}\n"
 
-# ── STATUS LINE ───────────────────────────────────────────────────────────
+# ── STATUS LINE (centered) ───────────────────────────────────────────────
 MSG="Unified Memory Locked // Local Intelligence Active"
-PAD=$(( (54 - ${#MSG}) / 2 ))
-printf "${WHITE}$(printf ' %.0s' $(seq 1 $PAD))${MSG}${RESET}\n"
+PAD=$(( (COLS - ${#MSG}) / 2 ))
+printf "%*s${WHITE}${MSG}${RESET}\n" $PAD ''
 
 # ── DIVIDER ───────────────────────────────────────────────────────────────
-printf "${PURPLE}$(printf '─%.0s' $(seq 1 54))${RESET}\n\n"
+printf "${PURPLE}$(printf '─%.0s' $(seq 1 $COLS))${RESET}\n\n"
 
 # ── ACTIVATE VENV ─────────────────────────────────────────────────────────
 if [ -f ~/cowork/jarvis/.venv/bin/activate ]; then
@@ -51,16 +67,24 @@ elif [ -f ~/cowork/venv/bin/activate ]; then
     source ~/cowork/venv/bin/activate
 fi
 
-# ── LAUNCH AIDER ─────────────────────────────────────────────────────────
-aider \
+# ── AIDER COLORS ──────────────────────────────────────────────────────────
+export AIDER_USER_INPUT_COLOR="#7C3AED"
+export AIDER_ASSISTANT_OUTPUT_COLOR="#FFFFFF"
+export AIDER_TOOL_OUTPUT_COLOR="#9F67F5"
+export AIDER_CODE_THEME="monokai"
+
+# ── LAUNCH AIDER IN PROJECT DIR ──────────────────────────────────────────
+cd ~/cowork && /Users/ashkansamali/cowork/venv/bin/aider \
   --architect \
-  --model openai/planner \
-  --editor-model openai/coder \
-  --editor-edit-format udiff \
-  --no-show-model-warnings \
+  --model openai/jarvis \
+  --editor-model openai/jarvis \
   --openai-api-base http://localhost:8081/v1 \
-  --openai-api-key local
+  --openai-api-key local \
+  --no-show-model-warnings \
+  --no-auto-commits \
+  --map-tokens 2048 \
+  --edit-format udiff
 
 # ── EXIT ──────────────────────────────────────────────────────────────────
-printf "\n${PURPLE}$(printf '─%.0s' $(seq 1 54))${RESET}\n"
+printf "\n${PURPLE}$(printf '─%.0s' $(seq 1 $COLS))${RESET}\n"
 printf "${DIM}Jarvis offline. Session ended.${RESET}\n"
