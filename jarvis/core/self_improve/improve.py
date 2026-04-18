@@ -103,7 +103,8 @@ async def run_improvement(duration_hours: float = 2.0, websocket=None):
                 "and memory files. Identify 3 specific things that could be improved "
                 "(e.g., missing error handling, missing features, better prompts, "
                 "new tools that could be added). Return a numbered list.",
-                max_steps=10
+                max_steps=10,
+                websocket=websocket
             )
             _log(f"  [AUDIT] Found: {audit_result[:200]}")
 
@@ -114,7 +115,8 @@ async def run_improvement(duration_hours: float = 2.0, websocket=None):
                 f"Use web_search to find the latest best practices for local AI agent "
                 f"systems in April 2026. Focus on practical code patterns. "
                 f"Return specific implementation approaches.",
-                max_steps=8
+                max_steps=8,
+                websocket=websocket
             )
             _log(f"  [RESEARCH] Findings: {research_result[:200]}")
 
@@ -130,7 +132,8 @@ async def run_improvement(duration_hours: float = 2.0, websocket=None):
                 f"4. You CANNOT modify these protected files: {', '.join(sorted(list(PROTECTED_PATHS))[:10])}...\n"
                 f"5. Focus on adding NEW capabilities, not rewriting existing ones.\n"
                 f"6. Write clean, tested code.",
-                max_steps=20
+                max_steps=20,
+                websocket=websocket
             )
             _log(f"  [BUILD] Result: {build_result[:200]}")
 
@@ -180,12 +183,12 @@ async def run_improvement(duration_hours: float = 2.0, websocket=None):
     return f"Improvement complete. {cycle} cycles."
 
 
-async def _run_agent(task: str, max_steps: int = 15) -> str:
+async def _run_agent(task: str, max_steps: int = 15, websocket=None) -> str:
     """Spawn an AgentRuntime for a specific improvement task."""
     try:
         from core.agents.runtime import AgentRuntime
         agent = AgentRuntime(task=task, max_steps=max_steps)
-        result = await asyncio.wait_for(agent.run(), timeout=300)
+        result = await asyncio.wait_for(agent.run(websocket), timeout=300)
         return str(result)[:500]
     except asyncio.TimeoutError:
         return "[Agent timed out after 300s]"

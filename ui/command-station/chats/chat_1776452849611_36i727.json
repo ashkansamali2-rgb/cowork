@@ -785,8 +785,22 @@
       "content": "Task aborted by user.",
       "timestamp": 1776538112262,
       "streaming": false
+    },
+    {
+      "id": "msg_1776538310216",
+      "role": "user",
+      "content": "/improve",
+      "timestamp": 1776538310216,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776538310243",
+      "role": "assistant",
+      "content": "Self-improvement session started for 2.0h. Check build_log.md for progress. The agent can add new files but cannot touch core/UI.",
+      "timestamp": 1776538310243,
+      "streaming": false
     }
   ],
-  "updatedAt": 1776538251532,
+  "updatedAt": 1776538311262,
   "projectName": null
 }

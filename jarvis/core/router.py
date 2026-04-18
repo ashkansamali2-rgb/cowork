@@ -176,7 +176,7 @@ def _fast_route(msg_lower: str):
                 continue
 
         from core.self_improve.improve import run_improvement
-        asyncio.get_event_loop().create_task(run_improvement(hours))
+        asyncio.get_event_loop().create_task(run_improvement(hours, websocket=websocket))
         return f"Self-improvement session started for {hours}h. Check build_log.md for progress. The agent can add new files but cannot touch core/UI."
 
     # Web learning — "learn about <topic>"
