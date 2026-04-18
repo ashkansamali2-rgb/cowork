@@ -1,0 +1,20 @@
+{
+  "skill_save_document": {
+    "created_at": "2026-04-17T20:28:03.271200",
+    "triggered_by": "create_word_document() missing 1 required positional argument: 'content'",
+    "task": "\"Initialize the V2 Construction Protocol:\n\nPhase 1: Knowledge Acquisition\n\nResearch 'advanced autono",
+    "file": "/Users/ashkansamali/cowork/jarvis/core/agents/skills/skill_create_word_document.py"
+  },
+  "skill_write_document": {
+    "created_at": "2026-04-17T20:29:42.604315",
+    "triggered_by": "create_word_document() missing 1 required positional argument: 'content'",
+    "task": "\"Initialize the V2 Construction Protocol:\n\nPhase 1: Knowledge Acquisition\n\nResearch 'advanced autono",
+    "file": "/Users/ashkansamali/cowork/jarvis/core/agents/skills/skill_create_word_document.py"
+  },
+  "skill_save_document_content": {
+    "created_at": "2026-04-17T20:35:49.286115",
+    "triggered_by": "create_word_document() missing 1 required positional argument: 'content'",
+    "task": "\"Initialize the V2 Construction Protocol:\n\nPhase 1: Knowledge Acquisition\n\nResearch 'advanced autono",
+    "file": "/Users/ashkansamali/cowork/jarvis/core/agents/skills/skill_create_word_document.py"
+  }
+}

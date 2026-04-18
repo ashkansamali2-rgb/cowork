@@ -8,7 +8,7 @@ const TEXT_EXTENSIONS = new Set([
 ])
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])
 
-export default function InputBar({ onSend, isStreaming, connected }) {
+export default function InputBar({ onSend, onStop, isStreaming, connected }) {
   const [text, setText] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const textareaRef = useRef(null)
@@ -21,9 +21,14 @@ export default function InputBar({ onSend, isStreaming, connected }) {
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'
   }, [text])
 
-  const handleSend = useCallback(() => {
+  const handleClick = useCallback(() => {
+    if (isStreaming) {
+      if (onStop) onStop()
+      return
+    }
+
     const trimmed = text.trim()
-    if ((!trimmed && attachedFiles.length === 0) || isStreaming) return
+    if (!trimmed && attachedFiles.length === 0) return
 
     let finalMessage = trimmed
     for (const f of attachedFiles) {
@@ -42,12 +47,12 @@ export default function InputBar({ onSend, isStreaming, connected }) {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
-  }, [text, attachedFiles, isStreaming, onSend])
+  }, [text, attachedFiles, isStreaming, onSend, onStop])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSend()
+      handleClick()
     }
   }
 
@@ -97,7 +102,7 @@ export default function InputBar({ onSend, isStreaming, connected }) {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index))
   }
 
-  const canSend = (text.trim().length > 0 || attachedFiles.length > 0) && !isStreaming
+  const canSend = (text.trim().length > 0 || attachedFiles.length > 0) || isStreaming
 
   return (
     <div
@@ -115,8 +120,8 @@ export default function InputBar({ onSend, isStreaming, connected }) {
                   <img src={f.base64} alt={f.name} style={{ width: 14, height: 14, objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0 }}>
-                    <rect x="1" y="0.5" width="10" height="11" rx="1.5" stroke="#7C3AED" strokeWidth="1"/>
-                    <path d="M3 4h6M3 6h6M3 8h4" stroke="#7C3AED" strokeWidth="1" strokeLinecap="round"/>
+                    <rect x="1" y="0.5" width="10" height="11" rx="1.5" stroke="#7C3AED" strokeWidth="1" />
+                    <path d="M3 4h6M3 6h6M3 8h4" stroke="#7C3AED" strokeWidth="1" strokeLinecap="round" />
                   </svg>
                 )}
                 {f.name}
@@ -159,24 +164,25 @@ export default function InputBar({ onSend, isStreaming, connected }) {
               !connected
                 ? 'Jarvis offline...'
                 : isStreaming
-                ? 'Responding...'
-                : 'Message Jarvis'
+                  ? 'Responding...'
+                  : 'Message Jarvis'
             }
             disabled={isStreaming}
             rows={1}
-            className="flex-1 bg-transparent text-sm text-[#1A1A1A] placeholder-[#C4BFB8] border-none outline-none leading-relaxed py-1 min-h-[24px] max-h-40 disabled:opacity-40"
+            className="flex-1 bg-transparent text-sm text-[#1A1A1A] placeholder-[#C4BFB8] border-none outline-none leading-relaxed py-1 min-h-[24px] max-h-40 disabled:opacity-70"
             style={{ resize: 'none', overflow: 'hidden', fontFamily: 'inherit' }}
           />
 
-          {/* Send */}
+          {/* Send/Stop */}
           <button
-            onClick={handleSend}
+            onClick={handleClick}
             disabled={!canSend}
-            className="flex-shrink-0 mb-0.5 btn-purple px-3 py-1 text-xs font-medium"
+            className={`flex-shrink-0 mb-0.5 px-3 py-1 text-xs font-medium transition-colors ${isStreaming ? 'bg-red-500 text-white hover:bg-red-600' : 'btn-purple'
+              }`}
             style={{ borderRadius: 0 }}
-            title="Send (Enter)"
+            title={isStreaming ? 'Stop generation' : 'Send (Enter)'}
           >
-            {isStreaming ? '...' : 'Send'}
+            {isStreaming ? 'STOP ⏹' : 'Send'}
           </button>
         </div>
 

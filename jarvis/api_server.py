@@ -221,7 +221,10 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
         try:
             await sender.send_json({"type": "ack", "msg": f"Heard: {msg}", "request_id": tid})
             final_result = await agent_loop(msg, sender, session_id=sid, cwd=_cwd)
-            await sender.send_json({"type": "final", "msg": final_result})
+            # Only send "final" if the response wasn't already streamed
+            # The router sends stream_end when it streams, so check if it's a short/cmd response
+            if final_result and not final_result.startswith("Thinking timeout"):
+                await sender.send_json({"type": "final", "msg": final_result})
         except asyncio.CancelledError:
             pass
         finally:

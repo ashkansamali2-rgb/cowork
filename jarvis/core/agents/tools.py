@@ -522,7 +522,7 @@ def create_document(title: str, content: str, fmt: str = "md") -> str:
         return f"create_document failed: {e}"
 
 # ── create_word_document(title, content, path) ────────────────────────────────
-def create_word_document(title: str, content: str, path: str = None) -> str:
+def create_word_document(title: str, content: str = "", path: str = None) -> str:
     """Create a properly formatted Word (.docx) document on the Desktop.
     Converts markdown headings (##) to Word heading styles and bullet points
     to proper Word list items. Opens the file automatically."""
@@ -696,8 +696,8 @@ def spawn_subagent(task: str) -> str:
                 await ws.send(json.dumps({"register": "subagent-spawner"}))
                 await ws.recv()
                 await ws.send(json.dumps({
-                    "type": "TASK_RESEARCH",
-                    "msg": task,
+                    "type": "AGENT_SPAWN",
+                    "task": task,
                     "agent_id": agent_id,
                     "cwd": str(Path.home() / "cowork"),
                 }))

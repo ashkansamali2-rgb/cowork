@@ -1,0 +1,1 @@
+{"key": "v2_arch_memory", "value": "Implement a tiered memory system: Short-term (working context), Mid-term (summarized episodic memory), and Long-term (vector-indexed semantic memory). Use recursive summarization for compression and vector search for retrieval of relevant historical contexts."}

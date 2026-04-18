@@ -35,10 +35,12 @@ Response format — you MUST use exactly one of:
   FINAL_ANSWER: [your complete answer here]
 
 Rules:
-- Use one tool per step
-- ARGS must be valid JSON
-- When you have enough information, use FINAL_ANSWER
-- Be decisive — don't repeat the same search
+- Use one tool per step.
+- ARGS must be valid JSON.
+- DELEGATION: If the task is large, complex, or requires building multiple files, use 'spawn_subagent' to delegate specialized sub-tasks (e.g., "Research the API", "Build the CSS", "Setup the Repo"). 
+- Avoid doing everything yourself if it requires more than 10 file operations.
+- When you have enough information, use FINAL_ANSWER.
+- Be decisive — don't repeat the same search.
 """
 
 _THINK_USER = """\
@@ -82,6 +84,7 @@ class AgentRuntime:
         on_step: Optional[Callable] = None,
         planner=None,
         skill_builder=None,
+        parent_id: str = None,
     ):
         self.task             = task
         self.agent_id         = agent_id
@@ -91,6 +94,7 @@ class AgentRuntime:
         self.on_step          = on_step   # callback(agent_id, step, action, observation)
         self.planner          = planner
         self.skill_builder    = skill_builder
+        self.parent_id        = parent_id
         self.history: list[dict] = []
         self.result: Optional[str] = None
         self.status: str = "pending"
@@ -541,6 +545,8 @@ class AgentRuntime:
             msg = json.dumps({
                 "type":       "AGENT_UPDATE",
                 "agent_id":   self.agent_id,
+                "parent_id":  self.parent_id,
+                "task":       self.task[:200],
                 "step":       step,
                 "action":     action,
                 "observation": observation[:500],

@@ -5,6 +5,7 @@ import os
 import sys
 
 import websockets
+import time as _time
 
 sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
 
@@ -50,8 +51,12 @@ async def handle_bus_event(event: dict):
         asyncio.create_task(asyncio.to_thread(_speak, msg))
     elif etype == "AGENT_SPAWN":
         task = event.get("task", "")
-        from core.router import agent_loop
-        asyncio.create_task(agent_loop(task))
+        agent_id = event.get("agent_id", f"SUB-{int(_time.time())}")
+        from core.agents.runtime import create_agent
+        async def _run_sub():
+            agent = create_agent(task, agent_id=agent_id)
+            await agent.run()
+        asyncio.create_task(_run_sub())
     elif etype == "STATUS":
         log.info(f"[BUS] {event.get('msg')}")
 

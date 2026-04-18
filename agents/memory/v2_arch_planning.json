@@ -1,0 +1,1 @@
+{"key": "v2_arch_planning", "value": "Implement Hierarchical Task Planning (HTP). Use a top-down approach where high-level goals are decomposed into manageable sub-tasks. Integrate a feedback loop where the agent evaluates the completion of sub-tasks before proceeding to the next, allowing for dynamic re-planning based on environmental changes."}

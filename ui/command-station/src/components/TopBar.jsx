@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 
-export default function TopBar({ connections, spawnerOpen, onToggleSpawner, activeAgents = 0, agentDone = false }) {
+export default function TopBar({ connections, spawnerOpen, onToggleSpawner, onStop, activeAgents = 0, agentDone = false }) {
   const connected = connections.jarvis
   const [showDone, setShowDone] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(0)
 
   // Show "Agent done" for 3 seconds after completion
   useEffect(() => {
@@ -13,6 +14,22 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
     }
   }, [agentDone])
 
+  // Estimated completion timer
+  useEffect(() => {
+    if (activeAgents > 0 && timeLeft === 0) {
+      // Default to 15 mins for "build/V3" tasks, 5 mins for others
+      setTimeLeft(900)
+    } else if (activeAgents === 0) {
+      setTimeLeft(0)
+    }
+
+    if (timeLeft > 0) {
+      const t = setInterval(() => setTimeLeft(prev => Math.max(0, prev - 1)), 1000)
+      return () => clearInterval(t)
+    }
+  }, [activeAgents, timeLeft])
+
+  const formatTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`
   const hasRunning = activeAgents > 0
 
   return (
@@ -60,6 +77,11 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
               ? `Agent running${activeAgents > 1 ? ` (${activeAgents})` : ''}`
               : 'Agent done 🎉'}
           </span>
+          {hasRunning && timeLeft > 0 && (
+            <span className="text-[9px] font-bold ml-1 px-1.5 py-0.5 rounded bg-[#EDE9FE] text-[#7C3AED]">
+              Est: {formatTime(timeLeft)}
+            </span>
+          )}
         </div>
       )}
 
@@ -74,7 +96,9 @@ export default function TopBar({ connections, spawnerOpen, onToggleSpawner, acti
         </span>
       </div>
 
-      {/* Agents panel toggle */}
+      <div className="flex-1" />
+
+      {/* Agent status indicator */}
       <button
         onClick={onToggleSpawner}
         className="no-drag mr-3 px-3 py-1 text-[11px] font-medium transition-all"

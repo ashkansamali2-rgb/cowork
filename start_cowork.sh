@@ -63,7 +63,8 @@ fi
 
 # ── 2. Gemma 4 E4B — Architect model (port 8080) ──────────────────────────────
 yellow "⟳ Starting Gemma 4 (Architect)..."
-llama-server -m "$GEMMA" --port 8080 --ctx-size 131072 --n-gpu-layers 99 \
+llama-server -m "$GEMMA" --port 8080 --ctx-size 32768 --n-gpu-layers 99 \
+    --batch-size 512 --threads 8 \
     > "$COWORK/logs/gemma.log" 2>&1 &
 if wait_for_port 8080 10; then
     green "✓ Gemma 4 ready  (port 8080)"
@@ -73,7 +74,8 @@ fi
 
 # ── 3. Qwen 3.5 9B — Editor model (port 8081) ────────────────────────────────
 yellow "⟳ Starting Qwen 3.5 (Editor)..."
-llama-server -m "$QWEN" --port 8081 --ctx-size 131072 --n-gpu-layers 99 \
+llama-server -m "$QWEN" --port 8081 --ctx-size 32768 --n-gpu-layers 99 \
+    --batch-size 512 --threads 8 \
     > "$COWORK/logs/qwen.log" 2>&1 &
 if wait_for_port 8081 10; then
     green "✓ Qwen 3.5 ready  (port 8081)"

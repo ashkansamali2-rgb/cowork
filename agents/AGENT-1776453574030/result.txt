@@ -1,0 +1,29 @@
+Task: "Initialize the V2 Construction Protocol:
+
+Phase 1: Knowledge Acquisition
+
+Research 'advanced autonomous agent memory compression techniques,' 'vector search for local LLMs,' and 'hierarchical task planning in 2024–2025.'
+Summarize the best findings and use the 
+
+remember
+ tool to save these to my long-term memory under keys starting with v2_arch_.
+Compress the findings into a core 'V2 Blueprint' document on my Desktop.
+Phase 2: Scaffolding
+
+Create a new directory ~/cowork-v2.
+Clone the current codebase structure into ~/cowork-v2.
+Use gh repo create cowork-v2 --private to set up the new GitHub tracking.
+Phase 3: Autonomous Implementation
+
+Spend the next 3 hours iteratively building the V2 core in ~/cowork-v2 based on the Blueprint.
+Focus specifically on implementing a new 'Compressed Memory Engine' that uses the techniques you researched in Phase 1.
+Rule: Do not wait for my approval. You are authorized to run 
+
+write_file
+, git commit, and 
+
+run_shell
+ autonomously. Record every major architectural decision in v2_build_log.md."
+
+Result:
+Max steps (30) reached. Last observation: Could not parse action from: 

@@ -1,0 +1,11 @@
+Task: Resume V2 Construction Protocol.
+
+Use the swarm hierarchy to delegate Phase 2 and 3 in parallel.
+Sub-Task A: Connect to the cowork-v2 directory and initialize the GitHub remote if not already finalized.
+Sub-Task B: Recall the v2_arch_memory and begin the Tiered Memory Engine implementation in ~/cowork-v2/jarvis/core/memory/memory_engine.py.
+Override: Max steps 100 per agent. Use specialized sub-agents for any heavy file-writing. No more research—execute the blueprint."
+
+Result:
+The Resume V2 Construction Protocol has been initiated. I have delegated the parallel phases to the swarm hierarchy:
+
+1. **Sub-Task A (GitHub Synchronization):** Delegated to sub-agent `SUB-1

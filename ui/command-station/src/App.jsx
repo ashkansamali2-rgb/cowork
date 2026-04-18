@@ -5,6 +5,7 @@ import ChatArea from './components/ChatArea.jsx'
 import InputBar from './components/InputBar.jsx'
 import AgentSpawner from './components/AgentSpawner.jsx'
 import KnowledgeGraph from './components/KnowledgeGraph.jsx'
+import AgentMonitor from './components/AgentMonitor.jsx'
 
 function generateId() {
   return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
@@ -142,6 +143,44 @@ export default function App() {
         return
       }
 
+      // "stream" type: append token to current streaming bubble
+      if (data.type === 'stream') {
+        setIsTyping(false)
+        setIsStreaming(true)
+        const token = data.content || ''
+        if (!token) return
+        setMessages(prev => {
+          const withoutTyping = prev.filter(m => m.id !== TYPING_ID)
+          const last = withoutTyping[withoutTyping.length - 1]
+          if (last && last.role === 'assistant' && last.streaming) {
+            return [
+              ...withoutTyping.slice(0, -1),
+              { ...last, content: last.content + token },
+            ]
+          }
+          return [
+            ...withoutTyping,
+            {
+              id: `msg_${Date.now()}`,
+              role: 'assistant',
+              content: token,
+              streaming: true,
+              timestamp: Date.now(),
+            },
+          ]
+        })
+        return
+      }
+
+      // "stream_end" type: finalize the streaming bubble
+      if (data.type === 'stream_end') {
+        setMessages(prev =>
+          prev.map(m => m.streaming ? { ...m, streaming: false } : m)
+        )
+        // Don't clear isStreaming yet — wait for "final" which handles cmd execution
+        return
+      }
+
       // "final" type: add as Jarvis response bubble, clear typing indicator
       if (data.type === 'final') {
         setIsTyping(false)
@@ -235,10 +274,10 @@ export default function App() {
         const agentId = event.agent_id || event.agentId
         const { step, action, observation } = event
         setAgents(prev => {
-          const existing = prev[agentId] || { task: event.task || '', status: 'running', steps: [], startTime: Date.now() }
+          const existing = prev[agentId] || { task: event.task || '', status: 'running', steps: [], startTime: Date.now(), parentId: event.parent_id || null }
           const newAgents = {
             ...prev,
-            [agentId]: { ...existing, status: 'running', steps: [...existing.steps, { step, action, observation }] },
+            [agentId]: { ...existing, status: 'running', parentId: existing.parentId || event.parent_id || null, steps: [...existing.steps, { step, action, observation }] },
           }
           agentsRef.current = newAgents
           return newAgents
@@ -538,12 +577,26 @@ export default function App() {
     }
   }, [isStreaming])
 
+  const handleStop = useCallback(async () => {
+    const api = window.jarvis
+    if (!api) return
+    try {
+      await api.sendMessage("SYSTEM_COMMAND_STOP")
+      setIsStreaming(false)
+      setIsTyping(false)
+      setStatusText('System stopped.')
+    } catch (err) {
+      console.error('Failed to stop system:', err)
+    }
+  }, [])
+
   return (
     <div className="flex flex-col h-screen bg-[#FBF8F4] text-[#1A1A1A] overflow-hidden">
       <TopBar
         connections={connections}
         spawnerOpen={spawnerOpen}
         onToggleSpawner={() => setSpawnerOpen(o => !o)}
+        onStop={handleStop}
         activeAgents={Object.values(agents).filter(a => a.status === 'running').length}
         agentDone={agentDone}
       />
@@ -616,6 +669,17 @@ export default function App() {
                 >
                   Graph
                 </button>
+                <button
+                  onClick={() => setActiveTab('monitor')}
+                  className="px-5 py-2 text-xs font-medium transition-all"
+                  style={{
+                    borderBottom: activeTab === 'monitor' ? '2px solid #7C3AED' : '2px solid transparent',
+                    color: activeTab === 'monitor' ? '#7C3AED' : '#9CA3AF',
+                    background: 'transparent',
+                  }}
+                >
+                  Monitor
+                </button>
               </div>
 
               {activeTab === 'chat' && (
@@ -634,6 +698,7 @@ export default function App() {
                   />
                   <InputBar
                     onSend={handleSendMessage}
+                    onStop={handleStop}
                     isStreaming={isStreaming}
                     connected={connections.jarvis}
                   />
@@ -643,6 +708,12 @@ export default function App() {
               {activeTab === 'graph' && (
                 <div className="flex-1 overflow-hidden">
                   <KnowledgeGraph />
+                </div>
+              )}
+
+              {activeTab === 'monitor' && (
+                <div className="flex-1 overflow-hidden">
+                  <AgentMonitor agents={agents} />
                 </div>
               )}
             </>

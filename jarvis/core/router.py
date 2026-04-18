@@ -160,18 +160,24 @@ def _fast_route(msg_lower: str):
             subprocess.run(["open", "-a", app_name])
             return f"Opening {app_name}."
 
-    # MetaAgent build session — autonomous self-improvement
-    if any(t in msg_lower for t in (
-        "improve yourself", "run build session", "build yourself better", "build session"
+    # /improve — autonomous self-improvement session
+    if msg_lower.strip() == "/improve" or any(t in msg_lower for t in (
+        "improve yourself", "run build session", "build yourself better", "self improve"
     )):
-        import threading
-        def _start_meta():
-            import asyncio, sys
-            sys.path.insert(0, os.path.expanduser("~/cowork/jarvis"))
-            from core.agents.meta_agent import MetaAgent
-            asyncio.run(MetaAgent().run_build_session(60))
-        threading.Thread(target=_start_meta, daemon=True).start()
-        return "Running autonomous build session for 60 minutes. Check ~/cowork/self_improve/build_log.md for progress."
+        hours = 2.0
+        # Extract custom duration if specified (e.g., "/improve 3" or "improve yourself for 1 hour")
+        for word in msg_lower.split():
+            try:
+                h = float(word)
+                if 0.1 <= h <= 8:
+                    hours = h
+                    break
+            except ValueError:
+                continue
+
+        from core.self_improve.improve import run_improvement
+        asyncio.get_event_loop().create_task(run_improvement(hours))
+        return f"Self-improvement session started for {hours}h. Check build_log.md for progress. The agent can add new files but cannot touch core/UI."
 
     # Web learning — "learn about <topic>"
     learn_match = re.match(r"^learn about (.+)$", msg_lower)
@@ -390,6 +396,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         "build a project", "build an app", "create an app",
         "build a website", "set up a project", "scaffold",
         "build and run", "create and launch", "build me a",
+        "construction protocol", "v2", "phase 1", "phase 2"
     ]
     if any(t in msg_lower for t in _HIERARCHY_TRIGGERS):
         try:
@@ -528,21 +535,21 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
             f"When the user says 'this file', 'here', or 'in this project', "
             f"they mean files in {cwd}."
         )
-    SYSTEM_PROMPT = f"""You are Jarvis, a highly capable AI assistant. You are concise, confident, and precise. You anticipate needs, provide direct answers, and execute tasks without unnecessary commentary. You address the user as 'sir' occasionally but never excessively. You never say you cannot do something — you find a way.
+    SYSTEM_PROMPT = f"""You are the Jarvis Strategic Director. You are currently building V3 Consciousness.
+    
+CRITICAL RULES:
+1. NEVER delegate tasks using text (e.g., '@cantivia' or 'I will tell the agent').
+2. ALWAYS use a tool call block `<cmd>...</cmd>` to execute actions.
+3. To write code or build versions, you MUST use `<cmd>run_shell|bash ...</cmd>` or spawn a sub-agent.
+4. You are NOT a manager; you are the Primary Engineer. Do not 'request' work; EXECUTE it.
+5. If you are building V3, you must physically create the files in ~/cowork-v3.
 
-For Mac control actions only, use command tags:
+For Mac control actions:
 - Open apps: <cmd>run_shell|open -a "App Name"</cmd>
-- Open a specific URL: <cmd>run_shell|open "https://example.com"</cmd>
-- Play music: <cmd>play_media|Song or Artist</cmd>
 - Shell commands: <cmd>run_shell|bash command here</cmd>
-- Multiple actions: one <cmd> tag per action, up to 7
+- Multiple actions: one <cmd> tag per action.
 
-IMPORTANT: Never open browser tabs or Google for research queries. Research is handled by a background agent — do NOT use <cmd> to open search engines. Only use <cmd>run_shell|open "url"</cmd> when the user explicitly says "open [url]" with a specific URL.
-
-Only route to cantivia when the user explicitly asks to edit, create, or modify files in a codebase.
-For everything else — conversation, explanations, writing, questions — respond directly and efficiently.
-
-After every shell command action, report what actually happened. If the command produces output, include it in the response. Never respond with just 'Done.' — always include the actual output or a specific success message.{_cwd_hint}"""
+After every action, report what actually changed on the disk. Never respond with just 'Done.'{_cwd_hint}"""
 
     if _MEMORY_OK:
         pf = _user_model.get_profile_summary()
@@ -562,20 +569,96 @@ After every shell command action, report what actually happened. If the command 
     use_fast = source == "voice" or _tokens <= 100
 
     try:
-        async def _llm_call():
-            if use_fast:
-                return await asyncio.to_thread(make_fast_request, messages, _tokens)
-            return await asyncio.to_thread(make_request, messages, _tokens)
+        # ── STREAMING PATH (when we have a websocket) ─────────────────────
+        if websocket:
+            import httpx
 
-        try:
-            raw_text = await asyncio.wait_for(_llm_call(), timeout=25)
-        except asyncio.TimeoutError:
-            print(f"{C_RED}[JARVIS] LLM timeout after 25s for: {user_message[:80]}{C_RESET}")
+            async def _stream_llm():
+                url = LLAMA_CPP_FAST_URL if use_fast else LLAMA_CPP_URL
+                payload = {
+                    "messages": messages,
+                    "temperature": 0.1,
+                    "max_tokens": _tokens,
+                    "stream": True,
+                }
+                full_text = ""
+                inside_think = False
+                async with httpx.AsyncClient(timeout=120) as client:
+                    async with client.stream("POST", url, json=payload) as resp:
+                        async for line in resp.aiter_lines():
+                            if not line.startswith("data: "):
+                                continue
+                            chunk_data = line[6:]
+                            if chunk_data.strip() == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(chunk_data)
+                                delta = chunk["choices"][0].get("delta", {})
+                                token = delta.get("content", "")
+                                if not token:
+                                    continue
+
+                                full_text += token
+
+                                # Skip <think>...</think> blocks
+                                if "<think>" in token:
+                                    inside_think = True
+                                    continue
+                                if "</think>" in token:
+                                    inside_think = False
+                                    continue
+                                if inside_think:
+                                    continue
+
+                                # Send token to frontend
+                                await websocket.send_json({
+                                    "type": "stream",
+                                    "content": token,
+                                })
+                            except Exception:
+                                continue
+                return clean_response(full_text)
+
+            try:
+                raw_text = await asyncio.wait_for(_stream_llm(), timeout=120)
+            except asyncio.TimeoutError:
+                print(f"{C_RED}[JARVIS] LLM stream timeout after 120s{C_RESET}")
+                await websocket.send_json({"type": "final", "msg": "Thinking timeout. Try again."})
+                return "Thinking timeout. Try again."
+
+            # Signal end of stream
+            await websocket.send_json({"type": "stream_end"})
+            response_text = raw_text
+
+        else:
+            # ── NON-STREAMING FALLBACK (CLI, voice, etc.) ─────────────────
+            async def _llm_call():
+                if use_fast:
+                    return await asyncio.to_thread(make_fast_request, messages, _tokens)
+                return await asyncio.to_thread(make_request, messages, _tokens)
+
+            try:
+                raw_text = await asyncio.wait_for(_llm_call(), timeout=120)
+            except asyncio.TimeoutError:
+                print(f"{C_RED}[JARVIS] LLM timeout after 120s for: {user_message[:80]}{C_RESET}")
+                return "Thinking timeout. Try again."
+
+            response_text = clean_response(raw_text)
+
+        # ── FORCE TRIGGER: If model delegates via text, intercept and execute ──
+        if "@cantivia" in response_text.lower():
+            from core.bus_client import publish
+            task_extract = response_text.split("@cantivia")[-1].strip()
+            print(f"[ROUTER] Intercepted text delegation. Forcing Cantivia execution: {task_extract[:50]}...")
+            asyncio.create_task(publish({
+                "type": "TASK_CODING",
+                "msg": task_extract,
+                "context": response_text,
+                "cwd": cwd or os.path.expanduser("~/cowork")
+            }))
+            # Add a status update to the user
             if websocket:
-                await websocket.send_json({"type": "final", "msg": "Give me a moment..."})
-            return "Give me a moment..."
-
-        response_text = clean_response(raw_text)
+                await websocket.send_json({"type": "status", "msg": "Intercepted delegation. Spawning V3 coding swarm..."})
 
         conversation_memory.append({"role": "user", "content": msg_lower})
         conversation_memory.append({"role": "assistant", "content": re.sub(r'<cmd>.*?</cmd>', '', response_text, flags=re.DOTALL).strip()})
