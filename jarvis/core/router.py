@@ -82,7 +82,7 @@ KNOWN_APPS = {
 }
 
 # ── Fast hardcoded routes (no LLM required) ───────────────────────────────────
-def _fast_route(msg_lower: str):
+def _fast_route(msg_lower: str, websocket=None):
     """
     Check for common one-shot commands and return a string response immediately,
     or return None to fall through to the LLM path.
@@ -236,7 +236,7 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
         if _onboarding.is_active():
             return _onboarding.handle_answer(user_message)
 
-    fast_result = _fast_route(msg_lower)
+    fast_result = _fast_route(msg_lower, websocket=websocket)
     if fast_result is not None:
         return fast_result
 
