@@ -98,6 +98,7 @@ class AgentRuntime:
         self.history: list[dict] = []
         self.result: Optional[str] = None
         self.status: str = "pending"
+        self.websocket = None
 
         # Load persistent skills from skills/ directory
         skills_dir = Path(__file__).parent / "skills"
@@ -539,18 +540,28 @@ class AgentRuntime:
         return resp.json()["choices"][0]["message"]["content"].strip()
 
     async def _publish_update(self, step: int, action: str, observation: str):
-        """Publish AGENT_UPDATE to bus. Best-effort."""
+        """Publish AGENT_UPDATE to bus or direct websocket. Best-effort."""
+        msg_dict = {
+            "type":       "AGENT_UPDATE",
+            "agent_id":   self.agent_id,
+            "parent_id":  self.parent_id,
+            "task":       self.task[:200],
+            "step":       step,
+            "action":     action,
+            "observation": observation[:500],
+        }
+        
+        # Direct live update to UI via websocket
+        if self.websocket:
+            try:
+                await self.websocket.send_json(msg_dict)
+            except Exception:
+                pass
+
+        # Global broadcast via bus
         try:
             import websockets as _ws
-            msg = json.dumps({
-                "type":       "AGENT_UPDATE",
-                "agent_id":   self.agent_id,
-                "parent_id":  self.parent_id,
-                "task":       self.task[:200],
-                "step":       step,
-                "action":     action,
-                "observation": observation[:500],
-            })
+            msg = json.dumps(msg_dict)
             async with _ws.connect("ws://127.0.0.1:8002", open_timeout=2) as ws:
                 await ws.send(json.dumps({"register": f"agent-{self.agent_id}"}))
                 await ws.recv()
