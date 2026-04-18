@@ -77,15 +77,23 @@ class AgentRuntime:
     def __init__(
         self,
         task: str,
-        agent_id: str,
-        tools: dict,
-        tool_descriptions: str,
+        agent_id: str = None,
+        tools: dict = None,
+        tool_descriptions: str = None,
         max_steps: int = 30,
         on_step: Optional[Callable] = None,
         planner=None,
         skill_builder=None,
         parent_id: str = None,
     ):
+        if agent_id is None:
+            import uuid
+            agent_id = str(uuid.uuid4())[:8]
+        if tools is None or tool_descriptions is None:
+            from core.agents.tools import TOOLS, TOOL_DESCRIPTIONS
+            tools = tools or TOOLS
+            tool_descriptions = tool_descriptions or "\n".join(TOOL_DESCRIPTIONS.values())
+        
         self.task             = task
         self.agent_id         = agent_id
         self.tools            = tools
