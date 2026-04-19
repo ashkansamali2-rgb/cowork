@@ -64,7 +64,7 @@ fi
 
 # ── 3. Gemma 4 31B — Core API model (port 8081) ──────────────────────────────
 yellow "⟳ Starting Gemma 4 31B (Core)..."
-llama-server -m "$GEMMA" --port 8081 --ctx-size 32768 --n-gpu-layers 99 \
+llama-server -m "$GEMMA" --port 8081 --ctx-size 65536 --n-gpu-layers 99 \
     --batch-size 512 --threads 8 \
     > "$COWORK/logs/gemma.log" 2>&1 &
 if wait_for_port 8081 10; then
@@ -75,7 +75,7 @@ fi
 
 # ── 3.5 LiteLLM Proxy (port 4001) ─────────────────────────────────────────────
 yellow "⟳ Starting LiteLLM proxy on port 4001..."
-nohup litellm --config ~/cowork/litellm_proxy.yaml --port 4001 > /tmp/proxy.log 2>&1 &
+nohup /Users/ashkansamali/cowork/venv/bin/litellm --config ~/cowork/litellm_proxy.yaml --port 4001 > /tmp/proxy.log 2>&1 &
 sleep 3
 green "✓ litellm-proxy ready (port 4001)"
 
