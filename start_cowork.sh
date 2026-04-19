@@ -65,7 +65,7 @@ fi
 # ── 3. Gemma 4 31B — Core API model (port 8081) ──────────────────────────────
 yellow "⟳ Starting Gemma 4 31B (Core)..."
 llama-server -m "$GEMMA" --port 8081 --ctx-size 65536 --n-gpu-layers 99 \
-    --batch-size 512 --threads 8 \
+    --batch-size 4096 --threads 14 \
     > "$COWORK/logs/gemma.log" 2>&1 &
 if wait_for_port 8081 10; then
     green "✓ Gemma 4 31B ready  (port 8081)"

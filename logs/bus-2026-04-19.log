@@ -42,3 +42,36 @@
 [2026-04-19T12:22:35] Client registered: cantivia (total: 2)
 [2026-04-19T12:22:35] [cantivia] CLIENT_CONNECT: total_clients=2
 [2026-04-19T12:22:36] connection open
+[2026-04-19T13:43:25] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-19T13:43:25] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-19T13:43:25] server listening on 127.0.0.1:8002
+[2026-04-19T13:43:25] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-19T13:43:25] connection open
+[2026-04-19T13:43:25] Client registered: jarvis (total: 1)
+[2026-04-19T13:43:25] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-19T13:43:26] connection open
+[2026-04-19T13:43:26] Client registered: cantivia (total: 2)
+[2026-04-19T13:43:26] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-19T13:43:28] connection open
+[2026-04-19T13:45:00] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-19T13:45:00] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-19T13:45:00] server listening on 127.0.0.1:8002
+[2026-04-19T13:45:00] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-19T13:45:01] connection open
+[2026-04-19T13:45:01] Client registered: jarvis (total: 1)
+[2026-04-19T13:45:01] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-19T13:45:01] connection open
+[2026-04-19T13:45:01] Client registered: cantivia (total: 2)
+[2026-04-19T13:45:01] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-19T13:45:02] connection open
+[2026-04-19T13:46:50] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-19T13:46:50] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-19T13:46:50] server listening on 127.0.0.1:8002
+[2026-04-19T13:46:50] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-19T13:46:51] connection open
+[2026-04-19T13:46:51] Client registered: jarvis (total: 1)
+[2026-04-19T13:46:51] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-19T13:46:52] connection open
+[2026-04-19T13:46:52] Client registered: cantivia (total: 2)
+[2026-04-19T13:46:52] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-19T13:46:52] connection open

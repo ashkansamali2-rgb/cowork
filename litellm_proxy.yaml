@@ -14,3 +14,18 @@ model_list:
       model: openai/jarvis
       api_base: http://localhost:8081/v1
       api_key: local
+  - model_name: claude-haiku-4-5-20251001
+    litellm_params:
+      model: openai/jarvis
+      api_base: http://localhost:8081/v1
+      api_key: local
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: openai/jarvis
+      api_base: http://localhost:8081/v1
+      api_key: local
+  - model_name: claude-3-haiku-20240307
+    litellm_params:
+      model: openai/jarvis
+      api_base: http://localhost:8081/v1
+      api_key: local
