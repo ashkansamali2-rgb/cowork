@@ -540,13 +540,13 @@ async def agent_loop(user_message: str, websocket=None, session_id: str = "", cw
 CRITICAL RULES:
 1. NEVER delegate tasks using text (e.g., '@cantivia' or 'I will tell the agent').
 2. ALWAYS use a tool call block `<cmd>...</cmd>` to execute actions.
-3. To write code or build versions, you MUST use `<cmd>run_shell|bash ...</cmd>` or spawn a sub-agent.
+3. To write code or build versions, you MUST use `<cmd>run_shell|your command here</cmd>` or spawn a sub-agent.
 4. You are NOT a manager; you are the Primary Engineer. Do not 'request' work; EXECUTE it.
 5. If you are building V3, you must physically create the files in ~/cowork-v3.
 
 For Mac control actions:
 - Open apps: <cmd>run_shell|open -a "App Name"</cmd>
-- Shell commands: <cmd>run_shell|bash command here</cmd>
+- Shell commands: <cmd>run_shell|ls -la</cmd>
 - Multiple actions: one <cmd> tag per action.
 
 After every action, report what actually changed on the disk. Never respond with just 'Done.'{_cwd_hint}"""
@@ -594,27 +594,25 @@ After every action, report what actually changed on the disk. Never respond with
                             try:
                                 chunk = json.loads(chunk_data)
                                 delta = chunk["choices"][0].get("delta", {})
-                                token = delta.get("content", "")
-                                if not token:
+                                content = str(delta.get("content", "") or "")
+                                reasoning = str(delta.get("reasoning_content", "") or "")
+                                
+                                if reasoning:
+                                    if not inside_think:
+                                        inside_think = True
+                                        full_text += "<think>\n"
+                                        await websocket.send_json({"type": "stream", "content": "<think>\n"})
+                                    full_text += reasoning
+                                    await websocket.send_json({"type": "stream", "content": reasoning})
                                     continue
-
-                                full_text += token
-
-                                # Skip <think>...</think> blocks
-                                if "<think>" in token:
-                                    inside_think = True
-                                    continue
-                                if "</think>" in token:
-                                    inside_think = False
-                                    continue
-                                if inside_think:
-                                    continue
-
-                                # Send token to frontend
-                                await websocket.send_json({
-                                    "type": "stream",
-                                    "content": token,
-                                })
+                                
+                                if content:
+                                    if inside_think:
+                                        inside_think = False
+                                        full_text += "\n</think>\n"
+                                        await websocket.send_json({"type": "stream", "content": "\n</think>\n"})
+                                    full_text += content
+                                    await websocket.send_json({"type": "stream", "content": content})
                             except Exception:
                                 continue
                 return clean_response(full_text)
@@ -666,7 +664,10 @@ After every action, report what actually changed on the disk. Never respond with
             conversation_memory = conversation_memory[-10:]
         save_memory(session_id, conversation_memory)
 
-        cmd_matches = re.findall(r'<cmd>(.*?)</cmd>', response_text, flags=re.DOTALL)
+        # Strip the entire think block BEFORE looking for executable commands
+        # This prevents the agent from executing commands it's merely "thinking" about.
+        clean_for_cmd = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
+        cmd_matches = re.findall(r'<cmd>(.*?)</cmd>', clean_for_cmd, flags=re.DOTALL)
         if cmd_matches:
             results = []
             for i, tool_string in enumerate(cmd_matches):
@@ -723,6 +724,8 @@ After every action, report what actually changed on the disk. Never respond with
                     print(f"Format error on task {i+1}: {e}")
 
             spoken_text = re.sub(r'<cmd>.*?</cmd>', '', response_text, flags=re.DOTALL).strip()
+            # Also hide the thinking block from spoken text
+            spoken_text = re.sub(r'<think>.*?</think>', '', spoken_text, flags=re.DOTALL).strip()
             final_res = spoken_text
 
             error_msgs = [r for r in results if "error" in r.lower() or "bypassed" in r.lower()]
@@ -741,7 +744,8 @@ After every action, report what actually changed on the disk. Never respond with
             return final_res
 
         if _MEMORY_OK:
-            asyncio.create_task(asyncio.to_thread(_memory_engine.extract_and_store, user_message, response_text))
+            final_no_think = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL).strip()
+            asyncio.create_task(asyncio.to_thread(_memory_engine.extract_and_store, user_message, final_no_think))
         return response_text
     except Exception as e:
         return f"Brain locked up. Error: {e}"

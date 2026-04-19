@@ -227,6 +227,10 @@ async def _handle_message(websocket: WebSocket, user_msg: str, session_id: str, 
                 await sender.send_json({"type": "final", "msg": final_result})
         except asyncio.CancelledError:
             pass
+        except Exception as e:
+            print(f"[API SERVER] Critical error in agent_loop: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             active_tasks.pop(tid, None)
 

@@ -10,7 +10,6 @@ COWORK="/Users/ashkansamali/cowork"
 JARVIS="$COWORK/jarvis"
 VENV="$JARVIS/.venv/bin"
 GEMMA="/Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf"
-QWEN="/Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf"
 ELECTRON_APP="$COWORK/ui/command-station/dist-electron/mac-arm64/Command Station.app"
 
 mkdir -p "$COWORK/logs"
@@ -61,27 +60,24 @@ else
     red "✗ Cantivia Bus failed — check $COWORK/logs/bus.log"
 fi
 
-# ── 2. Gemma 4 E4B — Architect model (port 8080) ──────────────────────────────
-yellow "⟳ Starting Gemma 4 (Architect)..."
-llama-server -m "$GEMMA" --port 8080 --ctx-size 32768 --n-gpu-layers 99 \
+# ── (Removed redundant Gemma 4 on port 8080; everything uses 8081) ───────
+
+# ── 3. Gemma 4 31B — Core API model (port 8081) ──────────────────────────────
+yellow "⟳ Starting Gemma 4 31B (Core)..."
+llama-server -m "$GEMMA" --port 8081 --ctx-size 32768 --n-gpu-layers 99 \
     --batch-size 512 --threads 8 \
     > "$COWORK/logs/gemma.log" 2>&1 &
-if wait_for_port 8080 10; then
-    green "✓ Gemma 4 ready  (port 8080)"
+if wait_for_port 8081 10; then
+    green "✓ Gemma 4 31B ready  (port 8081)"
 else
-    red "✗ Gemma 4 failed — check $COWORK/logs/gemma.log"
+    red "✗ Gemma 4 31B failed — check $COWORK/logs/gemma.log"
 fi
 
-# ── 3. Qwen 3.5 9B — Editor model (port 8081) ────────────────────────────────
-yellow "⟳ Starting Qwen 3.5 (Editor)..."
-llama-server -m "$QWEN" --port 8081 --ctx-size 32768 --n-gpu-layers 99 \
-    --batch-size 512 --threads 8 \
-    > "$COWORK/logs/qwen.log" 2>&1 &
-if wait_for_port 8081 10; then
-    green "✓ Qwen 3.5 ready  (port 8081)"
-else
-    red "✗ Qwen 3.5 failed — check $COWORK/logs/qwen.log"
-fi
+# ── 3.5 LiteLLM Proxy (port 4001) ─────────────────────────────────────────────
+yellow "⟳ Starting LiteLLM proxy on port 4001..."
+nohup litellm --config ~/cowork/litellm_proxy.yaml --port 4001 > /tmp/proxy.log 2>&1 &
+sleep 3
+green "✓ litellm-proxy ready (port 4001)"
 
 # ── 4. Jarvis API server (port 8001) ─────────────────────────────────────────
 yellow "⟳ Starting Jarvis..."

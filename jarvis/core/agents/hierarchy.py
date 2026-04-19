@@ -8,10 +8,9 @@ from pathlib import Path
 
 import requests
 
-BRAIN_URL = "http://localhost:8081/v1/chat/completions"   # Gemma 4 31B — single model
+BRAIN_URL = "http://localhost:8081/v1/chat/completions"   # Gemma 4 31B — single unified model
 # Aliases for internal use
 GEMMA_URL = BRAIN_URL
-QWEN_URL  = BRAIN_URL
 
 
 def _call_gemma(prompt: str, max_tokens: int = 500) -> str:
@@ -25,15 +24,15 @@ def _call_gemma(prompt: str, max_tokens: int = 500) -> str:
         return f"[gemma error: {e}]"
 
 
-def _call_qwen(prompt: str, max_tokens: int = 800) -> str:
+def _call_gemma_fast(prompt: str, max_tokens: int = 800) -> str:
     try:
-        r = requests.post(QWEN_URL, json={
+        r = requests.post(GEMMA_URL, json={
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.1, "max_tokens": max_tokens, "stream": False,
         }, timeout=60)
         return r.json()["choices"][0]["message"]["content"].strip()
     except Exception as e:
-        return f"[qwen error: {e}]"
+        return f"[gemma error: {e}]"
 
 
 async def _send(websocket, data: dict):
@@ -96,7 +95,7 @@ class AgentHierarchy:
             f"Return JSON: {{\"subtask\": \"...\", \"approach\": \"...\", "
             f"\"tools\": [], \"steps\": [], \"output\": \"...\"}}"
         )
-        raw = _call_qwen(prompt, max_tokens=400)
+        raw = _call_gemma_fast(prompt, max_tokens=400)
         try:
             start = raw.find("{")
             end   = raw.rfind("}") + 1
@@ -139,7 +138,7 @@ class AgentHierarchy:
             f"Results:\n{summary}\n\n"
             f"Provide a clear, concise final summary."
         )
-        return _call_qwen(prompt, max_tokens=600)
+        return _call_gemma_fast(prompt, max_tokens=600)
 
 
 # Wire into router.py — caller adds this trigger block:

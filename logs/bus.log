@@ -1,12 +1,12 @@
-/Users/ashkansamali/cowork/cantivia-bus.py:69: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
+/Users/ashkansamali/cowork/cantivia-bus.py:71: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
   clients: dict[str, websockets.WebSocketServerProtocol] = {}
-/Users/ashkansamali/cowork/cantivia-bus.py:172: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
+/Users/ashkansamali/cowork/cantivia-bus.py:196: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
   async def handler(websocket: websockets.WebSocketServerProtocol):
-2026-04-10 12:00:51,030 [BUS] Cantivia Bus starting on ws://127.0.0.1:8002
-[2026-04-10T12:00:51] [bus] BUS_START: ws://127.0.0.1:8002
-2026-04-10 12:00:51,031 [BUS] server listening on 127.0.0.1:8002
-2026-04-10 12:00:51,031 [BUS] Bus online. Waiting for Jarvis and Cantivia to connect...
-2026-04-10 12:00:51,977 [BUS] opening handshake failed
+2026-04-18 22:15:51,099 [BUS] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:15:51] [bus] BUS_START: ws://127.0.0.1:8002
+2026-04-18 22:15:51,100 [BUS] server listening on 127.0.0.1:8002
+2026-04-18 22:15:51,100 [BUS] Bus online. Waiting for Jarvis and Cantivia to connect...
+2026-04-18 22:15:52,055 [BUS] opening handshake failed
 Traceback (most recent call last):
   File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
     request_line = yield from parse_line(read_line)
@@ -36,12 +36,9 @@ Traceback (most recent call last):
   File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
     raise self.protocol.handshake_exc
 websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
-2026-04-10 12:00:54,249 [BUS] connection open
-2026-04-10 12:00:54,249 [BUS] Client registered: jarvis (total: 1)
-[2026-04-10T12:00:54] [jarvis] CLIENT_CONNECT: total_clients=1
-2026-04-10 12:00:55,104 [BUS] connection open
-2026-04-10 12:00:55,104 [BUS] Client registered: cantivia (total: 2)
-[2026-04-10T12:00:55] [cantivia] CLIENT_CONNECT: total_clients=2
-2026-04-10 12:00:55,423 [BUS] connection open
-2026-04-10 12:01:03,413 [BUS] connection open
-2026-04-10 12:08:42,632 [BUS] Client disconnected: jarvis
+2026-04-18 22:15:53,293 [BUS] connection open
+2026-04-18 22:15:53,293 [BUS] Client registered: jarvis (total: 1)
+[2026-04-18T22:15:53] [jarvis] CLIENT_CONNECT: total_clients=1
+2026-04-18 22:15:53,598 [BUS] connection open
+2026-04-18 22:15:54,205 [BUS] connection open
+2026-04-18 22:15:54,206 [BUS] Client registered: cantivia (total: 2)

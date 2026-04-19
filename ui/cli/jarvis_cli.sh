@@ -76,22 +76,40 @@ elif [ -f ~/cowork/venv/bin/activate ]; then
 fi
 
 # ── AIDER COLORS ──────────────────────────────────────────────────────────
-export AIDER_USER_INPUT_COLOR="#7C3AED"
+export AIDER_USER_INPUT_COLOR="#FFFFFF"
 export AIDER_ASSISTANT_OUTPUT_COLOR="#FFFFFF"
 export AIDER_TOOL_OUTPUT_COLOR="#9F67F5"
-export AIDER_CODE_THEME="monokai"
+export AIDER_CODE_THEME="native"
 
-# ── LAUNCH AIDER IN PROJECT DIR ──────────────────────────────────────────
-cd ~/cowork && /Users/ashkansamali/cowork/venv/bin/aider \
-  --architect \
-  --model openai/jarvis \
-  --editor-model openai/jarvis \
-  --openai-api-base http://localhost:8081/v1 \
-  --openai-api-key local \
-  --no-show-model-warnings \
-  --no-auto-commits \
-  --map-tokens 2048 \
-  --edit-format udiff
+# ── ENGINE SELECTION ──────────────────────────────────────────────────────
+echo ""
+echo -e "\033[1;35m  ┌─────────────────────────────────┐\033[0m"
+echo -e "\033[1;35m  │  [1]  Aider        (fast)        │\033[0m"
+echo -e "\033[1;35m  │  [2]  Claude Code  (full power)  │\033[0m"
+echo -e "\033[1;35m  └─────────────────────────────────┘\033[0m"
+echo ""
+printf "\033[1;35m  Select engine: \033[0m"
+read ENGINE_CHOICE
+
+cd ~/cowork
+
+if [ "$ENGINE_CHOICE" = "2" ]; then
+  ANTHROPIC_BASE_URL=http://localhost:4001 ANTHROPIC_API_KEY=local claude
+else
+  /Users/ashkansamali/cowork/venv/bin/aider \
+    --architect \
+    --model openai/jarvis \
+    --editor-model openai/jarvis \
+    --openai-api-base http://localhost:8081/v1 \
+    --openai-api-key local \
+    --no-show-model-warnings \
+    --no-auto-commits \
+    --map-tokens 2048 \
+    --edit-format udiff \
+    --model-metadata-file /Users/ashkansamali/cowork/jarvis/model_metadata.json \
+    --suggest-shell-commands \
+    --analytics-disable
+fi
 
 # ── EXIT ──────────────────────────────────────────────────────────────────
 printf "\n${PURPLE}$(printf '─%.0s' $(seq 1 $COLS))${RESET}\n"

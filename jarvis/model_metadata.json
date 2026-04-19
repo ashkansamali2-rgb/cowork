@@ -1,0 +1,12 @@
+{
+    "openai/jarvis": {
+        "max_input_tokens": 128000,
+        "max_output_tokens": 4096,
+        "input_cost_per_token": 0.0,
+        "output_cost_per_token": 0.0,
+        "litellm_provider": "openai",
+        "mode": "chat",
+        "supports_assistant_prefill": true,
+        "supports_function_calling": true
+    }
+}

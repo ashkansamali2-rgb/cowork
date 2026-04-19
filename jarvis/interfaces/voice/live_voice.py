@@ -10,6 +10,7 @@ import time
 import subprocess
 import traceback
 from datetime import datetime
+import threading
 
 import numpy as np
 import soundfile as sf
@@ -44,6 +45,8 @@ recognizer.dynamic_energy_threshold = False
 recognizer.pause_threshold = 0.6
 recognizer.non_speaking_duration = 0.3
 
+gpu_lock = threading.Lock()
+
 def sanitize_for_speech(text):
     text = re.sub(r'```.*?```', ' code snippet removed. ', text, flags=re.DOTALL)
     text = text.replace('`', '').replace('*', '').replace('@', ' at ')
@@ -60,12 +63,13 @@ async def speak_text(text):
     print(f"[Voice] Speaking: {safe_text[:80]}")
     try:
         def generate_audio():
-            results = list(tts_model.generate(
-                text=safe_text,
-                ref_audio=JARVIS_AUDIO_PATH,
-                ref_text=JARVIS_AUDIO_TEXT,
-                language="English"
-            ))
+            with gpu_lock:
+                results = list(tts_model.generate(
+                    text=safe_text,
+                    ref_audio=JARVIS_AUDIO_PATH,
+                    ref_text=JARVIS_AUDIO_TEXT,
+                    language="English"
+                ))
             audio = np.clip(np.array(results[0].audio) * 1.8, -1.0, 1.0)
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 tmp = f.name
@@ -114,7 +118,8 @@ async def process_loop(audio_q: asyncio.Queue, cmd_q: asyncio.Queue):
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 f.write(audio.get_wav_data())
                 tmp = f.name
-            res = mlx_whisper.transcribe(tmp, path_or_hf_repo=WHISPER_MODEL, beam_size=1)
+            with gpu_lock:
+                res = mlx_whisper.transcribe(tmp, path_or_hf_repo=WHISPER_MODEL, beam_size=1)
             os.remove(tmp)
             return res.get("text", "").lower().strip()
 

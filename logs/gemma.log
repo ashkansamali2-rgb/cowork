@@ -18,86 +18,86 @@ ggml_metal_device_init: recommendedMaxWorkingSetSize  = 40200.90 MB
 load_backend: loaded MTL backend from /opt/homebrew/Cellar/ggml/0.9.11/libexec/libggml-metal.so
 load_backend: loaded CPU backend from /opt/homebrew/Cellar/ggml/0.9.11/libexec/libggml-cpu-apple_m4.so
 main: n_parallel is set to auto, using n_parallel = 4 and kv_unified = true
-system info: n_threads = 10, n_threads_batch = 10, total_threads = 14
+system info: n_threads = 8, n_threads_batch = 8, total_threads = 14
 
-system_info: n_threads = 10 (n_threads_batch = 10) / 14 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | MATMUL_INT8 = 1 | DOTPROD = 1 | SME = 1 | ACCELERATE = 1 | OPENMP = 1 | REPACK = 1 | 
+system_info: n_threads = 8 (n_threads_batch = 8) / 14 | MTL : EMBED_LIBRARY = 1 | CPU : NEON = 1 | ARM_FMA = 1 | FP16_VA = 1 | MATMUL_INT8 = 1 | DOTPROD = 1 | SME = 1 | ACCELERATE = 1 | OPENMP = 1 | REPACK = 1 | 
 
 Running without SSL
 init: using 13 threads for HTTP server
 start: binding port with default address family
 main: loading model
-srv    load_model: loading model '/Users/ashkansamali/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf'
+srv    load_model: loading model '/Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf'
 common_init_result: fitting params to device memory, for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on
-llama_params_fit_impl: projected to use 7842 MiB of device memory vs. 38338 MiB of free device memory
-llama_params_fit_impl: will leave 30495 >= 1024 MiB of free device memory, no changes needed
+llama_params_fit_impl: projected to use 23154 MiB of device memory vs. 38338 MiB of free device memory
+llama_params_fit_impl: will leave 15183 >= 1024 MiB of free device memory, no changes needed
 llama_params_fit: successfully fit params to free device memory
-llama_params_fit: fitting params to free memory took 0.32 seconds
+llama_params_fit: fitting params to free memory took 0.36 seconds
 llama_model_load_from_file_impl: using device MTL0 (Apple M4 Pro) (unknown id) - 38338 MiB free
-llama_model_loader: loaded meta data with 56 key-value pairs and 720 tensors from /Users/ashkansamali/Downloads/gemma-4-E4B-it-UD-Q6_K_XL.gguf (version GGUF V3 (latest))
+llama_model_loader: loaded meta data with 57 key-value pairs and 833 tensors from /Users/ashkansamali/Downloads/gemma-4-31B-it-IQ4_NL.gguf (version GGUF V3 (latest))
 llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
 llama_model_loader: - kv   0:                       general.architecture str              = gemma4
 llama_model_loader: - kv   1:                               general.type str              = model
 llama_model_loader: - kv   2:                     general.sampling.top_k i32              = 64
 llama_model_loader: - kv   3:                     general.sampling.top_p f32              = 0.950000
 llama_model_loader: - kv   4:                      general.sampling.temp f32              = 1.000000
-llama_model_loader: - kv   5:                               general.name str              = Gemma-4-E4B-It
-llama_model_loader: - kv   6:                           general.basename str              = Gemma-4-E4B-It
-llama_model_loader: - kv   7:                       general.quantized_by str              = Unsloth
-llama_model_loader: - kv   8:                         general.size_label str              = 7.5B
-llama_model_loader: - kv   9:                            general.license str              = apache-2.0
-llama_model_loader: - kv  10:                       general.license.link str              = https://ai.google.dev/gemma/docs/gemm...
-llama_model_loader: - kv  11:                           general.repo_url str              = https://huggingface.co/unsloth
-llama_model_loader: - kv  12:                   general.base_model.count u32              = 1
-llama_model_loader: - kv  13:                  general.base_model.0.name str              = Gemma 4 E4B It
-llama_model_loader: - kv  14:          general.base_model.0.organization str              = Google
-llama_model_loader: - kv  15:              general.base_model.0.repo_url str              = https://huggingface.co/google/gemma-4...
-llama_model_loader: - kv  16:                               general.tags arr[str,2]       = ["unsloth", "any-to-any"]
-llama_model_loader: - kv  17:                         gemma4.block_count u32              = 42
-llama_model_loader: - kv  18:                      gemma4.context_length u32              = 131072
-llama_model_loader: - kv  19:                    gemma4.embedding_length u32              = 2560
-llama_model_loader: - kv  20:                 gemma4.feed_forward_length u32              = 10240
-llama_model_loader: - kv  21:                gemma4.attention.head_count u32              = 8
-llama_model_loader: - kv  22:             gemma4.attention.head_count_kv u32              = 2
-llama_model_loader: - kv  23:                      gemma4.rope.freq_base f32              = 1000000.000000
-llama_model_loader: - kv  24:                  gemma4.rope.freq_base_swa f32              = 10000.000000
-llama_model_loader: - kv  25:    gemma4.attention.layer_norm_rms_epsilon f32              = 0.000001
-llama_model_loader: - kv  26:                gemma4.attention.key_length u32              = 512
-llama_model_loader: - kv  27:              gemma4.attention.value_length u32              = 512
-llama_model_loader: - kv  28:             gemma4.final_logit_softcapping f32              = 30.000000
-llama_model_loader: - kv  29:            gemma4.attention.sliding_window u32              = 512
-llama_model_loader: - kv  30:          gemma4.attention.shared_kv_layers u32              = 18
-llama_model_loader: - kv  31:    gemma4.embedding_length_per_layer_input u32              = 256
-llama_model_loader: - kv  32:    gemma4.attention.sliding_window_pattern arr[bool,42]     = [true, true, true, true, true, false,...
-llama_model_loader: - kv  33:            gemma4.attention.key_length_swa u32              = 256
-llama_model_loader: - kv  34:          gemma4.attention.value_length_swa u32              = 256
-llama_model_loader: - kv  35:                gemma4.rope.dimension_count u32              = 512
-llama_model_loader: - kv  36:            gemma4.rope.dimension_count_swa u32              = 256
-llama_model_loader: - kv  37:                       tokenizer.ggml.model str              = gemma4
-llama_model_loader: - kv  38:                      tokenizer.ggml.tokens arr[str,262144]  = ["<pad>", "<eos>", "<bos>", "<unk>", ...
-llama_model_loader: - kv  39:                      tokenizer.ggml.scores arr[f32,262144]  = [-1000.000000, -1000.000000, -1000.00...
-llama_model_loader: - kv  40:                  tokenizer.ggml.token_type arr[i32,262144]  = [3, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, ...
-llama_model_loader: - kv  41:                      tokenizer.ggml.merges arr[str,514906]  = ["\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n", ...
-llama_model_loader: - kv  42:                tokenizer.ggml.bos_token_id u32              = 2
-llama_model_loader: - kv  43:                tokenizer.ggml.eos_token_id u32              = 106
-llama_model_loader: - kv  44:            tokenizer.ggml.unknown_token_id u32              = 3
-llama_model_loader: - kv  45:            tokenizer.ggml.padding_token_id u32              = 0
-llama_model_loader: - kv  46:               tokenizer.ggml.mask_token_id u32              = 4
-llama_model_loader: - kv  47:                    tokenizer.chat_template str              = {%- macro format_parameters(propertie...
-llama_model_loader: - kv  48:            tokenizer.ggml.add_space_prefix bool             = false
-llama_model_loader: - kv  49:               tokenizer.ggml.add_bos_token bool             = false
-llama_model_loader: - kv  50:               general.quantization_version u32              = 2
-llama_model_loader: - kv  51:                          general.file_type u32              = 18
-llama_model_loader: - kv  52:                      quantize.imatrix.file str              = gemma-4-E4B-it-GGUF/imatrix_unsloth.gguf
-llama_model_loader: - kv  53:                   quantize.imatrix.dataset str              = unsloth_calibration_gemma-4-E4B-it.txt
-llama_model_loader: - kv  54:             quantize.imatrix.entries_count u32              = 342
-llama_model_loader: - kv  55:              quantize.imatrix.chunks_count u32              = 141
-llama_model_loader: - type  f32:  423 tensors
-llama_model_loader: - type q8_0:  148 tensors
-llama_model_loader: - type q6_K:  148 tensors
-llama_model_loader: - type bf16:    1 tensors
+llama_model_loader: - kv   5:                               general.name str              = Gemma-4-31B-It
+llama_model_loader: - kv   6:                           general.finetune str              = it
+llama_model_loader: - kv   7:                           general.basename str              = Gemma-4-31B-It
+llama_model_loader: - kv   8:                       general.quantized_by str              = Unsloth
+llama_model_loader: - kv   9:                         general.size_label str              = 31B
+llama_model_loader: - kv  10:                            general.license str              = apache-2.0
+llama_model_loader: - kv  11:                       general.license.link str              = https://ai.google.dev/gemma/docs/gemm...
+llama_model_loader: - kv  12:                           general.repo_url str              = https://huggingface.co/unsloth
+llama_model_loader: - kv  13:                   general.base_model.count u32              = 1
+llama_model_loader: - kv  14:                  general.base_model.0.name str              = Gemma 4 31B It
+llama_model_loader: - kv  15:          general.base_model.0.organization str              = Google
+llama_model_loader: - kv  16:              general.base_model.0.repo_url str              = https://huggingface.co/google/gemma-4...
+llama_model_loader: - kv  17:                               general.tags arr[str,2]       = ["unsloth", "image-text-to-text"]
+llama_model_loader: - kv  18:                         gemma4.block_count u32              = 60
+llama_model_loader: - kv  19:                      gemma4.context_length u32              = 262144
+llama_model_loader: - kv  20:                    gemma4.embedding_length u32              = 5376
+llama_model_loader: - kv  21:                 gemma4.feed_forward_length u32              = 21504
+llama_model_loader: - kv  22:                gemma4.attention.head_count u32              = 32
+llama_model_loader: - kv  23:             gemma4.attention.head_count_kv arr[i32,60]      = [16, 16, 16, 16, 16, 4, 16, 16, 16, 1...
+llama_model_loader: - kv  24:                      gemma4.rope.freq_base f32              = 1000000.000000
+llama_model_loader: - kv  25:                  gemma4.rope.freq_base_swa f32              = 10000.000000
+llama_model_loader: - kv  26:    gemma4.attention.layer_norm_rms_epsilon f32              = 0.000001
+llama_model_loader: - kv  27:                gemma4.attention.key_length u32              = 512
+llama_model_loader: - kv  28:              gemma4.attention.value_length u32              = 512
+llama_model_loader: - kv  29:             gemma4.final_logit_softcapping f32              = 30.000000
+llama_model_loader: - kv  30:            gemma4.attention.sliding_window u32              = 1024
+llama_model_loader: - kv  31:          gemma4.attention.shared_kv_layers u32              = 0
+llama_model_loader: - kv  32:    gemma4.embedding_length_per_layer_input u32              = 0
+llama_model_loader: - kv  33:    gemma4.attention.sliding_window_pattern arr[bool,60]     = [true, true, true, true, true, false,...
+llama_model_loader: - kv  34:            gemma4.attention.key_length_swa u32              = 256
+llama_model_loader: - kv  35:          gemma4.attention.value_length_swa u32              = 256
+llama_model_loader: - kv  36:                gemma4.rope.dimension_count u32              = 512
+llama_model_loader: - kv  37:            gemma4.rope.dimension_count_swa u32              = 256
+llama_model_loader: - kv  38:                       tokenizer.ggml.model str              = gemma4
+llama_model_loader: - kv  39:                      tokenizer.ggml.tokens arr[str,262144]  = ["<pad>", "<eos>", "<bos>", "<unk>", ...
+llama_model_loader: - kv  40:                      tokenizer.ggml.scores arr[f32,262144]  = [-1000.000000, -1000.000000, -1000.00...
+llama_model_loader: - kv  41:                  tokenizer.ggml.token_type arr[i32,262144]  = [3, 1, 3, 3, 3, 1, 1, 1, 1, 1, 1, 1, ...
+llama_model_loader: - kv  42:                      tokenizer.ggml.merges arr[str,514906]  = ["\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n \n", ...
+llama_model_loader: - kv  43:                tokenizer.ggml.bos_token_id u32              = 2
+llama_model_loader: - kv  44:                tokenizer.ggml.eos_token_id u32              = 106
+llama_model_loader: - kv  45:            tokenizer.ggml.unknown_token_id u32              = 3
+llama_model_loader: - kv  46:            tokenizer.ggml.padding_token_id u32              = 0
+llama_model_loader: - kv  47:               tokenizer.ggml.mask_token_id u32              = 4
+llama_model_loader: - kv  48:                    tokenizer.chat_template str              = {%- macro format_parameters(propertie...
+llama_model_loader: - kv  49:            tokenizer.ggml.add_space_prefix bool             = false
+llama_model_loader: - kv  50:               tokenizer.ggml.add_bos_token bool             = true
+llama_model_loader: - kv  51:               general.quantization_version u32              = 2
+llama_model_loader: - kv  52:                          general.file_type u32              = 25
+llama_model_loader: - kv  53:                      quantize.imatrix.file str              = gemma-4-31B-it-GGUF/imatrix_unsloth.gguf
+llama_model_loader: - kv  54:                   quantize.imatrix.dataset str              = unsloth_calibration_gemma-4-31B-it.txt
+llama_model_loader: - kv  55:             quantize.imatrix.entries_count u32              = 410
+llama_model_loader: - kv  56:              quantize.imatrix.chunks_count u32              = 141
+llama_model_loader: - type  f32:  422 tensors
+llama_model_loader: - type q4_K:    1 tensors
+llama_model_loader: - type iq4_nl:  410 tensors
 print_info: file format = GGUF V3 (latest)
-print_info: file type   = Q6_K
-print_info: file size   = 6.93 GiB (7.92 BPW) 
+print_info: file type   = IQ4_NL - 4.5 bpw
+print_info: file size   = 16.09 GiB (4.50 BPW) 
 load: 0 unused tokens
 load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden
 load: printing all EOG tokens:
@@ -108,27 +108,27 @@ load: token to piece cache size = 1.9443 MB
 print_info: arch                  = gemma4
 print_info: vocab_only            = 0
 print_info: no_alloc              = 0
-print_info: n_ctx_train           = 131072
-print_info: n_embd                = 2560
-print_info: n_embd_inp            = 2560
-print_info: n_layer               = 42
-print_info: n_head                = 8
-print_info: n_head_kv             = 2
+print_info: n_ctx_train           = 262144
+print_info: n_embd                = 5376
+print_info: n_embd_inp            = 5376
+print_info: n_layer               = 60
+print_info: n_head                = 32
+print_info: n_head_kv             = [16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4, 16, 16, 16, 16, 16, 4]
 print_info: n_rot                 = 512
-print_info: n_swa                 = 512
+print_info: n_swa                 = 1024
 print_info: is_swa_any            = 1
 print_info: n_embd_head_k         = 512
 print_info: n_embd_head_v         = 512
-print_info: n_gqa                 = 4
-print_info: n_embd_k_gqa          = [512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024]
-print_info: n_embd_v_gqa          = [512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024, 512, 512, 512, 512, 512, 1024]
+print_info: n_gqa                 = [2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 8]
+print_info: n_embd_k_gqa          = [4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048]
+print_info: n_embd_v_gqa          = [4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048, 4096, 4096, 4096, 4096, 4096, 2048]
 print_info: f_norm_eps            = 0.0e+00
 print_info: f_norm_rms_eps        = 1.0e-06
 print_info: f_clamp_kqv           = 0.0e+00
 print_info: f_max_alibi_bias      = 0.0e+00
 print_info: f_logit_scale         = 0.0e+00
 print_info: f_attn_scale          = 1.0e+00
-print_info: n_ff                  = 10240
+print_info: n_ff                  = 21504
 print_info: n_expert              = 0
 print_info: n_expert_used         = 0
 print_info: n_expert_groups       = 0
@@ -144,12 +144,12 @@ print_info: freq_scale_swa        = 1
 print_info: n_embd_head_k_swa     = 256
 print_info: n_embd_head_v_swa     = 256
 print_info: n_rot_swa             = 256
-print_info: n_ctx_orig_yarn       = 131072
+print_info: n_ctx_orig_yarn       = 262144
 print_info: rope_yarn_log_mul     = 0.0000
 print_info: rope_finetuned        = unknown
-print_info: model type            = E4B
-print_info: model params          = 7.52 B
-print_info: general.name          = Gemma-4-E4B-It
+print_info: model type            = ?B
+print_info: model params          = 30.70 B
+print_info: general.name          = Gemma-4-31B-It
 print_info: vocab type            = BPE
 print_info: n_vocab               = 262144
 print_info: n_merges              = 514906
@@ -166,25 +166,25 @@ print_info: max token length      = 93
 load_tensors: loading model tensors, this can take a while... (mmap = true, direct_io = false)
 str: cannot properly format tensor name output with suffix=weight bid=-1 xid=-1
 load_tensors: offloading output layer to GPU
-load_tensors: offloading 41 repeating layers to GPU
-load_tensors: offloaded 43/43 layers to GPU
-load_tensors:   CPU_Mapped model buffer size =   680.00 MiB
-load_tensors:  MTL0_Mapped model buffer size =  7097.18 MiB
-.................................................
+load_tensors: offloading 59 repeating layers to GPU
+load_tensors: offloaded 61/61 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   756.00 MiB
+load_tensors:  MTL0_Mapped model buffer size = 16471.71 MiB
+..............................................................................................
 common_init_result: added <turn|> logit bias = -inf
 common_init_result: added </s> logit bias = -inf
 llama_context: constructing llama_context
 llama_context: n_seq_max     = 4
-llama_context: n_ctx         = 8192
-llama_context: n_ctx_seq     = 8192
-llama_context: n_batch       = 2048
+llama_context: n_ctx         = 32768
+llama_context: n_ctx_seq     = 32768
+llama_context: n_batch       = 512
 llama_context: n_ubatch      = 512
 llama_context: causal_attn   = 1
 llama_context: flash_attn    = auto
 llama_context: kv_unified    = true
 llama_context: freq_base     = 1000000.0
 llama_context: freq_scale    = 1
-llama_context: n_ctx_seq (8192) < n_ctx_train (131072) -- the full capacity of the model will not be utilized
+llama_context: n_ctx_seq (32768) < n_ctx_train (262144) -- the full capacity of the model will not be utilized
 ggml_metal_init: allocating
 ggml_metal_init: found device: Apple M4 Pro
 ggml_metal_init: picking default device: Apple M4 Pro
@@ -192,14 +192,14 @@ ggml_metal_init: use fusion         = true
 ggml_metal_init: use concurrency    = true
 ggml_metal_init: use graph optimize = true
 llama_context:        CPU  output buffer size =     4.00 MiB
-llama_kv_cache_iswa: creating non-SWA KV cache, size = 8192 cells
-llama_kv_cache:       MTL0 KV buffer size =   128.00 MiB
-llama_kv_cache: size =  128.00 MiB (  8192 cells,   4 layers,  4/1 seqs), K (f16):   64.00 MiB, V (f16):   64.00 MiB
+llama_kv_cache_iswa: creating non-SWA KV cache, size = 32768 cells
+llama_kv_cache:       MTL0 KV buffer size =  2560.00 MiB
+llama_kv_cache: size = 2560.00 MiB ( 32768 cells,  10 layers,  4/1 seqs), K (f16): 1280.00 MiB, V (f16): 1280.00 MiB
 llama_kv_cache: attn_rot_k = 0
 llama_kv_cache: attn_rot_v = 0
-llama_kv_cache_iswa: creating     SWA KV cache, size = 2560 cells
-llama_kv_cache:       MTL0 KV buffer size =   100.00 MiB
-llama_kv_cache: size =  100.00 MiB (  2560 cells,  20 layers,  4/1 seqs), K (f16):   50.00 MiB, V (f16):   50.00 MiB
+llama_kv_cache_iswa: creating     SWA KV cache, size = 4608 cells
+llama_kv_cache:       MTL0 KV buffer size =  3600.00 MiB
+llama_kv_cache: size = 3600.00 MiB (  4608 cells,  50 layers,  4/1 seqs), K (f16): 1800.00 MiB, V (f16): 1800.00 MiB
 llama_kv_cache: attn_rot_k = 0
 llama_kv_cache: attn_rot_v = 0
 sched_reserve: reserving ...
@@ -207,31 +207,32 @@ sched_reserve: Flash Attention was auto, set to enabled
 sched_reserve: resolving fused Gated Delta Net support:
 sched_reserve: fused Gated Delta Net (autoregressive) enabled
 sched_reserve: fused Gated Delta Net (chunked) enabled
-sched_reserve:       MTL0 compute buffer size =   517.50 MiB
-sched_reserve:        CPU compute buffer size =    31.02 MiB
-sched_reserve: graph nodes  = 1867
+sched_reserve:       MTL0 compute buffer size =   522.50 MiB
+sched_reserve:        CPU compute buffer size =    94.02 MiB
+sched_reserve: graph nodes  = 2462
 sched_reserve: graph splits = 2
-sched_reserve: reserve took 19.53 ms, sched copies = 1
+sched_reserve: reserve took 32.62 ms, sched copies = 1
 common_init_from_params: warming up the model with an empty run - please wait ... (--no-warmup to disable)
 srv    load_model: initializing slots, n_slots = 4
 no implementations specified for speculative decoding
 slot   load_model: id  0 | task -1 | speculative decoding context not initialized
-slot   load_model: id  0 | task -1 | new slot, n_ctx = 8192
+slot   load_model: id  0 | task -1 | new slot, n_ctx = 32768
 no implementations specified for speculative decoding
 slot   load_model: id  1 | task -1 | speculative decoding context not initialized
-slot   load_model: id  1 | task -1 | new slot, n_ctx = 8192
+slot   load_model: id  1 | task -1 | new slot, n_ctx = 32768
 no implementations specified for speculative decoding
 slot   load_model: id  2 | task -1 | speculative decoding context not initialized
-slot   load_model: id  2 | task -1 | new slot, n_ctx = 8192
+slot   load_model: id  2 | task -1 | new slot, n_ctx = 32768
 no implementations specified for speculative decoding
 slot   load_model: id  3 | task -1 | speculative decoding context not initialized
-slot   load_model: id  3 | task -1 | new slot, n_ctx = 8192
+slot   load_model: id  3 | task -1 | new slot, n_ctx = 32768
 srv    load_model: prompt cache is enabled, size limit: 8192 MiB
 srv    load_model: use `--cache-ram 0` to disable the prompt cache
 srv    load_model: for more info see https://github.com/ggml-org/llama.cpp/pull/16391
 srv          init: init: idle slots will be saved to prompt cache and cleared upon starting a new task
-init: chat template, example_format: '<bos><|turn>system
-<|think|>You are a helpful assistant<turn|>
+init: chat template, example_format: '<|turn>system
+<|think|>
+You are a helpful assistant<turn|>
 <|turn>user
 Hello<turn|>
 <|turn>model
@@ -242,11 +243,11 @@ How are you?<turn|>
 '
 srv          init: init: chat template, thinking = 1
 main: model loaded
-main: server is listening on http://127.0.0.1:8080
+main: server is listening on http://127.0.0.1:8081
 main: starting the main loop...
 srv  update_slots: all slots are idle
 srv    operator(): operator(): cleaning up before exit...
-llama_memory_breakdown_print: | memory breakdown [MiB]  | total    free    self   model   context   compute    unaccounted |
-llama_memory_breakdown_print: |   - MTL0 (Apple M4 Pro) | 38338 = 30495 + (7842 =  7097 +     228 +     517) +           0 |
-llama_memory_breakdown_print: |   - Host                |                   711 =   680 +       0 +      31                |
+llama_memory_breakdown_print: | memory breakdown [MiB]  | total    free     self   model   context   compute    unaccounted |
+llama_memory_breakdown_print: |   - MTL0 (Apple M4 Pro) | 38338 = 15183 + (23154 = 16471 +    6160 +     522) +           0 |
+llama_memory_breakdown_print: |   - Host                |                    850 =   756 +       0 +      94                |
 ggml_metal_free: deallocating

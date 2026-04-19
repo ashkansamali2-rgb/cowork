@@ -1,0 +1,6 @@
+model_list:
+  - model_name: claude-3-5-sonnet-20241022
+    litellm_params:
+      model: openai/jarvis
+      api_base: http://localhost:8081/v1
+      api_key: local

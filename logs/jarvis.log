@@ -1,7 +1,8 @@
-/Users/ashkansamali/cowork/jarvis/api_server.py:61: DeprecationWarning: 
+/Users/ashkansamali/cowork/jarvis/api_server.py:82: DeprecationWarning: 
         on_event is deprecated, use lifespan event handlers instead.
 
         Read more about it in the
         [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
         
   @app.on_event("startup")
+Bus disconnected (no close frame received or sent), retrying in 3s...

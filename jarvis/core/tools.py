@@ -77,6 +77,14 @@ def play_media(query):
     except Exception as e:
         return f"Media error: {e}"
 
+def run_shell(command):
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True, check=True)
+        output = result.stdout.strip()
+        return f"Command executed successfully. Output: {output}" if output else "Command executed successfully."
+    except subprocess.CalledProcessError as e:
+        return f"Error executing command: {e.stderr.strip()}"
+
 AVAILABLE_TOOLS = {
     "run_shell": run_shell,
     "launch_claude_code": launch_claude_code,

@@ -970,3 +970,568 @@ v3_i
 [2026-04-18T19:58:54] Client registered: cantivia (total: 2)
 [2026-04-18T19:58:54] [cantivia] CLIENT_CONNECT: total_clients=2
 [2026-04-18T19:58:55] connection open
+[2026-04-18T20:02:21] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:02:21] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:02:21] server listening on 127.0.0.1:8002
+[2026-04-18T20:02:21] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:02:22] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:02:25] connection open
+[2026-04-18T20:02:25] Client registered: jarvis (total: 1)
+[2026-04-18T20:02:25] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:02:26] connection open
+[2026-04-18T20:02:26] Client registered: cantivia (total: 2)
+[2026-04-18T20:02:26] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:02:27] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:02:27] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:02:27] server listening on 127.0.0.1:8002
+[2026-04-18T20:02:27] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:02:27] connection open
+[2026-04-18T20:02:28] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:02:30] connection open
+[2026-04-18T20:02:30] Client registered: jarvis (total: 1)
+[2026-04-18T20:02:30] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:02:31] connection open
+[2026-04-18T20:02:31] Client registered: cantivia (total: 2)
+[2026-04-18T20:02:31] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:03:14] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:03:14] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:03:14] server listening on 127.0.0.1:8002
+[2026-04-18T20:03:14] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:03:15] connection open
+[2026-04-18T20:03:15] Client registered: jarvis (total: 1)
+[2026-04-18T20:03:15] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:03:15] connection open
+[2026-04-18T20:03:16] connection open
+[2026-04-18T20:03:16] Client registered: cantivia (total: 2)
+[2026-04-18T20:03:16] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:03:17] connection open
+[2026-04-18T20:09:43] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:09:43] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:09:43] server listening on 127.0.0.1:8002
+[2026-04-18T20:09:43] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:09:44] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:09:45] connection open
+[2026-04-18T20:09:45] Client registered: jarvis (total: 1)
+[2026-04-18T20:09:45] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:09:46] connection open
+[2026-04-18T20:09:46] Client registered: cantivia (total: 2)
+[2026-04-18T20:09:46] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:09:47] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:09:47] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:09:47] server listening on 127.0.0.1:8002
+[2026-04-18T20:09:47] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:09:48] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:09:49] connection open
+[2026-04-18T20:09:49] Client registered: jarvis (total: 1)
+[2026-04-18T20:09:49] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:09:49] connection open
+[2026-04-18T20:09:50] connection open
+[2026-04-18T20:09:50] Client registered: cantivia (total: 2)
+[2026-04-18T20:09:50] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:10:53] Client disconnected: jarvis
+[2026-04-18T20:10:53] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-18T20:11:00] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:11:00] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:11:00] server listening on 127.0.0.1:8002
+[2026-04-18T20:11:00] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:11:01] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:11:02] connection open
+[2026-04-18T20:11:02] Client registered: jarvis (total: 1)
+[2026-04-18T20:11:02] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:11:03] connection open
+[2026-04-18T20:11:03] Client registered: cantivia (total: 2)
+[2026-04-18T20:11:03] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T20:11:04] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T20:11:04] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T20:11:04] server listening on 127.0.0.1:8002
+[2026-04-18T20:11:04] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T20:11:05] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T20:11:06] connection open
+[2026-04-18T20:11:06] Client registered: jarvis (total: 1)
+[2026-04-18T20:11:06] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T20:11:07] connection open
+[2026-04-18T20:11:07] connection open
+[2026-04-18T20:11:07] Client registered: cantivia (total: 2)
+[2026-04-18T20:11:07] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:00:27] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:00:27] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:00:27] server listening on 127.0.0.1:8002
+[2026-04-18T22:00:27] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:00:27] connection open
+[2026-04-18T22:00:27] Client registered: jarvis (total: 1)
+[2026-04-18T22:00:27] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:00:28] connection open
+[2026-04-18T22:00:28] Client registered: cantivia (total: 2)
+[2026-04-18T22:00:28] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:00:29] connection open
+[2026-04-18T22:07:38] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:07:38] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:07:38] server listening on 127.0.0.1:8002
+[2026-04-18T22:07:38] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:07:39] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:07:50] connection open
+[2026-04-18T22:07:50] Client registered: cantivia (total: 1)
+[2026-04-18T22:07:50] [cantivia] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:07:51] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:07:51] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:07:51] server listening on 127.0.0.1:8002
+[2026-04-18T22:07:51] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:07:52] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:07:53] connection open
+[2026-04-18T22:08:03] connection open
+[2026-04-18T22:08:03] Client registered: cantivia (total: 1)
+[2026-04-18T22:08:03] [cantivia] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:08:29] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:08:29] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:08:29] server listening on 127.0.0.1:8002
+[2026-04-18T22:08:29] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:08:30] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:08:31] connection open
+[2026-04-18T22:08:31] Client registered: jarvis (total: 1)
+[2026-04-18T22:08:31] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:08:32] connection open
+[2026-04-18T22:08:32] Client registered: cantivia (total: 2)
+[2026-04-18T22:08:32] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:08:33] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:08:33] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:08:33] server listening on 127.0.0.1:8002
+[2026-04-18T22:08:33] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:08:34] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:08:35] connection open
+[2026-04-18T22:08:35] Client registered: jarvis (total: 1)
+[2026-04-18T22:08:35] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:08:36] connection open
+[2026-04-18T22:08:37] connection open
+[2026-04-18T22:08:37] Client registered: cantivia (total: 2)
+[2026-04-18T22:08:37] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:09:56] connection open
+[2026-04-18T22:10:28] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:10:28] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:10:28] server listening on 127.0.0.1:8002
+[2026-04-18T22:10:28] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:10:28] connection open
+[2026-04-18T22:10:28] Client registered: jarvis (total: 1)
+[2026-04-18T22:10:28] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:10:29] connection open
+[2026-04-18T22:10:29] Client registered: cantivia (total: 2)
+[2026-04-18T22:10:29] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:10:30] connection open
+[2026-04-18T22:15:46] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:15:46] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:15:46] server listening on 127.0.0.1:8002
+[2026-04-18T22:15:46] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:15:47] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:15:49] connection open
+[2026-04-18T22:15:49] Client registered: jarvis (total: 1)
+[2026-04-18T22:15:49] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:15:49] connection open
+[2026-04-18T22:15:49] Client registered: cantivia (total: 2)
+[2026-04-18T22:15:49] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:15:51] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:15:51] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:15:51] server listening on 127.0.0.1:8002
+[2026-04-18T22:15:51] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:15:52] opening handshake failed
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 138, in parse
+    request_line = yield from parse_line(read_line)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 320, in parse_line
+    line = yield from read_line(MAX_LINE_LENGTH)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/streams.py", line 46, in read_line
+    raise EOFError(f"stream ends after {p} bytes, before end of line")
+EOFError: stream ends after 0 bytes, before end of line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/server.py", line 547, in parse
+    request = yield from Request.parse(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/http11.py", line 140, in parse
+    raise EOFError("connection closed while reading HTTP request line") from exc
+EOFError: connection closed while reading HTTP request line
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 356, in conn_handler
+    await connection.handshake(
+  File "/Users/ashkansamali/cowork/jarvis/.venv/lib/python3.12/site-packages/websockets/asyncio/server.py", line 207, in handshake
+    raise self.protocol.handshake_exc
+websockets.exceptions.InvalidMessage: did not receive a valid HTTP request
+[2026-04-18T22:15:53] connection open
+[2026-04-18T22:15:53] Client registered: jarvis (total: 1)
+[2026-04-18T22:15:53] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:15:53] connection open
+[2026-04-18T22:15:54] connection open
+[2026-04-18T22:15:54] Client registered: cantivia (total: 2)
+[2026-04-18T22:15:54] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:24:09] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:24:09] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:24:09] server listening on 127.0.0.1:8002
+[2026-04-18T22:24:09] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:24:10] connection open
+[2026-04-18T22:24:10] Client registered: jarvis (total: 1)
+[2026-04-18T22:24:10] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:24:10] connection open
+[2026-04-18T22:24:10] Client registered: cantivia (total: 2)
+[2026-04-18T22:24:10] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:24:12] connection open
+[2026-04-18T22:29:12] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:29:12] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:29:12] server listening on 127.0.0.1:8002
+[2026-04-18T22:29:12] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:29:12] connection open
+[2026-04-18T22:29:12] Client registered: jarvis (total: 1)
+[2026-04-18T22:29:12] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:29:13] connection open
+[2026-04-18T22:29:13] Client registered: cantivia (total: 2)
+[2026-04-18T22:29:13] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:29:14] connection open
+[2026-04-18T22:31:44] Client disconnected: jarvis
+[2026-04-18T22:31:44] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-18T22:31:44] connection open
+[2026-04-18T22:31:44] Client registered: jarvis (total: 2)
+[2026-04-18T22:31:44] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:31:59] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-18T22:31:59] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-18T22:31:59] server listening on 127.0.0.1:8002
+[2026-04-18T22:31:59] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-18T22:31:59] connection open
+[2026-04-18T22:31:59] Client registered: jarvis (total: 1)
+[2026-04-18T22:31:59] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-18T22:32:00] connection open
+[2026-04-18T22:32:00] Client registered: cantivia (total: 2)
+[2026-04-18T22:32:00] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:32:01] connection open
+[2026-04-18T22:44:03] Client disconnected: jarvis
+[2026-04-18T22:44:03] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-18T22:44:04] connection open
+[2026-04-18T22:44:04] Client registered: jarvis (total: 2)
+[2026-04-18T22:44:04] [jarvis] CLIENT_CONNECT: total_clients=2
+[2026-04-18T22:46:10] Client disconnected: jarvis
+[2026-04-18T22:46:10] [jarvis] CLIENT_DISCONNECT: remaining_clients=1
+[2026-04-18T22:46:11] connection open
+[2026-04-18T22:46:11] Client registered: jarvis (total: 2)
+[2026-04-18T22:46:11] [jarvis] CLIENT_CONNECT: total_clients=2
