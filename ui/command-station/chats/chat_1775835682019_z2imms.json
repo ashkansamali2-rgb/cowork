@@ -1,0 +1,338 @@
+{
+  "id": "chat_1775835682019_z2imms",
+  "title": "research MediaPipe hand gestures and cre...",
+  "messages": [
+    {
+      "id": "msg_1775835682020",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775835682020,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775835682050",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775835682/result.txt",
+      "streaming": false,
+      "timestamp": 1775835682050
+    },
+    {
+      "id": "msg_1775836345302",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775836345302,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775836345311",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775836345/result.txt",
+      "streaming": false,
+      "timestamp": 1775836345311
+    },
+    {
+      "id": "msg_1775836370081",
+      "role": "user",
+      "content": "research MediaPipe hand gestures and create a document in word",
+      "timestamp": 1775836370081,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775836370085",
+      "role": "assistant",
+      "content": "Agent spawned. I'll research 'MediaPipe hand gestures and create a document in word' in the background. Results will be saved to ~/cowork/agents/AGENT-1775836370/result.txt",
+      "streaming": false,
+      "timestamp": 1775836370085
+    },
+    {
+      "id": "msg_1775919948440",
+      "role": "user",
+      "content": "what time is it",
+      "timestamp": 1775919948441,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775919948462",
+      "role": "assistant",
+      "content": "04:05 PM",
+      "streaming": false,
+      "timestamp": 1775919948462
+    },
+    {
+      "id": "msg_1775922440020",
+      "role": "user",
+      "content": "open Safari and go to github.com",
+      "timestamp": 1775922440020,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775922440042",
+      "role": "assistant",
+      "content": "Agent AGENT-1775922440025 spawned. Working on it...",
+      "streaming": false,
+      "timestamp": 1775922440042
+    },
+    {
+      "id": "msg_1775922674062",
+      "role": "assistant",
+      "content": "Safari has been opened and navigated to https://github.com successfully. The task is complete.",
+      "streaming": false,
+      "timestamp": 1775922674062
+    },
+    {
+      "id": "msg_1775923530434",
+      "role": "user",
+      "content": "Research the top 5 laptops available right now. Look at real reviews and specs. Then create a stunning PowerPoint presentation called \"The Ultimate Laptop Guide\" with one slide per laptop showing the name, key specs, pros and cons, and who it's best for. Make the design creative — use a dark theme with accent colors. Add a title slide and a conclusion slide comparing all 5. Save it to my Desktop.",
+      "timestamp": 1775923530434,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775923530453",
+      "role": "assistant",
+      "content": "Agent AGENT-1775923530437 spawned. Working on it...",
+      "streaming": false,
+      "timestamp": 1775923530453
+    },
+    {
+      "id": "msg_1775923536910",
+      "role": "assistant",
+      "content": "Max steps (30) reached. Last observation: LLM call failed: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CZxGaVDKBa69uxnoXD67n'}",
+      "streaming": false,
+      "timestamp": 1775923536910
+    },
+    {
+      "id": "msg_1775924046979",
+      "role": "user",
+      "content": "Research the top 5 laptops available right now and create a PowerPoint presentation called \"The Ultimate Laptop Guide\" with a title slide, one slide per laptop with specs and pros/cons, and a conclusion slide. Dark theme, creative design. Save to my Desktop.",
+      "timestamp": 1775924046979,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775924046992",
+      "role": "assistant",
+      "content": "Agent AGENT-1775924046982 spawned. Working on it...",
+      "timestamp": 1775924046992,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775924416811",
+      "role": "assistant",
+      "content": "Max steps (30) reached. Last observation: Tool create_keynote_presentation raised: create_keynote_presentation() missing 2 required positional arguments: 'title' and 'slides'",
+      "timestamp": 1775924416811,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926489858",
+      "role": "user",
+      "content": "Research the top 5 laptops available right now and create a PowerPoint presentation called \"The Ultimate Laptop Guide\" with a title slide, one slide per laptop with name, specs, pros and cons, and a conclusion slide comparing all 5. Dark theme with purple accents. Save to my Desktop.",
+      "timestamp": 1775926489858,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926489871",
+      "role": "assistant",
+      "content": "Agent AGENT-1775926489861 spawned. Working on it...",
+      "timestamp": 1775926489871,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926593746",
+      "role": "user",
+      "content": "whats the weather for tommorrow in dublin ireland",
+      "timestamp": 1775926593747,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926605755",
+      "role": "assistant",
+      "content": "I don't have real-time weather data access, but I can help you get that information! You can check the weather by:\n\n1. Opening the Weather app on your Mac\n2. Searching \"Dublin weather tomorrow\" in Spotlight (Cmd+Space)\n3. Visiting a weather website like Met Éireann (the Irish Meteorological Service)\n\nWould you like me to open the Weather app for you?",
+      "timestamp": 1775926605755,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926647041",
+      "role": "user",
+      "content": "go to the weather app and check it out me",
+      "timestamp": 1775926647041,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926653128",
+      "role": "assistant",
+      "content": "I've opened the Weather app for you. You should now be able to see the current weather and forecast for Dublin, Ireland. Command ran: open -a \"Weather\" — no output returned.",
+      "timestamp": 1775926653128,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926710508",
+      "role": "user",
+      "content": "Open EUE LOM inside of word and tidy up my essay make it pop more",
+      "timestamp": 1775926710508,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775926738608",
+      "role": "assistant",
+      "content": "I've opened Microsoft Word for you. Now I need to know the full path to your \"eue lom\" file so I can open it. Could you tell me:\n\n1. Where the file is located (folder path)?\n2. Or if you'd like me to open the most recent Word document?\n\nOnce I have that, I can help you tidy up your essay and make it pop! Command ran: open -a \"Microsoft Word\" — no output returned.",
+      "timestamp": 1775926738608,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775927053280",
+      "role": "assistant",
+      "content": "Max steps (30) reached. Last observation: PowerPoint presentation created and opened: /Users/ashkansamali/Desktop/Presentation.pptx",
+      "timestamp": 1775927053280,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775928879741",
+      "role": "user",
+      "content": "Research top 3 laptops and create a PowerPoint on my Desktop",
+      "timestamp": 1775928879741,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775928879757",
+      "role": "assistant",
+      "content": "Agent AGENT-1775928879744 spawned. Working on it...",
+      "timestamp": 1775928879757,
+      "streaming": false
+    },
+    {
+      "id": "msg_1775928950497",
+      "role": "assistant",
+      "content": "PowerPoint presentation created and opened: /Users/ashkansamali/Desktop/Presentation.pptx",
+      "timestamp": 1775928950497,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776370026165",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1776370026165,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776370026179",
+      "role": "assistant",
+      "content": "Error: Error invoking remote method 'chat:send': Error: Jarvis not connected",
+      "error": true,
+      "timestamp": 1776370026179,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776372163243",
+      "role": "user",
+      "content": "hi",
+      "timestamp": 1776372163243,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776372163259",
+      "role": "assistant",
+      "content": "Sir, I noticed I don't know much about you. Could we do a quick onboarding interview? Just 50 questions to help me serve you perfectly. First things first—what should I call you?",
+      "timestamp": 1776372163259,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373634143",
+      "role": "user",
+      "content": "ok lets go",
+      "timestamp": 1776373634144,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373634191",
+      "role": "assistant",
+      "content": "Makes sense. What is your primary occupation or role?",
+      "timestamp": 1776373634191,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373634191",
+      "role": "assistant",
+      "content": "Makes sense. What is your primary occupation or role?",
+      "timestamp": 1776373634191,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667460",
+      "role": "user",
+      "content": "i am a student. I am 15 years old and go to ST. Vincents Castleknock College in dUBLIN iRELAND",
+      "timestamp": 1776373667460,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667487",
+      "role": "assistant",
+      "content": "Understood. Where are you based or what timezone are you in?",
+      "timestamp": 1776373667487,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373667493",
+      "role": "assistant",
+      "content": "Understood. Where are you based or what timezone are you in?",
+      "timestamp": 1776373667493,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673416",
+      "role": "user",
+      "content": "GMT",
+      "timestamp": 1776373673416,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673432",
+      "role": "assistant",
+      "content": "Noted. Are you part of a specific company or organization?",
+      "timestamp": 1776373673432,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373673438",
+      "role": "assistant",
+      "content": "Noted. Are you part of a specific company or organization?",
+      "timestamp": 1776373673438,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689433",
+      "role": "user",
+      "content": "I am building an AI startup with 2 of my friends",
+      "timestamp": 1776373689433,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689449",
+      "role": "assistant",
+      "content": "Interesting. How would you describe your general work style?",
+      "timestamp": 1776373689449,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776373689449",
+      "role": "assistant",
+      "content": "Interesting. How would you describe your general work style?",
+      "timestamp": 1776373689449,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776443570130",
+      "role": "user",
+      "content": "i like to vibe code and use AI",
+      "timestamp": 1776443570130,
+      "streaming": false
+    },
+    {
+      "id": "msg_1776443570139",
+      "role": "assistant",
+      "content": "Makes sense. Could you elaborate a bit on what your day-to-day role involves?",
+      "timestamp": 1776443570139,
+      "streaming": false
+    }
+  ],
+  "updatedAt": 1776443814195,
+  "projectName": null
+}
