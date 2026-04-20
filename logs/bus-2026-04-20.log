@@ -1,0 +1,38 @@
+[2026-04-20T09:46:18] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-20T09:46:18] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-20T09:46:18] server listening on 127.0.0.1:8002
+[2026-04-20T09:46:18] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-20T09:46:19] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-20T09:46:19] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-20T09:46:21] connection open
+[2026-04-20T09:46:21] connection open
+[2026-04-20T09:46:21] Client registered: jarvis (total: 1)
+[2026-04-20T09:46:21] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-20T09:46:21] connection open
+[2026-04-20T09:46:21] Client registered: cantivia (total: 2)
+[2026-04-20T09:46:21] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-20T09:46:21] connection open
+[2026-04-20T09:46:21] Client registered: cantivia (total: 2)
+[2026-04-20T09:46:21] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-20T09:46:23] connection open
+[2026-04-20T09:47:07] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-20T09:47:07] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-20T09:47:07] server listening on 127.0.0.1:8002
+[2026-04-20T09:47:07] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-20T09:47:07] connection open
+[2026-04-20T09:47:07] Client registered: jarvis (total: 1)
+[2026-04-20T09:47:07] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-20T09:47:08] connection open
+[2026-04-20T09:47:08] Client registered: cantivia (total: 2)
+[2026-04-20T09:47:08] [cantivia] CLIENT_CONNECT: total_clients=2
+[2026-04-20T09:47:09] connection open
+[2026-04-20T09:51:06] Cantivia Bus starting on ws://127.0.0.1:8002
+[2026-04-20T09:51:06] [bus] BUS_START: ws://127.0.0.1:8002
+[2026-04-20T09:51:06] server listening on 127.0.0.1:8002
+[2026-04-20T09:51:06] Bus online. Waiting for Jarvis and Cantivia to connect...
+[2026-04-20T09:51:06] connection open
+[2026-04-20T09:51:06] Client registered: jarvis (total: 1)
+[2026-04-20T09:51:06] [jarvis] CLIENT_CONNECT: total_clients=1
+[2026-04-20T09:51:07] connection open
+[2026-04-20T09:51:07] Client registered: cantivia (total: 2)
+[2026-04-20T09:51:07] [cantivia] CLIENT_CONNECT: total_clients=2
