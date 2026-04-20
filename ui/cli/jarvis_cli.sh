@@ -91,12 +91,19 @@ echo ""
 printf "\033[1;35m  Select engine: \033[0m"
 read ENGINE_CHOICE
 
+# ── CHECK MODEL ──────────────────────────────────────────────────────────
+if ! nc -z 127.0.0.1 8081; then
+  echo -e "\033[1;91m  ✗ Error: Gemma model (port 8081) is not running.\033[0m"
+  echo -e "\033[1;35m  Run 'start' to initialize the environment.\033[0m"
+  exit 1
+fi
+
 cd ~/cowork
 
 if [ "$ENGINE_CHOICE" = "2" ]; then
   ANTHROPIC_BASE_URL=http://localhost:4001 ANTHROPIC_API_KEY=local claude
 else
-  /Users/ashkansamali/cowork/venv/bin/aider \
+  exec /Users/ashkansamali/cowork/venv/bin/aider \
     --architect \
     --model openai/jarvis \
     --editor-model openai/jarvis \
@@ -104,8 +111,8 @@ else
     --openai-api-key local \
     --no-show-model-warnings \
     --no-auto-commits \
-    --map-tokens 2048 \
-    --edit-format udiff \
+    --map-tokens 256 \
+    --edit-format diff \
     --model-metadata-file /Users/ashkansamali/cowork/jarvis/model_metadata.json \
     --suggest-shell-commands \
     --analytics-disable
