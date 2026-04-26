@@ -1,0 +1,29 @@
+
+> command-station@1.0.0 dev
+> concurrently "vite" "wait-on http://localhost:5173 && electron ."
+
+[0] [33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+[0] 
+[0]   VITE v5.4.21  ready in 160 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] [Bus WS] error: connect ECONNREFUSED 127.0.0.1:8002
+[1] /Users/ashkansamali/cowork/ui/command-station/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron exited with signal SIGKILL
+[0] vite exited with code SIGKILL
+[1] wait-on http://localhost:5173 && electron . exited with code 1
